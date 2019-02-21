@@ -1,0 +1,113 @@
+/* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
+/*
+ * Copyright 2007 University of Washington
+ * 
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation;
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
+
+#ifndef GOSSIP_APP_H
+#define GOSSIP_APP_H
+
+#include "ns3/application.h"
+#include "ns3/event-id.h"
+#include "ns3/ptr.h"
+#include "ns3/address.h"
+#include "ns3/ipv4-address.h"
+#include "ns3/traced-callback.h"
+#include <map>
+#include <string>
+#include <vector>
+
+
+namespace ns3 {
+
+class Socket;
+class Packet;
+
+const int NODE_NUMBER = 8;
+const int FAN_OUT = 8;
+const int GOSSIP_ROUND = 2;
+const int SOLICIT_INTERVAL = 0.2;
+
+const uint8_t TYPE_SOLICIT = 21;
+const uint8_t TYPE_ACK = 23;
+const uint8_t TYPE_BLOCK[10240] = "BLOCK";
+const uint8_t TYPE_PREPARE[80] = "PREPARED";
+const uint8_t TYPE_COMMIT[80] = "COMMIT";
+
+
+
+class GossipApp : public Application 
+{
+public:
+  
+  static TypeId GetTypeId (void);
+  GossipApp ();
+  virtual ~GossipApp ();
+
+  Ptr<Packet> ComputeWhatToSend();
+  void ChooseNeighbor(int x[GOSSIP_ROUND]);
+  uint8_t GetNodeId(void);
+  void if_leader(void);
+
+  void ScheduleTransmit (Time dt, int dest);
+  void GossipMessageOut();
+
+
+protected:
+  virtual void DoDispose (void);
+
+
+private:
+
+  virtual void StartApplication (void);
+  virtual void StopApplication (void);
+  void Send (int dest);
+  // void ScheduleTransmit (Time dt, int dest);
+  void HandleRead (Ptr<Socket> socket);
+
+
+  uint8_t m_node_id;
+  uint16_t m_port; 
+  std::map<uint8_t, Ipv4Address> map_node_addr;
+
+  uint32_t m_sent;
+  uint32_t m_count;
+
+  uint8_t m_height;
+  uint8_t m_epoch;
+  bool current_consensus_success;
+  bool m_leader;
+  bool block_got;
+  int neighbors[GOSSIP_ROUND];
+  Ptr<Socket> m_socket_receive; 
+  std::vector<Ptr<Socket>> m_socket_send;
+
+
+  Time m_interval = Seconds(2.0); 
+  EventId m_sendEvent;
+  
+  
+
+  /// Callbacks for tracing the packet Rx events
+  // TracedCallback<Ptr<const Packet> > m_rxTrace;
+
+  /// Callbacks for tracing the packet Rx events, includes source and destination addresses
+  // TracedCallback<Ptr<const Packet>, const Address &, const Address &> m_rxTraceWithAddresses;
+};
+
+} // namespace ns3
+
+#endif /* GOSSIP_APP_H */
+
