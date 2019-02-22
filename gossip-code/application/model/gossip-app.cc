@@ -33,7 +33,7 @@
 #include "gossip-app.h"
 
 #include <stdlib.h>
-
+#include <time.h>
 
 
 
@@ -76,7 +76,10 @@ GossipApp::GossipApp ()
   m_sendEvent = EventId ();
   m_sent = 0;
   m_count = 1;
-  m_epoch = 0;
+  m_epoch = 1;
+  block_got = false;
+  len_phase1 = 10.0;
+  len_phase2 = 5.0;
 
   for(int i=0; i<NODE_NUMBER; i++)
   {
@@ -84,7 +87,24 @@ GossipApp::GossipApp ()
     ipaddress_string.append(std::to_string(i+1));
     ipaddress_string.append(".1");
     char* ipaddress = (char*)ipaddress_string.data();
-    map_node_addr[i] = Ipv4Address(ipaddress);
+    map_node_addr[i] = Ipv4Address(ipaddress);    
+  }
+
+  for(int i=0; i<NODE_NUMBER; i++)
+  {
+    std::string ipaddress_string = "10.1.";
+    ipaddress_string.append(std::to_string(i+1));
+    ipaddress_string.append(".1");
+    char* ipaddress = (char*)ipaddress_string.data();
+    Ipv4Address key1 = Ipv4Address(ipaddress);
+    map_addr_node[key1] = (uint8_t)i;
+  }
+
+  for(int i=0; i<NODE_NUMBER; i++)
+  {
+    map_node_PREPARE[i] = 0;
+    map_node_COMMIT[i] = 0;
+
   }
 
 
@@ -102,22 +122,43 @@ void GossipApp::if_leader(void)
 {
   uint8_t x = m_epoch % NODE_NUMBER;
   if(m_node_id==x)
+  {
     m_leader = true;
+    block_got = true;
+  }
   else
     m_leader = false;
 
 }
 
+std::string GossipApp::MessagetypeToString(int x)
+{
+  std::string res;
+  switch(x){
+    case 0: res = "BLOCK"; break;
+    case 1: res = "SOLICIT"; break;
+    case 2: res = "ACK"; break;
+    case 3: res = "PREPARE"; break;
+    case 4: res = "COMMIT"; break;
+  }
+  return res;
+}
+
 void GossipApp::ChooseNeighbor(int neighbor_choosed[GOSSIP_ROUND])
 {
-  srand((unsigned)Simulator::Now().GetSeconds());
+  // srand((unsigned)Simulator::Now().GetSeconds());
+  srand(time(NULL)+m_node_id);
   // srand(910.);
-  for(int i=0; i<GOSSIP_ROUND; i++)
+  int i = 0;
+  while(i<GOSSIP_ROUND)
   {
-  int x = (rand() % (NODE_NUMBER));
-  neighbor_choosed[i] = x;
+    int x = rand()%NODE_NUMBER;
+    if(x!=m_node_id)
+    {
+      neighbor_choosed[i] = x;
+      i++;
+    }
   }
-  
 }
 
 uint8_t GossipApp::GetNodeId(void)
@@ -144,9 +185,9 @@ GossipApp::StartApplication (void)
     Ptr<Socket> socket_send = Socket::CreateSocket(GetNode(), tid);
     m_socket_send.push_back(socket_send);
     // std::cout<<"sending socket created!"<<std::endl;
-    if(m_socket_send[i]->Connect (InetSocketAddress (Ipv4Address::ConvertFrom(map_node_addr[i]), 17))==0)
-      // std::cout<<"connection to "<<i<<" succeed"<<std::endl;
-    m_socket_send[i]->Connect (InetSocketAddress (Ipv4Address::ConvertFrom(map_node_addr[i]), 17));
+    if(m_socket_send[i]->Connect (InetSocketAddress (Ipv4Address::ConvertFrom(map_node_addr[i]), 17))==-1)
+      NS_FATAL_ERROR("Failer to connect socket");
+    
     
   }
 
@@ -162,17 +203,22 @@ GossipApp::StartApplication (void)
     }
   m_socket_receive->SetRecvCallback (MakeCallback (&GossipApp::HandleRead, this));
 
+  
+
   if_leader();
   if(m_leader)
   {
     std::cout<<"node "<<(int)GetNodeId()<<" is the leader"<<std::endl;
     GossipMessageOut();
-    // Simulator::Schedule (Seconds(0.), &GossipApp::GossipMessageOut,this);
   }
   else
   {
+    Simulator::Schedule(Seconds(3.0), &GossipApp::SolicitMessageFromOthers, this);
     // TODO wait for some time then query neighbors
   }
+
+  Simulator::Schedule(Seconds(len_phase1), &GossipApp::BroadcastMessageOut, this, 3);
+  Simulator::Schedule(Seconds(len_phase1), &GossipApp::DetermineCommit, this);
   // ScheduleTransmit (Seconds (0.), 0);
 
 }
@@ -187,18 +233,61 @@ GossipApp::StopApplication ()
       m_socket_receive->Close ();
       m_socket_receive->SetRecvCallback (MakeNullCallback<void, Ptr<Socket> > ());
     }
-  
+  // if(block_got)
+  //   std::cout<<"node "<<(int)m_node_id<<" has received the block"<<std::endl;
+  int sum=0;
+  for(int i=0; i<NODE_NUMBER; i++)
+  {
+    sum += map_node_COMMIT[i];
+  }
+  std::cout<<"node "<<(int)m_node_id<<" got "<<sum<<" commit messages"<<std::endl;
 }
 
 
 
-void GossipApp::Send(int dest)
+void GossipApp::Send(int dest, MESSAGE_TYPE message_type)
 {
   NS_LOG_FUNCTION(this);
+  switch(message_type){
+    case BLOCK:{
+      Packet pack1(TYPE_BLOCK, 1024);
+      Ptr<Packet> p = &pack1;
+      m_socket_send[dest]->Send(p);
+      break;
+    } 
+    case SOLICIT:
+    {
+      Packet pack1(TYPE_SOLICIT, 80);
+      Ptr<Packet> p = &pack1;
+      m_socket_send[dest]->Send(p);
+      break;
+    }
+    case ACK:
+    {
+      Packet pack1(TYPE_ACK, 80);
+      Ptr<Packet> p = &pack1;
+      m_socket_send[dest]->Send(p);
+      break;
+    }
+    case PREPARE:
+    {
+      Packet pack1(TYPE_PREPARE, 80);
+      Ptr<Packet> p = &pack1;
+      m_socket_send[dest]->Send(p);
+      break;
+    }
+    case COMMIT:
+    {
+      Packet pack1(TYPE_COMMIT, 80);
+      Ptr<Packet> p = &pack1;
+      m_socket_send[dest]->Send(p);
+      break;
+    }
+  }
+  // Packet pack1(TYPE_BLOCK, 1024);
 
-  Packet pack1(TYPE_BLOCK, 1024);
-  Ptr<Packet> p = &pack1;
-  m_socket_send[dest]->Send(p);
+  // Ptr<Packet> p = &pack1;
+  // m_socket_send[dest]->Send(p);
   // if(m_socket_send[dest]->Send(p));
   //   {
   //     std::cout<<"packet sent successfully!"<<std::endl;
@@ -212,7 +301,7 @@ void GossipApp::Send(int dest)
 
 }
 
-void GossipApp::ScheduleTransmit(Time dt, int dest)
+void GossipApp::ScheduleTransmit(Time dt, int dest, int type)
 {
   // NS_LOG_FUNCTION(this << dt);
   // if(m_socket_send == 0)
@@ -221,10 +310,12 @@ void GossipApp::ScheduleTransmit(Time dt, int dest)
   //   m_socket_send = Socket::CreateSocket(GetNode(), tid);
   //   m_socket_send->Connect (InetSocketAddress (Ipv4Address::ConvertFrom(map_node_addr[dest]), 17));
   // }
-  
-  m_sendEvent = Simulator::Schedule (dt, &GossipApp::Send, this, dest);
+  MESSAGE_TYPE message_type;
+  message_type = (MESSAGE_TYPE)type;
+  // m_sendEvent = Simulator::Schedule (dt, &GossipApp::Send, this, dest, message_type);
+  Simulator::Schedule (dt, &GossipApp::Send, this, dest, message_type);
 
-  std::cout<<"node "<<(int)GetNodeId()<<" send a packet to node "<<dest<<" at "<<Simulator::Now().GetSeconds()<<"s"<<std::endl;
+  std::cout<<"node "<<(int)GetNodeId()<<" send a "<<MessagetypeToString(((int)message_type))<<" to node "<<dest<<" at "<<Simulator::Now().GetSeconds()<<"s"<<std::endl;
 }
 
 void GossipApp::GossipMessageOut()
@@ -234,9 +325,65 @@ void GossipApp::GossipMessageOut()
 
   for(int i=0; i<GOSSIP_ROUND; i++)
   {
-    // std::cout<<neighbors[i]<<"********"<<std::endl;
-    ScheduleTransmit(Seconds (0.), neighbors[i]);
+    ScheduleTransmit(Seconds (0.), neighbors[i], 0);
   }
+}
+
+
+
+void GossipApp::BroadcastMessageOut(int type)
+{
+  // TODO some logic ambiguity
+  if(type==3)
+  {
+    if(block_got)
+    {
+      for(int i=0; i<NODE_NUMBER; i++)
+      { 
+        if(i!=m_node_id)
+          ScheduleTransmit(Seconds(0.), i, 3);
+      }
+    }
+  }
+  else if(type==4)
+  {
+    for(int i=0; i<NODE_NUMBER; i++)
+      { 
+        if(i!=m_node_id)
+          ScheduleTransmit(Seconds(0.), i, 4);
+      }
+  }
+    
+}
+
+void GossipApp::DetermineCommit()
+{
+  int sum = 0;
+  for(int i=0; i<NODE_NUMBER; i++)
+  {
+    sum += map_node_PREPARE[i];
+  }
+  if(sum>=(2*NODE_NUMBER/3.0+1))
+    BroadcastMessageOut(4);
+  else
+    Simulator::Schedule(Seconds(DETERMINECOMMIT_INTERVAL), &GossipApp::DetermineCommit, this);
+}
+
+void GossipApp::SolicitMessageFromOthers()
+{
+  
+  if(block_got==false)
+  {
+    int neighbors[SOLICIT_ROUND];
+    ChooseNeighbor(neighbors);
+    for(int i=0; i<SOLICIT_ROUND; i++)
+    {
+      ScheduleTransmit(Seconds (0.), neighbors[i], 1);
+    }
+    Simulator::Schedule(Seconds(SOLICIT_INTERVAL), &GossipApp::SolicitMessageFromOthers, this);
+  }
+
+
 }
 
 void 
@@ -248,9 +395,44 @@ GossipApp::HandleRead (Ptr<Socket> socket)
   while ((packet = socket->RecvFrom (from)))
     {
       uint8_t content_[10];
-      packet->CopyData(content_, 10); 
-      std::cout<<"node "<<(int)GetNodeId()<<" received a packet "<<packet->GetSize()<<" bytes at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
-      std::cout<<"packet content:"<<content_<<std::endl;
+      packet->CopyData(content_, 10);
+      Ipv4Address from_addr = InetSocketAddress::ConvertFrom (from).GetIpv4 ();
+      int from_node = (int)map_addr_node[from_addr];
+      std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" "<<packet->GetSize()
+        <<" bytes from node "<<from_node<<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
+      if(strcmp((char*)content_, "BLOCK")==0)
+      {
+        block_got = true; // TODO go into phase 2
+      }
+      else if(strcmp((char*)content_, "SOLICIT")==0)
+      {
+        if(block_got==true)
+        {
+          ScheduleTransmit(Seconds(0.), (int)map_addr_node[from_addr], 0);
+          std::cout<<"node "<<(int)GetNodeId()<<" responds node "<<from_node<<" and send him a block at"
+            <<Simulator::Now().GetSeconds()<<" s"<<std::endl;
+
+        }
+        else{
+          std::cout<<"node "<<(int)GetNodeId()<<" can't respond node "<<from_node<<" because until "<<
+            Simulator::Now().GetSeconds()<<" s he has not received a block yet"<<std::endl;
+        }
+        // TODO send block to whom query
+      }
+      else if(strcmp((char*)content_, "PREPARE")==0)
+      { 
+        map_node_PREPARE[from_node] = 1;
+        std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" "<<packet->GetSize()
+          <<" bytes from node "<<from_node<<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
+      }
+      else if(strcmp((char*)content_, "COMMIT")==0)
+      {
+        map_node_COMMIT[from_node] = 1;
+        std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" "<<packet->GetSize()
+          <<" bytes from node "<<from_node<<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
+      }
+
+
     }
 }
 

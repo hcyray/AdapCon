@@ -65,23 +65,30 @@ int main()
 		
 		GossipAppHelper gossipApp1(i, 17);
 		applicationlist[i] = gossipApp1.Install (nodeslist.Get (i));
-	    applicationlist[i].Start (Seconds (1.0));
-	    applicationlist[i].Stop (Seconds (10000.0));
+	    applicationlist[i].Start (Seconds (0.));
+	    applicationlist[i].Stop (Seconds (20.0));
 	}
-	
+
 	// GossipAppHelper gossipApp1 (0, 17);
  //    ApplicationContainer serverApps1 = gossipApp1.Install (nodeslist.Get (0));
  //    serverApps1.Start (Seconds (1.0));
- //    serverApps1.Stop (Seconds (10000.0));
+ //    serverApps1.Stop (Seconds (20.0));
 
  //    GossipAppHelper gossipApp2 (1, 17);
  //    ApplicationContainer serverApps2 = gossipApp2.Install (nodeslist.Get (1));
  //    serverApps2.Start (Seconds (1.0));
- //    serverApps2.Stop (Seconds (10000.0));
+ //    serverApps2.Stop (Seconds (20.0));
 
 
     Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
 	Simulator::Run ();
     Simulator::Destroy ();
+
+    
+
+
+
+
+
     return 0;
 }
