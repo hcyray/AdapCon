@@ -75,9 +75,9 @@ GossipApp::GossipApp ()
   NS_LOG_FUNCTION (this);
   m_sendEvent = EventId ();
   m_sent = 0;
-  m_count = 1;
-  m_epoch = 1;
-  block_got = false;
+  // m_count = 1;
+  // m_epoch = 1;
+  
   len_phase1 = 10.0;
   len_phase2 = 5.0;
 
@@ -100,12 +100,7 @@ GossipApp::GossipApp ()
     map_addr_node[key1] = (uint8_t)i;
   }
 
-  for(int i=0; i<NODE_NUMBER; i++)
-  {
-    map_node_PREPARE[i] = 0;
-    map_node_COMMIT[i] = 0;
-
-  }
+  
 
 
 }
@@ -116,6 +111,37 @@ GossipApp::~GossipApp()
 {
   NS_LOG_FUNCTION (this);
   m_socket_receive = 0;
+}
+
+void GossipApp::ConsensProcess()
+{
+  // TODO add epoch number to all messages
+  for(int i=0; i<NODE_NUMBER; i++)
+  {
+    map_node_PREPARE[i] = 0;
+    map_node_COMMIT[i] = 0;
+  }
+  block_got = false;
+
+  if_leader();
+  if(m_leader)
+  {
+    std::cout<<"node "<<(int)GetNodeId()<<" is the leader"<<std::endl;
+    std::cout<<"*****************"<<(int)m_epoch<<" epoch starts"<<"**********"<<std::endl;
+    GossipMessageOut();
+  }
+  else
+  {
+    Simulator::Schedule(Seconds(3.0), &GossipApp::SolicitMessageFromOthers, this);
+    // TODO wait for some time then query neighbors
+  }
+
+  Simulator::Schedule(Seconds(len_phase1), &GossipApp::BroadcastMessageOut, this, 3);
+  Simulator::Schedule(Seconds(len_phase1), &GossipApp::DetermineCommit, this);
+
+  m_epoch++;
+  if(m_epoch<10)
+    Simulator::Schedule(Seconds(len_phase1+len_phase2), &GossipApp::ConsensProcess, this);
 }
 
 void GossipApp::if_leader(void)
@@ -145,6 +171,7 @@ std::string GossipApp::MessagetypeToString(int x)
 }
 
 void GossipApp::ChooseNeighbor(int neighbor_choosed[GOSSIP_ROUND])
+// TODO do not choose a node more than once
 {
   // srand((unsigned)Simulator::Now().GetSeconds());
   srand(time(NULL)+m_node_id);
@@ -205,21 +232,7 @@ GossipApp::StartApplication (void)
 
   
 
-  if_leader();
-  if(m_leader)
-  {
-    std::cout<<"node "<<(int)GetNodeId()<<" is the leader"<<std::endl;
-    GossipMessageOut();
-  }
-  else
-  {
-    Simulator::Schedule(Seconds(3.0), &GossipApp::SolicitMessageFromOthers, this);
-    // TODO wait for some time then query neighbors
-  }
-
-  Simulator::Schedule(Seconds(len_phase1), &GossipApp::BroadcastMessageOut, this, 3);
-  Simulator::Schedule(Seconds(len_phase1), &GossipApp::DetermineCommit, this);
-  // ScheduleTransmit (Seconds (0.), 0);
+  Simulator::Schedule(Seconds(0.), &GossipApp::ConsensProcess, this);
 
 }
 
@@ -236,11 +249,11 @@ GossipApp::StopApplication ()
   // if(block_got)
   //   std::cout<<"node "<<(int)m_node_id<<" has received the block"<<std::endl;
   int sum=0;
-  for(int i=0; i<NODE_NUMBER; i++)
+  for(int i=1; i<10; i++)
   {
-    sum += map_node_COMMIT[i];
+    sum += map_epoch_consensed[i];
   }
-  std::cout<<"node "<<(int)m_node_id<<" got "<<sum<<" commit messages"<<std::endl;
+  std::cout<<"node "<<(int)m_node_id<<" got "<<sum<<" consensed block"<<std::endl;
 }
 
 
@@ -250,7 +263,7 @@ void GossipApp::Send(int dest, MESSAGE_TYPE message_type)
   NS_LOG_FUNCTION(this);
   switch(message_type){
     case BLOCK:{
-      Packet pack1(TYPE_BLOCK, 1024);
+      Packet pack1(TYPE_BLOCK, 1000);
       Ptr<Packet> p = &pack1;
       m_socket_send[dest]->Send(p);
       break;
@@ -284,7 +297,7 @@ void GossipApp::Send(int dest, MESSAGE_TYPE message_type)
       break;
     }
   }
-  // Packet pack1(TYPE_BLOCK, 1024);
+  // Packet pack1(TYPE_BLOCK, 1000);
 
   // Ptr<Packet> p = &pack1;
   // m_socket_send[dest]->Send(p);
@@ -364,9 +377,26 @@ void GossipApp::DetermineCommit()
     sum += map_node_PREPARE[i];
   }
   if(sum>=(2*NODE_NUMBER/3.0+1))
+  {
     BroadcastMessageOut(4);
+    Simulator::Schedule(Seconds(DETERMINECONSENS_INTERVAL), &GossipApp::DetermineConsens, this);
+  }
   else
     Simulator::Schedule(Seconds(DETERMINECOMMIT_INTERVAL), &GossipApp::DetermineCommit, this);
+}
+
+
+void GossipApp::DetermineConsens()
+{
+  int sum=0;
+  for(int i=0; i<NODE_NUMBER; i++)
+  {
+    sum += map_node_COMMIT[i];
+  }
+  if(sum>=(2*NODE_NUMBER/3.0+1))
+    map_epoch_consensed[m_epoch] = 1;
+  else
+    Simulator::Schedule(Seconds(DETERMINECONSENS_INTERVAL), &GossipApp::DetermineConsens, this);
 }
 
 void GossipApp::SolicitMessageFromOthers()
@@ -409,7 +439,7 @@ GossipApp::HandleRead (Ptr<Socket> socket)
         if(block_got==true)
         {
           ScheduleTransmit(Seconds(0.), (int)map_addr_node[from_addr], 0);
-          std::cout<<"node "<<(int)GetNodeId()<<" responds node "<<from_node<<" and send him a block at"
+          std::cout<<"node "<<(int)GetNodeId()<<" responds node "<<from_node<<" and send him a block at "
             <<Simulator::Now().GetSeconds()<<" s"<<std::endl;
 
         }

@@ -41,8 +41,9 @@ const int GOSSIP_ROUND = 2;
 const int SOLICIT_ROUND = 2;
 const int SOLICIT_INTERVAL = 3;
 const double DETERMINECOMMIT_INTERVAL = 0.2;
+const double DETERMINECONSENS_INTERVAL = 0.2;
 
-const uint8_t TYPE_BLOCK[1024] = "BLOCK";
+const uint8_t TYPE_BLOCK[1000] = "BLOCK";
 const uint8_t TYPE_SOLICIT[80] = "SOLICIT";
 const uint8_t TYPE_ACK[80] = "ACK";
 const uint8_t TYPE_PREPARE[80] = "PREPARE";
@@ -61,6 +62,7 @@ public:
   static TypeId GetTypeId (void);
   GossipApp ();
   virtual ~GossipApp ();
+  void ConsensProcess();
 
   Ptr<Packet> ComputeWhatToSend();
   void ChooseNeighbor(int x[GOSSIP_ROUND]);
@@ -71,6 +73,7 @@ public:
   void GossipMessageOut();
   void BroadcastMessageOut(int type);
   void DetermineCommit();
+  void DetermineConsens();
   void SolicitMessageFromOthers();
   std::string MessagetypeToString(int x);
 
@@ -90,6 +93,7 @@ private:
   uint16_t m_port; 
   std::map<uint8_t, Ipv4Address> map_node_addr;
   std::map<Ipv4Address, uint8_t> map_addr_node; 
+  std::map<int, int> map_epoch_consensed;
 
 
   uint32_t m_sent;
@@ -100,7 +104,7 @@ private:
   double len_phase1;
   double len_phase2;
 
-  bool current_consensus_success;
+  // bool current_consensus_success;
   bool m_leader;
   bool block_got;
   std::map<int, int> map_node_PREPARE;
