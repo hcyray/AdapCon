@@ -35,6 +35,8 @@ namespace ns3 {
 class Socket;
 class Packet;
 
+const int TOTAL_EPOCH_FOR_SIMULATION = 5;
+
 const int NODE_NUMBER = 8;
 const int FAN_OUT = 8;
 const int GOSSIP_ROUND = 2;
@@ -52,6 +54,7 @@ const uint8_t TYPE_COMMIT[80] = "COMMIT";
 
 
 enum MESSAGE_TYPE {BLOCK, SOLICIT, ACK, PREPARE, COMMIT};
+
 
 
 
@@ -76,6 +79,8 @@ public:
   void DetermineConsens();
   void SolicitMessageFromOthers();
   std::string MessagetypeToString(int x);
+  std::vector<std::string> split3222(const std::string& str, const char pattern);
+
 
 protected:
   virtual void DoDispose (void);

@@ -75,11 +75,11 @@ GossipApp::GossipApp ()
   NS_LOG_FUNCTION (this);
   m_sendEvent = EventId ();
   m_sent = 0;
-  // m_count = 1;
-  // m_epoch = 1;
+  m_count = 1;
+  m_epoch = 0;
   
-  len_phase1 = 10.0;
-  len_phase2 = 5.0;
+  len_phase1 = 15.0;
+  len_phase2 = 10.0;
 
   for(int i=0; i<NODE_NUMBER; i++)
   {
@@ -115,6 +115,7 @@ GossipApp::~GossipApp()
 
 void GossipApp::ConsensProcess()
 {
+  m_epoch++;
   // TODO add epoch number to all messages
   for(int i=0; i<NODE_NUMBER; i++)
   {
@@ -139,8 +140,7 @@ void GossipApp::ConsensProcess()
   Simulator::Schedule(Seconds(len_phase1), &GossipApp::BroadcastMessageOut, this, 3);
   Simulator::Schedule(Seconds(len_phase1), &GossipApp::DetermineCommit, this);
 
-  m_epoch++;
-  if(m_epoch<10)
+  if(m_epoch<TOTAL_EPOCH_FOR_SIMULATION)
     Simulator::Schedule(Seconds(len_phase1+len_phase2), &GossipApp::ConsensProcess, this);
 }
 
@@ -191,6 +191,20 @@ void GossipApp::ChooseNeighbor(int neighbor_choosed[GOSSIP_ROUND])
 uint8_t GossipApp::GetNodeId(void)
 {
   return m_node_id;
+}
+
+std::vector<std::string> GossipApp::split3222(const std::string& str, const char pattern)
+{
+    std::vector<std::string> res;
+    std::stringstream input(str);   //读取str到字符串流中
+    std::string temp;
+    //使用getline函数从字符串流中读取,遇到分隔符时停止,和从cin中读取类似
+    //注意,getline默认是可以读取空格的
+    while(getline(input, temp, pattern))
+    {
+        res.push_back(temp);
+    }
+    return res;
 }
 
 void
@@ -249,10 +263,11 @@ GossipApp::StopApplication ()
   // if(block_got)
   //   std::cout<<"node "<<(int)m_node_id<<" has received the block"<<std::endl;
   int sum=0;
-  for(int i=1; i<10; i++)
+  for(int i=1; i<=TOTAL_EPOCH_FOR_SIMULATION; i++)
   {
     sum += map_epoch_consensed[i];
   }
+  std::cout<<"temporal epoch: "<<(int)m_epoch<<"**********"<<std::endl;
   std::cout<<"node "<<(int)m_node_id<<" got "<<sum<<" consensed block"<<std::endl;
 }
 
@@ -394,7 +409,12 @@ void GossipApp::DetermineConsens()
     sum += map_node_COMMIT[i];
   }
   if(sum>=(2*NODE_NUMBER/3.0+1))
+  {
     map_epoch_consensed[m_epoch] = 1;
+    // std::cout<<(int)m_node_id<<" has consensed"<<std::endl;
+    // std::cout<<"temporal epoch: "<<(int)m_epoch<<"**********"<<std::endl;
+    // std::cout<<map_epoch_consensed[m_epoch]<<std::endl;
+  }
   else
     Simulator::Schedule(Seconds(DETERMINECONSENS_INTERVAL), &GossipApp::DetermineConsens, this);
 }
