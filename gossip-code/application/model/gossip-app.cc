@@ -79,8 +79,8 @@ GossipApp::GossipApp ()
   m_epoch = 0;
   m_epoch_beginning = 0.;
   
-  len_phase1 = 30.0;
-  len_phase2 = 20.0;
+  len_phase1 = 15.0;
+  len_phase2 = 10.0;
 
   for(int i=0; i<NODE_NUMBER; i++)
   {
@@ -118,7 +118,7 @@ void GossipApp::ConsensProcess()
 {
   m_epoch++;
   m_epoch_beginning = Simulator::Now().GetSeconds();
-  // TODO add epoch number to all messages
+  
   for(int i=0; i<NODE_NUMBER; i++)
   {
     map_node_PREPARE[i] = 0;
@@ -135,7 +135,7 @@ void GossipApp::ConsensProcess()
   }
   else
   {
-    Simulator::Schedule(Seconds(5.0), &GossipApp::SolicitMessageFromOthers, this);
+    Simulator::Schedule(Seconds(WAITTING_TIME), &GossipApp::SolicitMessageFromOthers, this);
     // TODO wait for some time then query neighbors
   }
 
@@ -496,17 +496,21 @@ void GossipApp::DetermineConsens()
 
 void GossipApp::SolicitMessageFromOthers()
 {
-  
-  if(block_got==false)
+  if((Simulator::Now().GetSeconds() - m_epoch_beginning) >= WAITTING_TIME)
   {
-    int neighbors[SOLICIT_ROUND];
-    ChooseNeighbor(SOLICIT_ROUND, neighbors);
-    for(int i=0; i<SOLICIT_ROUND; i++)
+    
+    if(block_got==false)
     {
-      ScheduleTransmit(Seconds (0.), neighbors[i], 1);
+      int neighbors[SOLICIT_ROUND];
+      ChooseNeighbor(SOLICIT_ROUND, neighbors);
+      for(int i=0; i<SOLICIT_ROUND; i++)
+      {
+        ScheduleTransmit(Seconds (0.), neighbors[i], 1);
+      }
+      Simulator::Schedule(Seconds(SOLICIT_INTERVAL), &GossipApp::SolicitMessageFromOthers, this);
     }
-    Simulator::Schedule(Seconds(SOLICIT_INTERVAL), &GossipApp::SolicitMessageFromOthers, this);
   }
+  
 
 
 }

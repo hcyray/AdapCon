@@ -35,13 +35,14 @@ namespace ns3 {
 class Socket;
 class Packet;
 
-const int TOTAL_EPOCH_FOR_SIMULATION = 10;
+const int TOTAL_EPOCH_FOR_SIMULATION = 15;
 
-const int NODE_NUMBER = 7;
+const int NODE_NUMBER = 27;
 const int FAN_OUT = 8;
 const int GOSSIP_ROUND = 3;
 const int SOLICIT_ROUND = 1;
 const int SOLICIT_INTERVAL = 5;
+const int WAITTING_TIME = 5;
 const double DETERMINECOMMIT_INTERVAL = 0.2;
 const double DETERMINECONSENS_INTERVAL = 0.2;
 
