@@ -69,11 +69,13 @@ public:
 
   Ptr<Packet> ComputeWhatToSend();
   void ChooseNeighbor(int number, int x[]);
+  void ChooseNeighbor(int number, int x[], int node_excluded);
   uint8_t GetNodeId(void);
   void if_leader(void);
 
   void ScheduleTransmit (Time dt, int dest, int type);
   void GossipMessageOut();
+  void GossipMessageAfterReceive(int from_node);
   void BroadcastMessageOut(int type);
   void DetermineCommit();
   void DetermineConsens();

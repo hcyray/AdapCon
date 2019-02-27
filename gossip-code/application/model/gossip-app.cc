@@ -196,6 +196,30 @@ void GossipApp::ChooseNeighbor(int number, int neighbor_choosed[])
   }
 }
 
+void GossipApp::ChooseNeighbor(int number, int neighbor_choosed[], int node_excluded)
+{
+  // srand((unsigned)Simulator::Now().GetSeconds());
+  srand(time(NULL)+m_node_id);
+  int i = 0;
+  std::vector<int> node_added;
+  std::vector<int>::iterator it;
+  while(i<number)
+  {
+    int x = rand()%NODE_NUMBER;
+    if(x!=m_node_id && x!=node_excluded)
+    {
+      it=std::find(node_added.begin(), node_added.end(), x);
+      if(it==node_added.end())
+      {
+        neighbor_choosed[i] = x;
+        node_added.push_back(x);
+        i++;
+      }
+      
+    }
+  }
+}
+
 uint8_t GossipApp::GetNodeId(void)
 {
   return m_node_id;
@@ -399,7 +423,16 @@ void GossipApp::GossipMessageOut()
   }
 }
 
+void GossipApp::GossipMessageAfterReceive(int from_node)
+{
+  int neighbors[GOSSIP_ROUND];
+  ChooseNeighbor(GOSSIP_ROUND, neighbors, from_node);
 
+  for(int i=0; i<GOSSIP_ROUND; i++)
+  {
+    ScheduleTransmit(Seconds (0.), neighbors[i], 0);
+  }
+}
 
 void GossipApp::BroadcastMessageOut(int type)
 {
@@ -502,9 +535,17 @@ GossipApp::HandleRead (Ptr<Socket> socket)
         const char* type_of_received_message = res[1].c_str();
         if(strcmp(type_of_received_message, "BLOCK")==0)
         {
-          block_got = true; // TODO go into phase 2
-          std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" "<<packet->GetSize()
-            <<" bytes from node "<<from_node<<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
+          if(block_got==false)
+          {
+            block_got = true;
+            std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" for the first time "<<packet->GetSize()
+              <<" bytes from node "<<from_node<<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
+            GossipMessageAfterReceive(from_node);
+            
+          }
+          else
+            std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" "<<packet->GetSize()
+              <<" bytes from node "<<from_node<<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
         }
         else if(strcmp(type_of_received_message, "SOLICIT")==0)
         {
