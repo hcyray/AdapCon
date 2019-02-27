@@ -34,7 +34,7 @@
 
 #include <stdlib.h>
 #include <time.h>
-
+#include <algorithm>
 
 
 namespace ns3 {
@@ -77,9 +77,10 @@ GossipApp::GossipApp ()
   m_sent = 0;
   m_count = 1;
   m_epoch = 0;
+  m_epoch_beginning = 0.;
   
-  len_phase1 = 15.0;
-  len_phase2 = 10.0;
+  len_phase1 = 30.0;
+  len_phase2 = 20.0;
 
   for(int i=0; i<NODE_NUMBER; i++)
   {
@@ -116,6 +117,7 @@ GossipApp::~GossipApp()
 void GossipApp::ConsensProcess()
 {
   m_epoch++;
+  m_epoch_beginning = Simulator::Now().GetSeconds();
   // TODO add epoch number to all messages
   for(int i=0; i<NODE_NUMBER; i++)
   {
@@ -127,13 +129,13 @@ void GossipApp::ConsensProcess()
   if_leader();
   if(m_leader)
   {
+    std::cout<<"*****************"<<"epoch "<<(int)m_epoch<<" starts"<<"**********"<<std::endl;
     std::cout<<"node "<<(int)GetNodeId()<<" is the leader"<<std::endl;
-    std::cout<<"*****************"<<(int)m_epoch<<" epoch starts"<<"**********"<<std::endl;
     GossipMessageOut();
   }
   else
   {
-    Simulator::Schedule(Seconds(3.0), &GossipApp::SolicitMessageFromOthers, this);
+    Simulator::Schedule(Seconds(5.0), &GossipApp::SolicitMessageFromOthers, this);
     // TODO wait for some time then query neighbors
   }
 
@@ -170,20 +172,26 @@ std::string GossipApp::MessagetypeToString(int x)
   return res;
 }
 
-void GossipApp::ChooseNeighbor(int neighbor_choosed[GOSSIP_ROUND])
-// TODO do not choose a node more than once
+void GossipApp::ChooseNeighbor(int number, int neighbor_choosed[])
 {
   // srand((unsigned)Simulator::Now().GetSeconds());
   srand(time(NULL)+m_node_id);
-  // srand(910.);
   int i = 0;
-  while(i<GOSSIP_ROUND)
+  std::vector<int> node_added;
+  std::vector<int>::iterator it;
+  while(i<number)
   {
     int x = rand()%NODE_NUMBER;
     if(x!=m_node_id)
     {
-      neighbor_choosed[i] = x;
-      i++;
+      it=std::find(node_added.begin(), node_added.end(), x);
+      if(it==node_added.end())
+      {
+        neighbor_choosed[i] = x;
+        node_added.push_back(x);
+        i++;
+      }
+      
     }
   }
 }
@@ -193,13 +201,11 @@ uint8_t GossipApp::GetNodeId(void)
   return m_node_id;
 }
 
-std::vector<std::string> GossipApp::split3222(const std::string& str, const char pattern)
+std::vector<std::string> GossipApp::SplitMessage(const std::string& str, const char pattern)
 {
     std::vector<std::string> res;
-    std::stringstream input(str);   //读取str到字符串流中
+    std::stringstream input(str);   
     std::string temp;
-    //使用getline函数从字符串流中读取,遇到分隔符时停止,和从cin中读取类似
-    //注意,getline默认是可以读取空格的
     while(getline(input, temp, pattern))
     {
         res.push_back(temp);
@@ -278,39 +284,75 @@ void GossipApp::Send(int dest, MESSAGE_TYPE message_type)
   NS_LOG_FUNCTION(this);
   switch(message_type){
     case BLOCK:{
-      Packet pack1(TYPE_BLOCK, 1000);
+      std::string str1 = "";
+      str1.append(std::to_string((int)m_epoch));
+      str1.append("+");
+      std::string str2(TYPE_BLOCK, TYPE_BLOCK+10);
+      str1.append(str2);
+      const uint8_t *str3 = reinterpret_cast<const uint8_t*>(str1.c_str());
+      Packet pack1(str3, 1000);
       Ptr<Packet> p = &pack1;
       m_socket_send[dest]->Send(p);
       break;
     } 
     case SOLICIT:
     {
-      Packet pack1(TYPE_SOLICIT, 80);
+      // Packet pack1(TYPE_SOLICIT, 80);
+      std::string str1 = "";
+      str1.append(std::to_string((int)m_epoch));
+      str1.append("+");
+      std::string str2(TYPE_SOLICIT, TYPE_SOLICIT+10);
+      str1.append(str2);
+      const uint8_t *str3 = reinterpret_cast<const uint8_t*>(str1.c_str());
+      Packet pack1(str3, 1000);
       Ptr<Packet> p = &pack1;
       m_socket_send[dest]->Send(p);
       break;
     }
     case ACK:
     {
-      Packet pack1(TYPE_ACK, 80);
+      // Packet pack1(TYPE_ACK, 80);
+      std::string str1 = "";
+      str1.append(std::to_string((int)m_epoch));
+      str1.append("+");
+      std::string str2(TYPE_ACK, TYPE_ACK+10);
+      str1.append(str2);
+      const uint8_t *str3 = reinterpret_cast<const uint8_t*>(str1.c_str());
+      Packet pack1(str3, 1000);
       Ptr<Packet> p = &pack1;
       m_socket_send[dest]->Send(p);
       break;
     }
     case PREPARE:
     {
-      Packet pack1(TYPE_PREPARE, 80);
+      // Packet pack1(TYPE_PREPARE, 80);
+      std::string str1 = "";
+      str1.append(std::to_string((int)m_epoch));
+      str1.append("+");
+      std::string str2(TYPE_PREPARE, TYPE_PREPARE+10);
+      str1.append(str2);
+      const uint8_t *str3 = reinterpret_cast<const uint8_t*>(str1.c_str());
+      Packet pack1(str3, 1000);
       Ptr<Packet> p = &pack1;
       m_socket_send[dest]->Send(p);
       break;
     }
     case COMMIT:
     {
-      Packet pack1(TYPE_COMMIT, 80);
+      // Packet pack1(TYPE_COMMIT, 80);
+      std::string str1 = "";
+      str1.append(std::to_string((int)m_epoch));
+      str1.append("+");
+      std::string str2(TYPE_COMMIT, TYPE_COMMIT+10);
+      str1.append(str2);
+      const uint8_t *str3 = reinterpret_cast<const uint8_t*>(str1.c_str());
+      Packet pack1(str3, 1000);
       Ptr<Packet> p = &pack1;
       m_socket_send[dest]->Send(p);
       break;
     }
+   
+
   }
   // Packet pack1(TYPE_BLOCK, 1000);
 
@@ -349,7 +391,7 @@ void GossipApp::ScheduleTransmit(Time dt, int dest, int type)
 void GossipApp::GossipMessageOut()
 {
   int neighbors[GOSSIP_ROUND];
-  ChooseNeighbor(neighbors);
+  ChooseNeighbor(GOSSIP_ROUND, neighbors);
 
   for(int i=0; i<GOSSIP_ROUND; i++)
   {
@@ -425,7 +467,7 @@ void GossipApp::SolicitMessageFromOthers()
   if(block_got==false)
   {
     int neighbors[SOLICIT_ROUND];
-    ChooseNeighbor(neighbors);
+    ChooseNeighbor(SOLICIT_ROUND, neighbors);
     for(int i=0; i<SOLICIT_ROUND; i++)
     {
       ScheduleTransmit(Seconds (0.), neighbors[i], 1);
@@ -444,43 +486,57 @@ GossipApp::HandleRead (Ptr<Socket> socket)
   Address from;
   while ((packet = socket->RecvFrom (from)))
     {
-      uint8_t content_[10];
-      packet->CopyData(content_, 10);
+      uint8_t content_[20];
+      packet->CopyData(content_, 20);
       Ipv4Address from_addr = InetSocketAddress::ConvertFrom (from).GetIpv4 ();
       int from_node = (int)map_addr_node[from_addr];
-      std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" "<<packet->GetSize()
-        <<" bytes from node "<<from_node<<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
-      if(strcmp((char*)content_, "BLOCK")==0)
-      {
-        block_got = true; // TODO go into phase 2
-      }
-      else if(strcmp((char*)content_, "SOLICIT")==0)
-      {
-        if(block_got==true)
-        {
-          ScheduleTransmit(Seconds(0.), (int)map_addr_node[from_addr], 0);
-          std::cout<<"node "<<(int)GetNodeId()<<" responds node "<<from_node<<" and send him a block at "
-            <<Simulator::Now().GetSeconds()<<" s"<<std::endl;
+      // std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" "<<packet->GetSize()
+      //   <<" bytes from node "<<from_node<<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
 
-        }
-        else{
-          std::cout<<"node "<<(int)GetNodeId()<<" can't respond node "<<from_node<<" because until "<<
-            Simulator::Now().GetSeconds()<<" s he has not received a block yet"<<std::endl;
-        }
-        // TODO send block to whom query
-      }
-      else if(strcmp((char*)content_, "PREPARE")==0)
-      { 
-        map_node_PREPARE[from_node] = 1;
-        std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" "<<packet->GetSize()
-          <<" bytes from node "<<from_node<<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
-      }
-      else if(strcmp((char*)content_, "COMMIT")==0)
+      std::string str_of_content(content_, content_+20);
+      std::vector<std::string> res = SplitMessage(str_of_content, '+');
+      const char* time_of_recived_message = res[0].c_str();
+
+      if(strcmp(time_of_recived_message, (std::to_string(m_epoch)).c_str())==0)
       {
-        map_node_COMMIT[from_node] = 1;
-        std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" "<<packet->GetSize()
-          <<" bytes from node "<<from_node<<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
+        const char* type_of_received_message = res[1].c_str();
+        if(strcmp(type_of_received_message, "BLOCK")==0)
+        {
+          block_got = true; // TODO go into phase 2
+          std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" "<<packet->GetSize()
+            <<" bytes from node "<<from_node<<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
+        }
+        else if(strcmp(type_of_received_message, "SOLICIT")==0)
+        {
+          if(block_got==true)
+          {
+            ScheduleTransmit(Seconds(0.), (int)map_addr_node[from_addr], 0);
+            std::cout<<"node "<<(int)GetNodeId()<<" responds node "<<from_node<<" and send him a block at "
+              <<Simulator::Now().GetSeconds()<<" s"<<std::endl;
+
+          }
+          else{
+            std::cout<<"node "<<(int)GetNodeId()<<" can't respond node "<<from_node<<" because until "<<
+              Simulator::Now().GetSeconds()<<" s he has not received a block yet"<<std::endl;
+          }
+          
+        }
+        else if(strcmp(type_of_received_message, "PREPARE")==0)
+        { 
+          map_node_PREPARE[from_node] = 1;
+          std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" "<<packet->GetSize()
+            <<" bytes from node "<<from_node<<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
+        }
+        else if(strcmp(type_of_received_message, "COMMIT")==0)
+        {
+          map_node_COMMIT[from_node] = 1;
+          std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" "<<packet->GetSize()
+            <<" bytes from node "<<from_node<<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
+        }
       }
+
+
+      
 
 
     }

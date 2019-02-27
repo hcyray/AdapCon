@@ -35,13 +35,13 @@ namespace ns3 {
 class Socket;
 class Packet;
 
-const int TOTAL_EPOCH_FOR_SIMULATION = 5;
+const int TOTAL_EPOCH_FOR_SIMULATION = 10;
 
-const int NODE_NUMBER = 8;
+const int NODE_NUMBER = 7;
 const int FAN_OUT = 8;
-const int GOSSIP_ROUND = 2;
-const int SOLICIT_ROUND = 2;
-const int SOLICIT_INTERVAL = 3;
+const int GOSSIP_ROUND = 3;
+const int SOLICIT_ROUND = 1;
+const int SOLICIT_INTERVAL = 5;
 const double DETERMINECOMMIT_INTERVAL = 0.2;
 const double DETERMINECONSENS_INTERVAL = 0.2;
 
@@ -68,7 +68,7 @@ public:
   void ConsensProcess();
 
   Ptr<Packet> ComputeWhatToSend();
-  void ChooseNeighbor(int x[GOSSIP_ROUND]);
+  void ChooseNeighbor(int number, int x[]);
   uint8_t GetNodeId(void);
   void if_leader(void);
 
@@ -79,7 +79,7 @@ public:
   void DetermineConsens();
   void SolicitMessageFromOthers();
   std::string MessagetypeToString(int x);
-  std::vector<std::string> split3222(const std::string& str, const char pattern);
+  std::vector<std::string> SplitMessage(const std::string& str, const char pattern);
 
 
 protected:
@@ -115,12 +115,14 @@ private:
   std::map<int, int> map_node_PREPARE;
   std::map<int, int> map_node_COMMIT;
 
-  int neighbors[GOSSIP_ROUND];
+  // int neighborsforpush[GOSSIP_ROUND];
+  // int neighborsforpull[SOLICIT_ROUND]; 
   Ptr<Socket> m_socket_receive; 
   std::vector<Ptr<Socket>> m_socket_send;
 
 
   Time m_interval = Seconds(2.0); 
+  double m_epoch_beginning;
   EventId m_sendEvent;
   
   
