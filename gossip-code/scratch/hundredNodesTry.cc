@@ -268,18 +268,42 @@ int main()
 
 
 // ************************************************** extract IoT device's ip address 
+	std::map<uint8_t, Ipv4Address> map_node_addr;
+	for(int i=0; i<IotNodeNumber; i++)
+	{
+		std::pair<int, int> p = map_NodeNumberToApNodeNumber[i];
+		map_node_addr[i] = wifistaInterface[p.first].GetAddress(p.second);
+	}
+
+	std::ofstream outfile1;
+	outfile1.open("scratch/subdir/topologydata/node-address.txt");
+	outfile1<<"Node and Ip address\n";
+	for(int i=0; i<IotNodeNumber; i++)
+	{
+		outfile1<<i<<" "<<map_node_addr[i]<<"\n";
+	}
+	outfile1.close();
 
 
+	std::ofstream outfile2;
+	outfile2.open("scratch/subdir/topologydata/address-node.txt");
+	outfile2<<"Ip address and Node\n";
+	for(int i=0; i<IotNodeNumber; i++)
+	{
+		outfile2<<map_node_addr[i]<<" "<<i<<"\n";
+	}
+	outfile2.close();
 
 // **************************************************　install app
-	// ApplicationContainer gossipApplist[IotNodeNumber];
-	// for(int i=0; i++; i<IotNodeNumber)
-	// {
-	// 	GossipAppHelper gossipApp1(i, 17);
-	// 	gossipApplist[i] = gossipApp1.Install()
-	// 	gossipApplist[i].Start(Seconds(0.));
-	// 	gossipApplist[i].Stop(Seconds(1000.));
-	// }
+	ApplicationContainer gossipApplist[IotNodeNumber];
+	for(int i=0; i<IotNodeNumber; i++)
+	{
+		GossipAppHelper gossipApp1(i, 17);
+		std::pair<int, int> p = map_NodeNumberToApNodeNumber[i];
+		gossipApplist[i] = gossipApp1.Install(IotNode[p.first].Get(p.second));
+		gossipApplist[i].Start(Seconds(0.));
+		gossipApplist[i].Stop(Seconds(1000.));
+	}
 
     Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
 	Simulator::Run ();
