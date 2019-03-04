@@ -35,7 +35,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <algorithm>
-
+#include <fstream>
 
 namespace ns3 {
 
@@ -82,28 +82,45 @@ GossipApp::GossipApp ()
   len_phase1 = 15.0;
   len_phase2 = 10.0;
 
-  for(int i=0; i<NODE_NUMBER; i++)
+
+  const int LINE_LENGTH = 100;
+  char str1[LINE_LENGTH];
+  std::ifstream infile1;
+  infile1.open("scratch/subdir/topologydata/node-address.txt");
+  while(infile1.getline(str1,LINE_LENGTH))
   {
-    std::string ipaddress_string = "10.1.";
-    ipaddress_string.append(std::to_string(i+1));
-    ipaddress_string.append(".1");
-    char* ipaddress = (char*)ipaddress_string.data();
-    map_node_addr[i] = Ipv4Address(ipaddress);    
+      if(strcmp(str1, "Node and Ip address")==0)
+          continue;
+      std::string str2(str1);
+      std::vector<std::string> res = SplitMessage(str2, ' ');
+      if(res.size()==2)
+      {
+          int x = (atoi)(res[0].c_str());
+          char* ipaddress = (char*)res[1].data();
+          Ipv4Address y = Ipv4Address(ipaddress);
+          map_node_addr[x] = y;
+      }
   }
+  infile1.close();
 
-  for(int i=0; i<NODE_NUMBER; i++)
+  std::ifstream infile2;
+  infile2.open("scratch/subdir/topologydata/address-node.txt");
+  while(infile2.getline(str1,LINE_LENGTH))
   {
-    std::string ipaddress_string = "10.1.";
-    ipaddress_string.append(std::to_string(i+1));
-    ipaddress_string.append(".1");
-    char* ipaddress = (char*)ipaddress_string.data();
-    Ipv4Address key1 = Ipv4Address(ipaddress);
-    map_addr_node[key1] = (uint8_t)i;
+      if(strcmp(str1, "Node and Ip address")==0)
+          continue;
+      std::string str2(str1);
+      std::vector<std::string> res = SplitMessage(str2, ' ');
+      if(res.size()==2)
+      {
+          
+          int x = (atoi)(res[1].c_str());
+          char* ipaddress = (char*)res[0].data();
+          Ipv4Address y = Ipv4Address(ipaddress);
+          map_addr_node[y] = x;
+      }
   }
-
-  
-
-
+  infile2.close();
 }
 
 
@@ -328,7 +345,7 @@ void GossipApp::Send(int dest, MESSAGE_TYPE message_type)
       std::string str2(TYPE_SOLICIT, TYPE_SOLICIT+10);
       str1.append(str2);
       const uint8_t *str3 = reinterpret_cast<const uint8_t*>(str1.c_str());
-      Packet pack1(str3, 1000);
+      Packet pack1(str3, 80);
       Ptr<Packet> p = &pack1;
       m_socket_send[dest]->Send(p);
       break;
@@ -342,7 +359,7 @@ void GossipApp::Send(int dest, MESSAGE_TYPE message_type)
       std::string str2(TYPE_ACK, TYPE_ACK+10);
       str1.append(str2);
       const uint8_t *str3 = reinterpret_cast<const uint8_t*>(str1.c_str());
-      Packet pack1(str3, 1000);
+      Packet pack1(str3, 80);
       Ptr<Packet> p = &pack1;
       m_socket_send[dest]->Send(p);
       break;
@@ -356,7 +373,7 @@ void GossipApp::Send(int dest, MESSAGE_TYPE message_type)
       std::string str2(TYPE_PREPARE, TYPE_PREPARE+10);
       str1.append(str2);
       const uint8_t *str3 = reinterpret_cast<const uint8_t*>(str1.c_str());
-      Packet pack1(str3, 1000);
+      Packet pack1(str3, 80);
       Ptr<Packet> p = &pack1;
       m_socket_send[dest]->Send(p);
       break;
@@ -370,7 +387,7 @@ void GossipApp::Send(int dest, MESSAGE_TYPE message_type)
       std::string str2(TYPE_COMMIT, TYPE_COMMIT+10);
       str1.append(str2);
       const uint8_t *str3 = reinterpret_cast<const uint8_t*>(str1.c_str());
-      Packet pack1(str3, 1000);
+      Packet pack1(str3, 80);
       Ptr<Packet> p = &pack1;
       m_socket_send[dest]->Send(p);
       break;
@@ -409,7 +426,7 @@ void GossipApp::ScheduleTransmit(Time dt, int dest, int type)
   // m_sendEvent = Simulator::Schedule (dt, &GossipApp::Send, this, dest, message_type);
   Simulator::Schedule (dt, &GossipApp::Send, this, dest, message_type);
 
-  std::cout<<"node "<<(int)GetNodeId()<<" send a "<<MessagetypeToString(((int)message_type))<<" to node "<<dest<<" at "<<Simulator::Now().GetSeconds()<<"s"<<std::endl;
+  // std::cout<<"node "<<(int)GetNodeId()<<" send a "<<MessagetypeToString(((int)message_type))<<" to node "<<dest<<" at "<<Simulator::Now().GetSeconds()<<"s"<<std::endl;
 }
 
 void GossipApp::GossipMessageOut()

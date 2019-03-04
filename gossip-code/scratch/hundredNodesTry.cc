@@ -16,6 +16,8 @@
 
 using namespace ns3;
 
+
+// **************************************************　preprocessing functions
 std::vector<std::string> SplitString(const std::string& str, const char pattern)
 {
     std::vector<std::string> res;
@@ -40,7 +42,7 @@ int Get_Topology(std::map<int, int>& map_AP_devicenumber,
     {
         if(strcmp(str1, "AP and attached device number")==0)
             continue;
-        if(strcmp(str1, "dege between AP")==0)
+        if(strcmp(str1, "edge between AP")==0)
             break;
         std::string str2(str1);
         std::vector<std::string> res = SplitString(str2, ' ');
@@ -73,6 +75,39 @@ int Get_Topology(std::map<int, int>& map_AP_devicenumber,
     return totalIotdevice;    
 }
 
+std::map<int, std::pair<int, int> > NodeNumberToApNodeNumber(int IotNodeNumber, std::map<int, int> map_AP_devicenumber)
+{
+	std::map<int, std::pair<int, int> > res;
+	int n=0;
+	int completed_n=0;
+	int i=0;
+	int j=0;
+	while(n < IotNodeNumber)
+	{
+		if(n-completed_n<map_AP_devicenumber[i])
+		{
+			std::pair<int, int> p;
+			p.first = i;
+			p.second = j;
+			res[n] = p;
+			j++;
+			n++;
+		}
+		else
+		{
+			completed_n += j;
+			i++;
+			j = 0;
+		}
+	}
+	return res;
+}
+
+
+
+
+
+
 NS_LOG_COMPONENT_DEFINE("HundredNodesTry");
 
 int main()
@@ -81,12 +116,13 @@ int main()
 	LogComponentEnable("GossipAppApplication", LOG_LEVEL_INFO);
 	LogComponentEnable ("UdpEchoClientApplication", LOG_LEVEL_INFO);
 	LogComponentEnable ("UdpEchoServerApplication", LOG_LEVEL_INFO);
-// **************************************************read topology from txt file
+	// **************************************************read topology from txt file
 	std::map<int, int> map_AP_devicenumber;
     std::vector<std::pair<int, int> > vecotr_edge;
 
     int IotNodeNumber = Get_Topology(map_AP_devicenumber, vecotr_edge);
     std::cout<<"total IoT devices are: "<<IotNodeNumber<<std::endl;
+	std::map<int, std::pair<int, int> > map_NodeNumberToApNodeNumber = NodeNumberToApNodeNumber(IotNodeNumber, map_AP_devicenumber);
     // for(int i=0; i<40; i++)
     //     std::cout<<map_AP_devicenumber[i]<<"  ";
     // std::cout<<std::endl;
@@ -147,11 +183,14 @@ int main()
 // ************************************************** set wifi link between AP and attatched Iotdevices
 
 
-	NodeContainer subnetwifilist[AP_NUMBER];
+	NodeContainer subnetwifistalist[AP_NUMBER];
 	NetDeviceContainer stadevices[AP_NUMBER];
 	NetDeviceContainer apdevices[AP_NUMBER];
 	for(int i=0; i<AP_NUMBER; i++)
 	{
+		subnetwifistalist[i] = IotNode[i];
+		subnetwifistalist[i].Add(UserNode.Get(i));
+
 		std::string wifiname = "AP-";
 		wifiname.append(std::to_string(i));
 		wifiname.append("-ssid");
@@ -167,13 +206,13 @@ int main()
 		WifiMacHelper mac;
 		mac.SetType("ns3::StaWifiMac", "Ssid", SsidValue(ssid),
 			"ActiveProbing", BooleanValue(false));;
-		stadevices[i] = wifi.Install(phy, mac, IotNode[i]);
+		stadevices[i] = wifi.Install(phy, mac, subnetwifistalist[i]);
 		mac.SetType("ns3::ApWifiMac", "Ssid", SsidValue(ssid));
 		apdevices[i] = wifi.Install(phy, mac, AP.Get(i));
 
 		MobilityHelper mobility;
 		mobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
-		mobility.Install(IotNode[i]);
+		mobility.Install(subnetwifistalist[i]);
 		mobility.Install(AP.Get(i));
 
 	}
@@ -228,24 +267,19 @@ int main()
 	}
 
 
-	UdpEchoServerHelper echoServer (9);
-
-	ApplicationContainer serverApps = echoServer.Install (IotNode[0].Get(0));
-	serverApps.Start (Seconds (1.0));
-	serverApps.Stop (Seconds (10.0));
-
-	UdpEchoClientHelper echoClient (wifistaInterface[0].GetAddress(0), 9);
- 	echoClient.SetAttribute ("MaxPackets", UintegerValue (1));
- 	echoClient.SetAttribute ("Interval", TimeValue (Seconds (1.0)));
-  	echoClient.SetAttribute ("PacketSize", UintegerValue (1024));
-
-	ApplicationContainer clientApps = 
-    echoClient.Install (IotNode[1].Get(0));
-	clientApps.Start (Seconds (2.0));
-	clientApps.Stop (Seconds (10.0));
+// ************************************************** extract IoT device's ip address 
 
 
-	Simulator::Stop (Seconds (10.0));
+
+// **************************************************　install app
+	// ApplicationContainer gossipApplist[IotNodeNumber];
+	// for(int i=0; i++; i<IotNodeNumber)
+	// {
+	// 	GossipAppHelper gossipApp1(i, 17);
+	// 	gossipApplist[i] = gossipApp1.Install()
+	// 	gossipApplist[i].Start(Seconds(0.));
+	// 	gossipApplist[i].Stop(Seconds(1000.));
+	// }
 
     Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
 	Simulator::Run ();
