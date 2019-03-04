@@ -79,8 +79,9 @@ GossipApp::GossipApp ()
   m_epoch = 0;
   m_epoch_beginning = 0.;
   
-  len_phase1 = 15.0;
-  len_phase2 = 10.0;
+  len_phase1 = 60.0;
+  len_phase2 = 30.0;
+  waitting_time = len_phase1/2;
 
 
   const int LINE_LENGTH = 100;
@@ -152,7 +153,7 @@ void GossipApp::ConsensProcess()
   }
   else
   {
-    Simulator::Schedule(Seconds(WAITTING_TIME), &GossipApp::SolicitMessageFromOthers, this);
+    Simulator::Schedule(Seconds(waitting_time), &GossipApp::SolicitMessageFromOthers, this);
     // TODO wait for some time then query neighbors
   }
 
@@ -426,7 +427,7 @@ void GossipApp::ScheduleTransmit(Time dt, int dest, int type)
   // m_sendEvent = Simulator::Schedule (dt, &GossipApp::Send, this, dest, message_type);
   Simulator::Schedule (dt, &GossipApp::Send, this, dest, message_type);
 
-  // std::cout<<"node "<<(int)GetNodeId()<<" send a "<<MessagetypeToString(((int)message_type))<<" to node "<<dest<<" at "<<Simulator::Now().GetSeconds()<<"s"<<std::endl;
+  std::cout<<"node "<<(int)GetNodeId()<<" send a "<<MessagetypeToString(((int)message_type))<<" to node "<<dest<<" at "<<Simulator::Now().GetSeconds()<<"s"<<std::endl;
 }
 
 void GossipApp::GossipMessageOut()
@@ -513,7 +514,7 @@ void GossipApp::DetermineConsens()
 
 void GossipApp::SolicitMessageFromOthers()
 {
-  if((Simulator::Now().GetSeconds() - m_epoch_beginning) >= WAITTING_TIME)
+  if((Simulator::Now().GetSeconds() - m_epoch_beginning) >= waitting_time)
   {
     
     if(block_got==false)
@@ -524,7 +525,8 @@ void GossipApp::SolicitMessageFromOthers()
       {
         ScheduleTransmit(Seconds (0.), neighbors[i], 1);
       }
-      Simulator::Schedule(Seconds(SOLICIT_INTERVAL), &GossipApp::SolicitMessageFromOthers, this);
+      if((Simulator::Now().GetSeconds() - m_epoch_beginning + SOLICIT_INTERVAL)<len_phase1 + len_phase2)
+        Simulator::Schedule(Seconds(SOLICIT_INTERVAL), &GossipApp::SolicitMessageFromOthers, this);
     }
   }
   

@@ -43,7 +43,6 @@ const int FAN_OUT = 4;
 const int GOSSIP_ROUND = 3;
 const int SOLICIT_ROUND = 1;
 const int SOLICIT_INTERVAL = 5;
-const int WAITTING_TIME = 5;
 const double DETERMINECOMMIT_INTERVAL = 0.2;
 const double DETERMINECONSENS_INTERVAL = 0.2;
 
@@ -112,6 +111,7 @@ private:
   uint8_t m_epoch;
   double len_phase1;
   double len_phase2;
+  double waitting_time;
 
   // bool current_consensus_success;
   bool m_leader;
