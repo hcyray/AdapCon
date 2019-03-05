@@ -19,18 +19,16 @@
 #. epoch的演化  ***ok***
 #. 把gossip继续完善，加入push阶段   ***ok***
 #. 保存所有device的IP地址  ***ok***
+#. 为什么没有停止，debug  ***在主程序里面加了一句stop，告诉系统什么时候停止***
+#. 为什么在发solicit之前收不到消息，debug  ***ok***
 
 
-
-
+~~~~~~~~~~~~#. 把对prepare、commit的广播改成gossip，可能要改消息的结构
+~~~~~~~~~~~~#. 把udp通信全部改成tcp
+~~~~~~~~~~~~#. 写user app 发送流量  ***on going using tcp***
 
 #. 为什么wifi模块没有带宽设置  ***由协议决定***
-#. 写user app 发送流量  
-#. 为什么没有停止，debug
-#. 为什么在发solicit之前收不到消息，debug
-#. 把对prepare、commit的广播改成gossip，可能要改消息的结构
 #. 学习wifi模块的控制
-#. 把udp通信全部改成tcp
 #. byzantine behavior
 #. reputation scheme
 #. 连到AP的城市IoT设备的带宽变化  ***on going***

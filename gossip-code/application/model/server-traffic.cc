@@ -22,7 +22,7 @@
 #include "ns3/nstime.h"
 #include "ns3/inet-socket-address.h"
 #include "ns3/socket.h"
-#include "ns3/udp-socket.h"
+#include "ns3/tcp-socket.h"
 #include "ns3/simulator.h"
 #include "ns3/socket-factory.h"
 #include "ns3/packet.h"
@@ -52,10 +52,10 @@ ServerTraffic::GetTypeId (void)
     .SetParent<Application> ()
     .SetGroupName("Applications")
     .AddConstructor<ServerTraffic> ()
-    .AddAttribute ("NodeId", "Node on which the application runs.",
-                   UintegerValue (0),
-                   MakeUintegerAccessor (&ServerTraffic::m_node_id),
-                   MakeUintegerChecker<uint8_t> ())
+    // .AddAttribute ("NodeId", "Node on which the application runs.",
+    //                UintegerValue (0),
+    //                MakeUintegerAccessor (&ServerTraffic::m_node_id),
+    //                MakeUintegerChecker<uint8_t> ())
     .AddAttribute ("Port", "Port on which we listen for incoming packets.",
                    UintegerValue (9),
                    MakeUintegerAccessor (&ServerTraffic::m_port),
@@ -73,6 +73,7 @@ ServerTraffic::GetTypeId (void)
 ServerTraffic::ServerTraffic ()
 {
   NS_LOG_FUNCTION (this);
+  m_socket = 0;
 
 }
 
@@ -81,20 +82,10 @@ ServerTraffic::ServerTraffic ()
 ServerTraffic::~ServerTraffic()
 {
   NS_LOG_FUNCTION (this);
-  
+  m_socket = 0;
 }
 
 
-
-
-
-
-
-
-uint8_t ServerTraffic::GetNodeId(void)
-{
-  return m_node_id;
-}
 
 std::vector<std::string> ServerTraffic::SplitMessage(const std::string& str, const char pattern)
 {
@@ -119,23 +110,23 @@ void
 ServerTraffic::StartApplication (void)
 {
   NS_LOG_FUNCTION (this);
-  
+  std::cout<<"Server starts"<<std::endl;
 
-  if (m_socket_receive == 0)
+  if (m_socket == 0)
     {
-      TypeId tid = TypeId::LookupByName ("ns3::UdpSocketFactory");
-      m_socket_receive = Socket::CreateSocket (GetNode (), tid);
+      TypeId tid = TypeId::LookupByName ("ns3::TcpSocketFactory");
+      m_socket = Socket::CreateSocket (GetNode (), tid);
       InetSocketAddress local = InetSocketAddress (Ipv4Address::GetAny (), m_port);
-      if (m_socket_receive->Bind (local) == -1)
+      if (m_socket->Bind (local) == -1)
         {
           NS_FATAL_ERROR ("Failed to bind socket");
         }
+      if(m_socket->Listen()==0)
+        std::cout<<"Server is listening!"<<std::endl;
+      m_socket->ShutdownSend();
     }
-  m_socket_receive->SetRecvCallback (MakeCallback (&ServerTraffic::HandleRead, this));
-
-  
-
-  Simulator::Schedule(Seconds(0.), &ServerTraffic::ConsensProcess, this);
+  m_socket->SetAcceptCallback (MakeNullCallback<bool, Ptr<Socket>, const Address &> (),
+    MakeCallback (&ServerTraffic::HandleAccept, this));
 
 }
 
@@ -144,37 +135,41 @@ ServerTraffic::StopApplication ()
 {
   NS_LOG_FUNCTION (this);
   // printf("%s\n", "Server stops!");
-  if (m_socket_receive != 0) 
+  if (m_socket != 0) 
     {
-      m_socket_receive->Close ();
-      m_socket_receive->SetRecvCallback (MakeNullCallback<void, Ptr<Socket> > ());
+      m_socket->Close ();
+      m_socket->SetRecvCallback (MakeNullCallback<void, Ptr<Socket> > ());
     }
 }
 
 
 
-
+void ServerTraffic::HandleAccept(Ptr<Socket> s, const Address& from)
+{
+  s->SetRecvCallback (MakeCallback (&ServerTraffic::HandleTraffic, this));
+}
 
 
 
 void 
-ServerTraffic::HandleRead (Ptr<Socket> socket)
+ServerTraffic::HandleTraffic (Ptr<Socket> socket)
 {
-  NS_LOG_FUNCTION (this << socket);
+  // NS_LOG_FUNCTION (this << socket);
   Ptr<Packet> packet;
   Address from;
   while ((packet = socket->RecvFrom (from)))
     {
-      uint8_t content_[20];
-      packet->CopyData(content_, 20);
-      Ipv4Address from_addr = InetSocketAddress::ConvertFrom (from).GetIpv4 ();
-      int from_node = (int)map_addr_node[from_addr];
+      // uint8_t content_[20];
+      // packet->CopyData(content_, 20);
+      // Ipv4Address from_addr = InetSocketAddress::ConvertFrom (from).GetIpv4 ();
+      // int from_node = (int)map_addr_node[from_addr];
       // std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" "<<packet->GetSize()
       //   <<" bytes from node "<<from_node<<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
+      std::cout<<"Server received "<<packet->GetSize()<<" bytes from "<<InetSocketAddress::ConvertFrom (from).GetIpv4 ()<<std::endl;
 
-      std::string str_of_content(content_, content_+20);
-      std::vector<std::string> res = SplitMessage(str_of_content, '+');
-      const char* time_of_recived_message = res[0].c_str();
+      // std::string str_of_content(content_, content_+20);
+      // std::vector<std::string> res = SplitMessage(str_of_content, '+');
+      // const char* time_of_recived_message = res[0].c_str();
     }
 }
 

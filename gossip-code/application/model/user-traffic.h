@@ -44,7 +44,7 @@ public:
   static TypeId GetTypeId (void);
   UserTraffic ();
   virtual ~UserTraffic ();
-
+  std::vector<std::string> SplitMessage(const std::string& str, const char pattern);
 
 protected:
   virtual void DoDispose (void);
@@ -54,10 +54,14 @@ private:
 
   virtual void StartApplication (void);
   virtual void StopApplication (void);
+
   void SendTraffic();
   void QueryTraffic();
+  void HandleTraffic(Ptr<Socket> socket);
 
-  int NodeId;
+  Ptr<Socket> m_socket;
+  uint16_t m_peerPort;
+  Address m_peerAddress;
 
 
 

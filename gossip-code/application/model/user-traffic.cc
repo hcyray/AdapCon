@@ -22,7 +22,7 @@
 #include "ns3/nstime.h"
 #include "ns3/inet-socket-address.h"
 #include "ns3/socket.h"
-#include "ns3/udp-socket.h"
+#include "ns3/tcp-socket.h"
 #include "ns3/simulator.h"
 #include "ns3/socket-factory.h"
 #include "ns3/packet.h"
@@ -52,14 +52,19 @@ UserTraffic::GetTypeId (void)
     .SetParent<Application> ()
     .SetGroupName("Applications")
     .AddConstructor<UserTraffic> ()
-    .AddAttribute ("NodeId", "Node on which the application runs.",
-                   UintegerValue (0),
-                   MakeUintegerAccessor (&UserTraffic::m_node_id),
-                   MakeUintegerChecker<uint8_t> ())
+    // .AddAttribute ("NodeId", "Node on which the application runs.",
+    //                UintegerValue (0),
+    //                MakeUintegerAccessor (&UserTraffic::m_node_id),
+    //                MakeUintegerChecker<uint8_t> ())
     .AddAttribute ("Port", "Port on which we listen for incoming packets.",
                    UintegerValue (27),
-                   MakeUintegerAccessor (&UserTraffic::m_port),
+                   MakeUintegerAccessor (&UserTraffic::m_peerPort),
                    MakeUintegerChecker<uint16_t> ())
+    .AddAttribute ("RemoteAddress",
+                   "The destination address of the outbound packets",
+                   AddressValue (),
+                   MakeAddressAccessor (&UserTraffic::m_peerAddress),
+                   MakeAddressChecker ())
     // .AddTraceSource ("Rx", "A packet has been received",
     //                  MakeTraceSourceAccessor (&UserTraffic::m_rxTrace),
     //                  "ns3::Packet::TracedCallback")
@@ -73,6 +78,7 @@ UserTraffic::GetTypeId (void)
 UserTraffic::UserTraffic ()
 {
   NS_LOG_FUNCTION (this);
+  m_socket = 0;
 
 }
 
@@ -81,20 +87,11 @@ UserTraffic::UserTraffic ()
 UserTraffic::~UserTraffic()
 {
   NS_LOG_FUNCTION (this);
+  m_socket = 0;
   
 }
 
 
-
-
-
-
-
-
-uint8_t UserTraffic::GetNodeId(void)
-{
-  return m_node_id;
-}
 
 std::vector<std::string> UserTraffic::SplitMessage(const std::string& str, const char pattern)
 {
@@ -121,22 +118,18 @@ UserTraffic::StartApplication (void)
   NS_LOG_FUNCTION (this);
   
 
-  if (m_socket_receive == 0)
+  if (m_socket == 0)
     {
-      TypeId tid = TypeId::LookupByName ("ns3::UdpSocketFactory");
-      m_socket_receive = Socket::CreateSocket (GetNode (), tid);
-      InetSocketAddress local = InetSocketAddress (Ipv4Address::GetAny (), m_port);
-      if (m_socket_receive->Bind (local) == -1)
-        {
-          NS_FATAL_ERROR ("Failed to bind socket");
-        }
+      TypeId tid = TypeId::LookupByName ("ns3::TcpSocketFactory");
+      m_socket = Socket::CreateSocket (GetNode (), tid);
+      InetSocketAddress remote = InetSocketAddress (Ipv4Address::ConvertFrom (m_peerAddress), m_peerPort);
+      m_socket->Bind();
+      if(m_socket->Connect(remote)==0)
+        std::cout<<"user create a socket connected to server successfully!"<<std::endl;
     }
-  m_socket_receive->SetRecvCallback (MakeCallback (&UserTraffic::HandleRead, this));
+  m_socket->SetRecvCallback (MakeCallback (&UserTraffic::HandleTraffic, this));
 
-  
-
-  Simulator::Schedule(Seconds(0.), &UserTraffic::ConsensProcess, this);
-
+  SendTraffic();
 }
 
 void 
@@ -144,37 +137,44 @@ UserTraffic::StopApplication ()
 {
   NS_LOG_FUNCTION (this);
   // printf("%s\n", "Server stops!");
-  if (m_socket_receive != 0) 
+  if (m_socket != 0) 
     {
-      m_socket_receive->Close ();
-      m_socket_receive->SetRecvCallback (MakeNullCallback<void, Ptr<Socket> > ());
+      m_socket->Close ();
+      m_socket->SetRecvCallback (MakeNullCallback<void, Ptr<Socket> > ());
     }
 }
 
 
 
-
+void UserTraffic::SendTraffic()
+{
+  Ptr<Packet> p;
+  p = Create<Packet> (100);
+  if(m_socket->Send(p)!=-1);
+    std::cout<<"User send a packet to server!"<<std::endl;
+}
 
 
 
 void 
-UserTraffic::HandleRead (Ptr<Socket> socket)
+UserTraffic::HandleTraffic (Ptr<Socket> socket)
 {
   NS_LOG_FUNCTION (this << socket);
   Ptr<Packet> packet;
   Address from;
   while ((packet = socket->RecvFrom (from)))
     {
-      uint8_t content_[20];
-      packet->CopyData(content_, 20);
-      Ipv4Address from_addr = InetSocketAddress::ConvertFrom (from).GetIpv4 ();
-      int from_node = (int)map_addr_node[from_addr];
+      // uint8_t content_[20];
+      // packet->CopyData(content_, 20);
+      // Ipv4Address from_addr = InetSocketAddress::ConvertFrom (from).GetIpv4 ();
+      // int from_node = (int)map_addr_node[from_addr];
       // std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" "<<packet->GetSize()
       //   <<" bytes from node "<<from_node<<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
+      std::cout<<"user received "<<packet->GetSize()<<" bytes from "<<InetSocketAddress::ConvertFrom (from).GetIpv4 ()<<std::endl;
 
-      std::string str_of_content(content_, content_+20);
-      std::vector<std::string> res = SplitMessage(str_of_content, '+');
-      const char* time_of_recived_message = res[0].c_str();
+      // std::string str_of_content(content_, content_+20);
+      // std::vector<std::string> res = SplitMessage(str_of_content, '+');
+      // const char* time_of_recived_message = res[0].c_str();
     }
 }
 

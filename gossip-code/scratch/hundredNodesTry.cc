@@ -300,26 +300,48 @@ int main()
 	outfile2.close();
 
 // **************************************************　install app
-	ApplicationContainer gossipApplist[IotNodeNumber];
-	for(int i=0; i<IotNodeNumber; i++)
-	{
-		GossipAppHelper gossipApp1(i, 17);
-		std::pair<int, int> p = map_NodeNumberToApNodeNumber[i];
-		gossipApplist[i] = gossipApp1.Install(IotNode[p.first].Get(p.second));
-		gossipApplist[i].Start(Seconds(0.));
-		gossipApplist[i].Stop(Seconds(1000.));
-	}
+	// ApplicationContainer gossipApplist[IotNodeNumber];
+	// for(int i=0; i<IotNodeNumber; i++)
+	// {
+	// 	GossipAppHelper gossipApp1(i, 17);
+	// 	std::pair<int, int> p = map_NodeNumberToApNodeNumber[i];
+	// 	gossipApplist[i] = gossipApp1.Install(IotNode[p.first].Get(p.second));
+	// 	gossipApplist[i].Start(Seconds(0.));
+	// 	gossipApplist[i].Stop(Seconds(999.));
+	// }
+
+	int client_ = 1;
+	int server_ = 9;
+	std::pair<int, int> p_server = map_NodeNumberToApNodeNumber[server_];
+	std::pair<int, int> p_client = map_NodeNumberToApNodeNumber[client_];
+	ServerTrafficHelper serverTraffic (109);
+	ApplicationContainer serverTrafficApp = serverTraffic.Install (IotNode[p_server.first].Get(p_server.second));
+	serverTrafficApp.Start (Seconds (1.0));
+	serverTrafficApp.Stop (Seconds (10.0));
+
+	UserTrafficHelper userTraffic (map_node_addr[server_], 109);
+	// userTraffic.SetAttribute ("MaxPackets", UintegerValue (1));
+	// userTraffic.SetAttribute ("Interval", TimeValue (Seconds (1.0)));
+	// userTraffic.SetAttribute ("PacketSize", UintegerValue (1024));
+
+	ApplicationContainer userTrafficApp = 
+		userTraffic.Install (IotNode[p_client.first].Get(p_client.second));
+	userTrafficApp.Start (Seconds (2.0));
+	userTrafficApp.Stop (Seconds (10.0));
+
+
 
 	// int client_ = 1;
-	// int server_ = 9;
-	// std::pair<int, int> p_server = map_NodeNumberToApNodeNumber[server_];
+	// // int server_ = 9;
+	// // std::pair<int, int> p_server = map_NodeNumberToApNodeNumber[server_];
 	// std::pair<int, int> p_client = map_NodeNumberToApNodeNumber[client_];
 	// UdpEchoServerHelper echoServer (9);
-	// ApplicationContainer serverApps = echoServer.Install (IotNode[p_server.first].Get(p_server.second));
+	// // ApplicationContainer serverApps = echoServer.Install (IotNode[p_server.first].Get(p_server.second));
+	// ApplicationContainer serverApps = echoServer.Install (Router.Get(9));
 	// serverApps.Start (Seconds (1.0));
 	// serverApps.Stop (Seconds (10.0));
 
-	// UdpEchoClientHelper echoClient (map_node_addr[server_], 9);
+	// UdpEchoClientHelper echoClient (ap2rInterface[9].GetAddress(0), 9);
 	// echoClient.SetAttribute ("MaxPackets", UintegerValue (1));
 	// echoClient.SetAttribute ("Interval", TimeValue (Seconds (1.0)));
 	// echoClient.SetAttribute ("PacketSize", UintegerValue (1024));
@@ -328,10 +350,11 @@ int main()
 	// 	echoClient.Install (IotNode[p_client.first].Get(p_client.second));
 	// clientApps.Start (Seconds (2.0));
 	// clientApps.Stop (Seconds (10.0));
+
 	
 // **************************************************  run simulation
 
-	Simulator::Stop (Seconds (1020.0));
+	Simulator::Stop (Seconds (20.0));
     Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
 	Simulator::Run ();
     Simulator::Destroy ();
