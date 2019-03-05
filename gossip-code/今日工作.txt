@@ -8,7 +8,7 @@
 1. GossipGenerator类中 几个Handle函数什么时候触发？
 2. GossipGenerator类中 data是用什么方法发出去的？
 3. GossipGenerator类 与 icmpv4-l4-protocol类互相包含是什么意思？
-
+***已放弃***
 
 #. 在1km x 1km的正方形区域内，随机放置30个AP  ***ok***
 #. AP之间按照ER随机图连接  ***ok***
@@ -26,6 +26,8 @@
 ~~~~~~~~~~~~#. 把对prepare、commit的广播改成gossip，可能要改消息的结构
 ~~~~~~~~~~~~#. 把udp通信全部改成tcp
 ~~~~~~~~~~~~#. 写user app 发送流量  ***on going using tcp***
+~~~~~~~~~~~~#. max packet size  ***tcp 128k, udp 64k***
+
 
 #. 为什么wifi模块没有带宽设置  ***由协议决定***
 #. 学习wifi模块的控制

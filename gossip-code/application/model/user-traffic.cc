@@ -124,8 +124,8 @@ UserTraffic::StartApplication (void)
       m_socket = Socket::CreateSocket (GetNode (), tid);
       InetSocketAddress remote = InetSocketAddress (Ipv4Address::ConvertFrom (m_peerAddress), m_peerPort);
       m_socket->Bind();
-      if(m_socket->Connect(remote)==0)
-        std::cout<<"user create a socket connected to server successfully!"<<std::endl;
+      if(m_socket->Connect(remote)!=0)
+        std::cout<<"user socket connection failed!"<<std::endl;
     }
   m_socket->SetRecvCallback (MakeCallback (&UserTraffic::HandleTraffic, this));
 
@@ -149,9 +149,11 @@ UserTraffic::StopApplication ()
 void UserTraffic::SendTraffic()
 {
   Ptr<Packet> p;
-  p = Create<Packet> (100);
-  if(m_socket->Send(p)!=-1);
-    std::cout<<"User send a packet to server!"<<std::endl;
+  uint32_t x = 10*1024;
+  uint8_t const buffer[x] = "Hello world";
+  p = Create<Packet> (buffer, x);
+  if(m_socket->Send(p)==-1)
+    std::cout<<"User fail to send a packet to server!"<<std::endl;
 }
 
 

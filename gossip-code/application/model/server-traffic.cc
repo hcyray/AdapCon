@@ -163,9 +163,10 @@ ServerTraffic::HandleTraffic (Ptr<Socket> socket)
       // packet->CopyData(content_, 20);
       // Ipv4Address from_addr = InetSocketAddress::ConvertFrom (from).GetIpv4 ();
       // int from_node = (int)map_addr_node[from_addr];
-      // std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" "<<packet->GetSize()
-      //   <<" bytes from node "<<from_node<<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
-      std::cout<<"Server received "<<packet->GetSize()<<" bytes from "<<InetSocketAddress::ConvertFrom (from).GetIpv4 ()<<std::endl;
+      // std::cout<<"Server received a "<<content_<<" "<<packet->GetSize()
+      //   <<" bytes at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
+      std::cout<<"Server received "<<packet->GetSize()<<" bytes from "<<InetSocketAddress::ConvertFrom (from).GetIpv4 ()<<
+        " at "<<Simulator::Now().GetSeconds() <<std::endl;
 
       // std::string str_of_content(content_, content_+20);
       // std::vector<std::string> res = SplitMessage(str_of_content, '+');
