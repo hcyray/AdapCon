@@ -35,10 +35,10 @@ namespace ns3 {
 class Socket;
 class Packet;
 
-const int TOTAL_EPOCH_FOR_SIMULATION = 3;
+const int TOTAL_EPOCH_FOR_SIMULATION = 6;
 
 const int AP_NUMBER = 10;
-const int NODE_NUMBER = 30;
+const int NODE_NUMBER = 33;
 const int FAN_OUT = 4;
 const int GOSSIP_ROUND = 3;
 const int SOLICIT_ROUND = 1;
@@ -104,8 +104,8 @@ private:
   std::map<int, int> map_epoch_consensed;
 
 
-  uint32_t m_sent;
-  uint32_t m_count;
+  // uint32_t m_sent;
+  // uint32_t m_count;
 
   uint8_t m_height;
   uint8_t m_epoch;
@@ -127,7 +127,7 @@ private:
 
   Time m_interval = Seconds(2.0); 
   double m_epoch_beginning;
-  EventId m_sendEvent;
+  // EventId m_sendEvent;
   
   
 

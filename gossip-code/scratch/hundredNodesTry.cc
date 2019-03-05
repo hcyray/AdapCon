@@ -123,7 +123,12 @@ int main()
     int IotNodeNumber = Get_Topology(map_AP_devicenumber, vecotr_edge);
     std::cout<<"total IoT devices are: "<<IotNodeNumber<<std::endl;
 	std::map<int, std::pair<int, int> > map_NodeNumberToApNodeNumber = NodeNumberToApNodeNumber(IotNodeNumber, map_AP_devicenumber);
-    // for(int i=0; i<40; i++)
+    // for(int i=0; i<IotNodeNumber; i++)
+	// {
+	// 	std::pair<int, int> p = map_NodeNumberToApNodeNumber[i];
+	// 	std::cout<<i<<"<----"<<p.first<<" "<<p.second<<std::endl;
+	// }
+	// for(int i=0; i<40; i++)
     //     std::cout<<map_AP_devicenumber[i]<<"  ";
     // std::cout<<std::endl;
     // for(int i=0; i<(int)vecotr_edge.size(); i++)
@@ -155,7 +160,7 @@ int main()
 		subnetap2rlist[i].Add(Router.Get(i));
 		subnetap2rlist[i].Add(AP.Get(i));
 
-		p2phelper.SetDeviceAttribute("DataRate", StringValue("100kBps"));
+		p2phelper.SetDeviceAttribute("DataRate", StringValue("10kBps"));
 		p2phelper.SetChannelAttribute("Delay", StringValue("0ms"));
 		p2pdevicelist1[i] = p2phelper.Install(subnetap2rlist[i]);
 
@@ -174,7 +179,7 @@ int main()
 		subnetr2rlist[i].Add(Router.Get(vecotr_edge[i].first));
 		subnetr2rlist[i].Add(Router.Get(vecotr_edge[i].second));
 
-		p2phelper.SetDeviceAttribute("DataRate", StringValue("100kBps"));
+		p2phelper.SetDeviceAttribute("DataRate", StringValue("10kBps"));
 		p2phelper.SetChannelAttribute("Delay", StringValue("0ms"));
 		p2pdevicelist2[i] = p2phelper.Install(subnetr2rlist[i]);
 	}
@@ -262,8 +267,8 @@ int main()
 		ipaddress_string.append(".0");
 		char* ipaddress = (char*)ipaddress_string.data();
 		address.SetBase(Ipv4Address(ipaddress), "255.255.255.0");
-		wifiapInterface[i] = address.Assign(apdevices[i]);
 		wifistaInterface[i] = address.Assign(stadevices[i]);
+		wifiapInterface[i] = address.Assign(apdevices[i]);
 	}
 
 
@@ -305,6 +310,28 @@ int main()
 		gossipApplist[i].Stop(Seconds(1000.));
 	}
 
+	// int client_ = 1;
+	// int server_ = 9;
+	// std::pair<int, int> p_server = map_NodeNumberToApNodeNumber[server_];
+	// std::pair<int, int> p_client = map_NodeNumberToApNodeNumber[client_];
+	// UdpEchoServerHelper echoServer (9);
+	// ApplicationContainer serverApps = echoServer.Install (IotNode[p_server.first].Get(p_server.second));
+	// serverApps.Start (Seconds (1.0));
+	// serverApps.Stop (Seconds (10.0));
+
+	// UdpEchoClientHelper echoClient (map_node_addr[server_], 9);
+	// echoClient.SetAttribute ("MaxPackets", UintegerValue (1));
+	// echoClient.SetAttribute ("Interval", TimeValue (Seconds (1.0)));
+	// echoClient.SetAttribute ("PacketSize", UintegerValue (1024));
+
+	// ApplicationContainer clientApps = 
+	// 	echoClient.Install (IotNode[p_client.first].Get(p_client.second));
+	// clientApps.Start (Seconds (2.0));
+	// clientApps.Stop (Seconds (10.0));
+	
+// **************************************************  run simulation
+
+	Simulator::Stop (Seconds (1020.0));
     Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
 	Simulator::Run ();
     Simulator::Destroy ();

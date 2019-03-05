@@ -73,9 +73,9 @@ GossipApp::GetTypeId (void)
 GossipApp::GossipApp ()
 {
   NS_LOG_FUNCTION (this);
-  m_sendEvent = EventId ();
-  m_sent = 0;
-  m_count = 1;
+  // m_sendEvent = EventId ();
+  // m_sent = 0;
+  // m_count = 1;
   m_epoch = 0;
   m_epoch_beginning = 0.;
   
@@ -122,6 +122,7 @@ GossipApp::GossipApp ()
       }
   }
   infile2.close();
+  // std::cout<<"read ip address"<<std::endl;
 }
 
 
@@ -149,12 +150,12 @@ void GossipApp::ConsensProcess()
   {
     std::cout<<"*****************"<<"epoch "<<(int)m_epoch<<" starts"<<"**********"<<std::endl;
     std::cout<<"node "<<(int)GetNodeId()<<" is the leader"<<std::endl;
+    std::cout<<"time now: "<<m_epoch_beginning<<std::endl;
     GossipMessageOut();
   }
   else
   {
     Simulator::Schedule(Seconds(waitting_time), &GossipApp::SolicitMessageFromOthers, this);
-    // TODO wait for some time then query neighbors
   }
 
   Simulator::Schedule(Seconds(len_phase1), &GossipApp::BroadcastMessageOut, this, 3);
@@ -294,7 +295,8 @@ GossipApp::StartApplication (void)
 
   
 
-  Simulator::Schedule(Seconds(0.), &GossipApp::ConsensProcess, this);
+  Simulator::Schedule(Seconds(2.), &GossipApp::ConsensProcess, this); // must wait for some time, for example 2.0s,
+  // or no block can be received in epoch 1
 
 }
 
@@ -315,7 +317,7 @@ GossipApp::StopApplication ()
   {
     sum += map_epoch_consensed[i];
   }
-  std::cout<<"temporal epoch: "<<(int)m_epoch<<"**********"<<std::endl;
+  // std::cout<<"temporal epoch: "<<(int)m_epoch<<"**********"<<std::endl;
   std::cout<<"node "<<(int)m_node_id<<" got "<<sum<<" consensed block"<<std::endl;
 }
 
@@ -335,6 +337,8 @@ void GossipApp::Send(int dest, MESSAGE_TYPE message_type)
       Packet pack1(str3, 1000);
       Ptr<Packet> p = &pack1;
       m_socket_send[dest]->Send(p);
+      // std::cout<<"node "<<(int)GetNodeId()<<" send a "<<str1<<" to node "<<dest
+      //   <<" at "<<Simulator::Now().GetSeconds()<<"s"<<std::endl;
       break;
     } 
     case SOLICIT:
@@ -349,6 +353,8 @@ void GossipApp::Send(int dest, MESSAGE_TYPE message_type)
       Packet pack1(str3, 80);
       Ptr<Packet> p = &pack1;
       m_socket_send[dest]->Send(p);
+      // std::cout<<"node "<<(int)GetNodeId()<<" send a "<<str1<<" to node "<<dest
+      //   <<" at "<<Simulator::Now().GetSeconds()<<"s"<<std::endl;
       break;
     }
     case ACK:
@@ -363,6 +369,8 @@ void GossipApp::Send(int dest, MESSAGE_TYPE message_type)
       Packet pack1(str3, 80);
       Ptr<Packet> p = &pack1;
       m_socket_send[dest]->Send(p);
+      // std::cout<<"node "<<(int)GetNodeId()<<" send a "<<str1<<" to node "<<dest
+      //   <<" at "<<Simulator::Now().GetSeconds()<<"s"<<std::endl;
       break;
     }
     case PREPARE:
@@ -377,6 +385,8 @@ void GossipApp::Send(int dest, MESSAGE_TYPE message_type)
       Packet pack1(str3, 80);
       Ptr<Packet> p = &pack1;
       m_socket_send[dest]->Send(p);
+      // std::cout<<"node "<<(int)GetNodeId()<<" send a "<<str1<<" to node "<<dest
+      //   <<" at "<<Simulator::Now().GetSeconds()<<"s"<<std::endl;
       break;
     }
     case COMMIT:
@@ -391,12 +401,12 @@ void GossipApp::Send(int dest, MESSAGE_TYPE message_type)
       Packet pack1(str3, 80);
       Ptr<Packet> p = &pack1;
       m_socket_send[dest]->Send(p);
+      // std::cout<<"node "<<(int)GetNodeId()<<" send a "<<str1<<" to node "<<dest
+      //   <<" at "<<Simulator::Now().GetSeconds()<<"s"<<std::endl;
       break;
     }
-   
-
   }
-  // Packet pack1(TYPE_BLOCK, 1000);
+    // Packet pack1(TYPE_BLOCK, 1000);
 
   // Ptr<Packet> p = &pack1;
   // m_socket_send[dest]->Send(p);
@@ -427,7 +437,7 @@ void GossipApp::ScheduleTransmit(Time dt, int dest, int type)
   // m_sendEvent = Simulator::Schedule (dt, &GossipApp::Send, this, dest, message_type);
   Simulator::Schedule (dt, &GossipApp::Send, this, dest, message_type);
 
-  std::cout<<"node "<<(int)GetNodeId()<<" send a "<<MessagetypeToString(((int)message_type))<<" to node "<<dest<<" at "<<Simulator::Now().GetSeconds()<<"s"<<std::endl;
+  // std::cout<<"node "<<(int)GetNodeId()<<" send a "<<MessagetypeToString(((int)message_type))<<" to node "<<dest<<" at "<<Simulator::Now().GetSeconds()<<"s"<<std::endl;
 }
 
 void GossipApp::GossipMessageOut()
@@ -561,41 +571,41 @@ GossipApp::HandleRead (Ptr<Socket> socket)
           if(block_got==false)
           {
             block_got = true;
-            std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" for the first time "<<packet->GetSize()
-              <<" bytes from node "<<from_node<<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
+            // std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" for the first time "<<packet->GetSize()
+            //   <<" bytes from node "<<from_node<<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
             GossipMessageAfterReceive(from_node);
             
           }
-          else
-            std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" "<<packet->GetSize()
-              <<" bytes from node "<<from_node<<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
+          // else
+            // std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" "<<packet->GetSize()
+            //   <<" bytes from node "<<from_node<<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
         }
         else if(strcmp(type_of_received_message, "SOLICIT")==0)
         {
           if(block_got==true)
           {
             ScheduleTransmit(Seconds(0.), (int)map_addr_node[from_addr], 0);
-            std::cout<<"node "<<(int)GetNodeId()<<" responds node "<<from_node<<" and send him a block at "
-              <<Simulator::Now().GetSeconds()<<" s"<<std::endl;
+            // std::cout<<"node "<<(int)GetNodeId()<<" responds node "<<from_node<<" and send him a block at "
+            //   <<Simulator::Now().GetSeconds()<<" s"<<std::endl;
 
           }
-          else{
-            std::cout<<"node "<<(int)GetNodeId()<<" can't respond node "<<from_node<<" because until "<<
-              Simulator::Now().GetSeconds()<<" s he has not received a block yet"<<std::endl;
-          }
+          // else{
+          //   std::cout<<"node "<<(int)GetNodeId()<<" can't respond node "<<from_node<<" because until "<<
+          //     Simulator::Now().GetSeconds()<<" s he has not received a block yet"<<std::endl;
+          // }
           
         }
         else if(strcmp(type_of_received_message, "PREPARE")==0)
         { 
           map_node_PREPARE[from_node] = 1;
-          std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" "<<packet->GetSize()
-            <<" bytes from node "<<from_node<<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
+          // std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" "<<packet->GetSize()
+          //   <<" bytes from node "<<from_node<<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
         }
         else if(strcmp(type_of_received_message, "COMMIT")==0)
         {
           map_node_COMMIT[from_node] = 1;
-          std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" "<<packet->GetSize()
-            <<" bytes from node "<<from_node<<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
+          // std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" "<<packet->GetSize()
+          //   <<" bytes from node "<<from_node<<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
         }
       }
 
