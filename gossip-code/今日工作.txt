@@ -23,9 +23,9 @@
 #. 为什么在发solicit之前收不到消息，debug  ***ok***
 #. 把udp通信全部改成tcp  ***已放弃***
 #. max packet size  ***tcp 128k, udp 64k***
+#. 把对prepare、commit的广播改成gossip，可能要改消息的结构  ***ok***
 
 
-~~~~~~~~~~~~#. 把对prepare、commit的广播改成gossip，可能要改消息的结构
 ~~~~~~~~~~~~#. 写user app 发送流量  ***on going using tcp***
 
 
