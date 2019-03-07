@@ -75,6 +75,7 @@ public:
   void GetNeighbor(int n, int x[]);
   uint8_t GetNodeId(void);
   void if_leader(void);
+  void if_get_block(void);
 
   void ScheduleTransmit (Time dt, int dest, int type);
   void GossipBlockOut();
@@ -97,6 +98,7 @@ private:
   virtual void StartApplication (void);
   virtual void StopApplication (void);
   void Send (int dest, MESSAGE_TYPE);
+  void SendBlock(int dest);
   void HandleRead (Ptr<Socket> socket);
 
 
@@ -119,6 +121,7 @@ private:
   // bool current_consensus_success;
   bool m_leader;
   bool block_got;
+  std::map<int, int> map_piece_received;
   std::map<int, int> map_node_PREPARE;
   std::map<int, int> map_node_COMMIT;
   std::map<double, double> map_node_BLOCK_time;

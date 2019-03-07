@@ -160,7 +160,7 @@ int main()
 		subnetap2rlist[i].Add(Router.Get(i));
 		subnetap2rlist[i].Add(AP.Get(i));
 
-		p2phelper.SetDeviceAttribute("DataRate", StringValue("10kBps"));
+		p2phelper.SetDeviceAttribute("DataRate", StringValue("10MBps"));
 		p2phelper.SetChannelAttribute("Delay", StringValue("0ms"));
 		p2pdevicelist1[i] = p2phelper.Install(subnetap2rlist[i]);
 
@@ -179,7 +179,7 @@ int main()
 		subnetr2rlist[i].Add(Router.Get(vecotr_edge[i].first));
 		subnetr2rlist[i].Add(Router.Get(vecotr_edge[i].second));
 
-		p2phelper.SetDeviceAttribute("DataRate", StringValue("10kBps"));
+		p2phelper.SetDeviceAttribute("DataRate", StringValue("10MBps"));
 		p2phelper.SetChannelAttribute("Delay", StringValue("0ms"));
 		p2pdevicelist2[i] = p2phelper.Install(subnetr2rlist[i]);
 	}
