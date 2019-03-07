@@ -35,12 +35,13 @@ namespace ns3 {
 class Socket;
 class Packet;
 
-const int TOTAL_EPOCH_FOR_SIMULATION = 6;
+const int TOTAL_EPOCH_FOR_SIMULATION = 3;
 
 const int AP_NUMBER = 10;
 const int NODE_NUMBER = 33;
 const int FAN_OUT = 4;
-const int GOSSIP_ROUND = 3;
+const int OUT_GOSSIP_ROUND = 5;
+const int IN_GOSSIP_ROUND = 3;
 const int SOLICIT_ROUND = 1;
 const int SOLICIT_INTERVAL = 5;
 const double DETERMINECOMMIT_INTERVAL = 0.2;
@@ -69,15 +70,17 @@ public:
   void ConsensProcess();
 
   Ptr<Packet> ComputeWhatToSend();
-  void ChooseNeighbor(int number, int x[]);
-  void ChooseNeighbor(int number, int x[], int node_excluded);
+  // void ChooseNeighbor(int number, int x[]);
+  // void ChooseNeighbor(int number, int x[], int node_excluded);
+  void GetNeighbor(int n, int x[]);
   uint8_t GetNodeId(void);
   void if_leader(void);
 
   void ScheduleTransmit (Time dt, int dest, int type);
-  void GossipMessageOut();
-  void GossipMessageAfterReceive(int from_node);
-  void BroadcastMessageOut(int type);
+  void GossipBlockOut();
+  void GossipBlockAfterReceive(int from_node);
+  void GossipVotingMessageOut(int type);
+  void RelayVotingMessage(Ptr<Packet> p);
   void DetermineCommit();
   void DetermineConsens();
   void SolicitMessageFromOthers();
@@ -118,12 +121,16 @@ private:
   bool block_got;
   std::map<int, int> map_node_PREPARE;
   std::map<int, int> map_node_COMMIT;
+  std::map<double, double> map_node_BLOCK_time;
+  std::map<double, double> map_node_PREPARE_time;
+  std::map<double, double> map_node_COMMIT_time;
 
-  // int neighborsforpush[GOSSIP_ROUND];
+  // int neighborsforpush[OUT_GOSSIP_ROUND];
   // int neighborsforpull[SOLICIT_ROUND]; 
   Ptr<Socket> m_socket_receive; 
   std::vector<Ptr<Socket>> m_socket_send;
-
+  int out_neighbor_choosed[OUT_GOSSIP_ROUND];
+  int in_neighbor_choosed[IN_GOSSIP_ROUND];
 
   Time m_interval = Seconds(2.0); 
   double m_epoch_beginning;

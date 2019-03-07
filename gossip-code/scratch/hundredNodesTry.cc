@@ -300,34 +300,31 @@ int main()
 	outfile2.close();
 
 // **************************************************　install app
-	// ApplicationContainer gossipApplist[IotNodeNumber];
-	// for(int i=0; i<IotNodeNumber; i++)
-	// {
-	// 	GossipAppHelper gossipApp1(i, 17);
-	// 	std::pair<int, int> p = map_NodeNumberToApNodeNumber[i];
-	// 	gossipApplist[i] = gossipApp1.Install(IotNode[p.first].Get(p.second));
-	// 	gossipApplist[i].Start(Seconds(0.));
-	// 	gossipApplist[i].Stop(Seconds(999.));
-	// }
+	ApplicationContainer gossipApplist[IotNodeNumber];
+	for(int i=0; i<IotNodeNumber; i++)
+	{
+		GossipAppHelper gossipApp1(i, 17);
+		std::pair<int, int> p = map_NodeNumberToApNodeNumber[i];
+		gossipApplist[i] = gossipApp1.Install(IotNode[p.first].Get(p.second));
+		gossipApplist[i].Start(Seconds(0.));
+		gossipApplist[i].Stop(Seconds(999.));
+	}
 
-	int client_ = 1;
-	int server_ = 9;
-	std::pair<int, int> p_server = map_NodeNumberToApNodeNumber[server_];
-	std::pair<int, int> p_client = map_NodeNumberToApNodeNumber[client_];
-	ServerTrafficHelper serverTraffic (109);
-	ApplicationContainer serverTrafficApp = serverTraffic.Install (IotNode[p_server.first].Get(p_server.second));
-	serverTrafficApp.Start (Seconds (1.0));
-	serverTrafficApp.Stop (Seconds (10.0));
+	// int client_ = 1;
+	// int server_ = 9;
+	// std::pair<int, int> p_server = map_NodeNumberToApNodeNumber[server_];
+	// std::pair<int, int> p_client = map_NodeNumberToApNodeNumber[client_];
+	// ServerTrafficHelper serverTraffic (109);
+	// ApplicationContainer serverTrafficApp = serverTraffic.Install (IotNode[p_server.first].Get(p_server.second));
+	// serverTrafficApp.Start (Seconds (1.0));
+	// serverTrafficApp.Stop (Seconds (10.0));
 
-	UserTrafficHelper userTraffic (map_node_addr[server_], 109);
-	// userTraffic.SetAttribute ("MaxPackets", UintegerValue (1));
-	// userTraffic.SetAttribute ("Interval", TimeValue (Seconds (1.0)));
-	// userTraffic.SetAttribute ("PacketSize", UintegerValue (1024));
+	// UserTrafficHelper userTraffic (map_node_addr[server_], 109);
 
-	ApplicationContainer userTrafficApp = 
-		userTraffic.Install (IotNode[p_client.first].Get(p_client.second));
-	userTrafficApp.Start (Seconds (2.0));
-	userTrafficApp.Stop (Seconds (10.0));
+	// ApplicationContainer userTrafficApp = 
+	// 	userTraffic.Install (IotNode[p_client.first].Get(p_client.second));
+	// userTrafficApp.Start (Seconds (2.0));
+	// userTrafficApp.Stop (Seconds (10.0));
 
 
 
@@ -354,7 +351,7 @@ int main()
 	
 // **************************************************  run simulation
 
-	Simulator::Stop (Seconds (20.0));
+	Simulator::Stop (Seconds (1001.0));
     Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
 	Simulator::Run ();
     Simulator::Destroy ();
