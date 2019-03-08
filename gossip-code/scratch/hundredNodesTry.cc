@@ -121,6 +121,8 @@ int main()
     std::vector<std::pair<int, int> > vecotr_edge;
 
     int IotNodeNumber = Get_Topology(map_AP_devicenumber, vecotr_edge);
+	int ApNumber = map_AP_devicenumber.size();
+	std::cout<<"total Aps are: "<<ApNumber<<std::endl;
     std::cout<<"total IoT devices are: "<<IotNodeNumber<<std::endl;
 	std::map<int, std::pair<int, int> > map_NodeNumberToApNodeNumber = NodeNumberToApNodeNumber(IotNodeNumber, map_AP_devicenumber);
     // for(int i=0; i<IotNodeNumber; i++)
@@ -155,12 +157,20 @@ int main()
     NodeContainer subnetap2rlist[AP_NUMBER];
     PointToPointHelper p2phelper;
     NetDeviceContainer p2pdevicelist1[AP_NUMBER];
+	srand(time(NULL));
     for(int i=0; i<AP_NUMBER; i++)
 	{
 		subnetap2rlist[i].Add(Router.Get(i));
 		subnetap2rlist[i].Add(AP.Get(i));
-
-		p2phelper.SetDeviceAttribute("DataRate", StringValue("10MBps"));
+		int x = rand() % 4;
+		if(x==0)
+			p2phelper.SetDeviceAttribute("DataRate", StringValue("100Mbps"));
+		else if(x==1)
+			p2phelper.SetDeviceAttribute("DataRate", StringValue("300Mbps"));
+		else if(x==2)
+			p2phelper.SetDeviceAttribute("DataRate", StringValue("500Mbps"));
+		else
+			p2phelper.SetDeviceAttribute("DataRate", StringValue("1000Mbps"));
 		p2phelper.SetChannelAttribute("Delay", StringValue("0ms"));
 		p2pdevicelist1[i] = p2phelper.Install(subnetap2rlist[i]);
 
@@ -272,7 +282,7 @@ int main()
 	}
 
 
-// ************************************************** extract IoT device's ip address 
+// ************************************************** extract IoT device's ip address and save them
 	std::map<uint8_t, Ipv4Address> map_node_addr;
 	for(int i=0; i<IotNodeNumber; i++)
 	{
@@ -309,24 +319,22 @@ int main()
 		gossipApplist[i].Start(Seconds(0.));
 		gossipApplist[i].Stop(Seconds(999.));
 	}
+	
+	ApplicationContainer serverTrafficlist[ApNumber];
+	ApplicationContainer userTrafficlist[ApNumber];
+	for(int i=0; i<ApNumber; i++)
+	{
+		ServerTrafficHelper ServerTraffic(109);
+		serverTrafficlist[i] = ServerTraffic.Install(Router.Get(i));
+		serverTrafficlist[i].Start(Seconds(20.0));
+		serverTrafficlist[i].Stop(Seconds(1000.0));
 
-	// int client_ = 1;
-	// int server_ = 9;
-	// std::pair<int, int> p_server = map_NodeNumberToApNodeNumber[server_];
-	// std::pair<int, int> p_client = map_NodeNumberToApNodeNumber[client_];
-	// ServerTrafficHelper serverTraffic (109);
-	// ApplicationContainer serverTrafficApp = serverTraffic.Install (IotNode[p_server.first].Get(p_server.second));
-	// serverTrafficApp.Start (Seconds (1.0));
-	// serverTrafficApp.Stop (Seconds (10.0));
+		UserTrafficHelper UserTraffic(ap2rInterface[i].GetAddress(0), 109);
+		userTrafficlist[i] = UserTraffic.Install(UserNode.Get(i));
+		userTrafficlist[i].Start(Seconds(20.0));
+		userTrafficlist[i].Stop(Seconds(1000.0));
 
-	// UserTrafficHelper userTraffic (map_node_addr[server_], 109);
-
-	// ApplicationContainer userTrafficApp = 
-	// 	userTraffic.Install (IotNode[p_client.first].Get(p_client.second));
-	// userTrafficApp.Start (Seconds (2.0));
-	// userTrafficApp.Stop (Seconds (10.0));
-
-
+	}
 
 	// int client_ = 1;
 	// // int server_ = 9;

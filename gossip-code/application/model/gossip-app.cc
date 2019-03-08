@@ -81,7 +81,7 @@ GossipApp::GossipApp ()
   
   len_phase1 = 120.0;
   len_phase2 = 30.0;
-  waitting_time = len_phase1*3/4.;
+  waitting_time = len_phase1*1/4.;
 
 
   const int LINE_LENGTH = 100;
@@ -395,8 +395,8 @@ void GossipApp::Send(int dest, MESSAGE_TYPE message_type)
       Packet pack1(str3, 80);
       Ptr<Packet> p = &pack1;
       m_socket_send[dest]->Send(p);
-      std::cout<<"node "<<(int)GetNodeId()<<" send a "<<str3<<" to node "<<dest
-        <<" at "<<Simulator::Now().GetSeconds()<<"s"<<std::endl;
+      // std::cout<<"node "<<(int)GetNodeId()<<" send a "<<str3<<" to node "<<dest
+      //   <<" at "<<Simulator::Now().GetSeconds()<<"s"<<std::endl;
       break;
     }
     case ACK:
@@ -524,7 +524,6 @@ void GossipApp::ScheduleTransmit(Time dt, int dest, int type)
 
 void GossipApp::GossipBlockOut()
 {
-
   for(int i=0; i<OUT_GOSSIP_ROUND; i++)
   {
     SendBlock(out_neighbor_choosed[i]);
@@ -637,14 +636,14 @@ GossipApp::HandleRead (Ptr<Socket> socket)
   Address from;
   while ((packet = socket->RecvFrom (from)))
     {
-      uint8_t content_[20];
-      packet->CopyData(content_, 20);
+      uint8_t content_[30];
+      packet->CopyData(content_, 30);
       Ipv4Address from_addr = InetSocketAddress::ConvertFrom (from).GetIpv4 ();
       int from_node = (int)map_addr_node[from_addr];
       // std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" "<<packet->GetSize()
       //   <<" bytes from node "<<from_node<<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
 
-      std::string str_of_content(content_, content_+20);
+      std::string str_of_content(content_, content_+30);
       std::vector<std::string> res = SplitMessage(str_of_content, '+');
       const char* time_of_recived_message = res[0].c_str();
 
@@ -660,8 +659,10 @@ GossipApp::HandleRead (Ptr<Socket> socket)
             if_get_block();
             if(block_got == true)
             {
-              std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" for the first time "<<packet->GetSize()
-              <<" bytes from node "<<from_node<<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
+              // std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" for the first time "<<packet->GetSize()
+              // <<" bytes from node "<<from_node<<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
+              std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" for the first time from node "
+                <<from_node<<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
               GossipBlockAfterReceive(from_node);
             }
           }
@@ -674,13 +675,13 @@ GossipApp::HandleRead (Ptr<Socket> socket)
           if(block_got==true)
           {
             SendBlock(from_node);
-            std::cout<<"node "<<(int)GetNodeId()<<" responds node "<<from_node<<" and send him a block at "
-              <<Simulator::Now().GetSeconds()<<" s"<<std::endl;
+            // std::cout<<"node "<<(int)GetNodeId()<<" responds node "<<from_node<<" and send him a block at "
+            //   <<Simulator::Now().GetSeconds()<<" s"<<std::endl;
 
           }
           else{
-            std::cout<<"node "<<(int)GetNodeId()<<" can't respond node "<<from_node<<" because until "<<
-              Simulator::Now().GetSeconds()<<" s he has not received a block yet"<<std::endl;
+            // std::cout<<"node "<<(int)GetNodeId()<<" can't respond node "<<from_node<<" because until "<<
+            //   Simulator::Now().GetSeconds()<<" s he has not received a block yet"<<std::endl;
           }
           
         }
@@ -690,8 +691,8 @@ GossipApp::HandleRead (Ptr<Socket> socket)
           if(map_node_PREPARE[x]==0)
           {
             map_node_PREPARE[x] = 1;
-            std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" "<<packet->GetSize()
-              <<" bytes from node "<<from_node<<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
+            // std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" "<<packet->GetSize()
+            //   <<" bytes from node "<<from_node<<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
             RelayVotingMessage(packet);
           }
         }
@@ -701,8 +702,8 @@ GossipApp::HandleRead (Ptr<Socket> socket)
           if(map_node_COMMIT[x]==0)
           {
             map_node_COMMIT[x] = 1;
-            std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" "<<packet->GetSize()
-              <<" bytes from node "<<from_node<<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
+            // std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" "<<packet->GetSize()
+            //   <<" bytes from node "<<from_node<<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
             RelayVotingMessage(packet);
           }
         }
