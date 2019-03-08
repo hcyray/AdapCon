@@ -35,7 +35,7 @@ namespace ns3 {
 class Socket;
 class Packet;
 
-const int TOTAL_EPOCH_FOR_SIMULATION = 1;
+const int TOTAL_EPOCH_FOR_SIMULATION = 2;
 
 const int AP_NUMBER = 10;
 const int NODE_NUMBER = 33;
@@ -43,7 +43,7 @@ const int FAN_OUT = 4;
 const int OUT_GOSSIP_ROUND = 5;
 const int IN_GOSSIP_ROUND = 3;
 const int SOLICIT_ROUND = 1;
-const int SOLICIT_INTERVAL = 5;
+const int SOLICIT_INTERVAL = 10;
 const double DETERMINECOMMIT_INTERVAL = 0.2;
 const double DETERMINECONSENS_INTERVAL = 0.2;
 
@@ -52,10 +52,12 @@ const uint8_t TYPE_SOLICIT[80] = "SOLICIT";
 const uint8_t TYPE_ACK[80] = "ACK";
 const uint8_t TYPE_PREPARE[80] = "PREPARE";
 const uint8_t TYPE_COMMIT[80] = "COMMIT";
+const uint8_t TYPE_REPUTATION[100] = "REPUTATION";
 
+const int WINDOW_SIZE = 3;
+const double EPSILON = 5.0;
 
-
-enum MESSAGE_TYPE {BLOCK, SOLICIT, ACK, PREPARE, COMMIT};
+enum MESSAGE_TYPE {BLOCK, SOLICIT, ACK, PREPARE, COMMIT, REPUTATION};
 
 
 
@@ -69,7 +71,7 @@ public:
   virtual ~GossipApp ();
   void ConsensProcess();
 
-  Ptr<Packet> ComputeWhatToSend();
+  // Ptr<Packet> ComputeWhatToSend();
   // void ChooseNeighbor(int number, int x[]);
   // void ChooseNeighbor(int number, int x[], int node_excluded);
   void GetNeighbor(int n, int x[]);
@@ -78,10 +80,14 @@ public:
   void if_get_block(void);
 
   void ScheduleTransmit (Time dt, int dest, int type);
+  void InitializeReputationMessage();
+  std::pair<int, int> ReputationComputation();
   void GossipBlockOut();
   void GossipBlockAfterReceive(int from_node);
   void GossipVotingMessageOut(int type);
+  void GossipReputationMessage();
   void RelayVotingMessage(Ptr<Packet> p);
+  void RelayReputationMessage(Ptr<Packet> p);
   void DetermineCommit();
   void DetermineConsens();
   void SolicitMessageFromOthers();
@@ -99,6 +105,7 @@ private:
   virtual void StopApplication (void);
   void Send (int dest, MESSAGE_TYPE);
   void SendBlock(int dest);
+  void SendBlockAck(int dest);
   void HandleRead (Ptr<Socket> socket);
 
 
@@ -121,7 +128,7 @@ private:
   // bool current_consensus_success;
   bool m_leader;
   bool block_got;
-  std::map<int, int> map_piece_received;
+  std::map<int, int> map_blockpiece_received;
   std::map<int, int> map_node_PREPARE;
   std::map<int, int> map_node_COMMIT;
   std::map<double, double> map_node_BLOCK_time;
@@ -130,7 +137,7 @@ private:
 
   // int neighborsforpush[OUT_GOSSIP_ROUND];
   // int neighborsforpull[SOLICIT_ROUND]; 
-  Ptr<Socket> m_socket_receive; 
+  Ptr<Socket> m_socket_receive;
   std::vector<Ptr<Socket>> m_socket_send;
   int out_neighbor_choosed[OUT_GOSSIP_ROUND];
   int in_neighbor_choosed[IN_GOSSIP_ROUND];
@@ -138,6 +145,25 @@ private:
   Time m_interval = Seconds(2.0); 
   double m_epoch_beginning;
   // EventId m_sendEvent;
+  
+  int get_block_or_not;
+  int get_committed_or_not;
+  double get_block_time;
+  double get_prepared_time;
+  double get_committed_time;
+  
+  std::map<int, int> map_node_getblockornot;
+  std::map<int, int> map_node_getcommitedornot;
+  std::map<int, double> map_node_getblocktime;
+  std::map<int, double> map_node_getpreparedtime;
+  std::map<int, double> map_node_getcommittedtime;
+
+  std::vector<std::map<int, int> > vector_map_node_getblockornot;
+  std::vector<std::map<int, int> > vector_map_node_getcommitedornot;
+  std::vector<std::map<int, double> > vector_map_node_getblocktime;
+  std::vector<std::map<int, double> > vector_map_node_getpreparedtime;
+  std::vector<std::map<int, double> > vector_map_node_getcommittedtime;
+  
   
   
 

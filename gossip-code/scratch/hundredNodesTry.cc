@@ -163,6 +163,7 @@ int main()
 		subnetap2rlist[i].Add(Router.Get(i));
 		subnetap2rlist[i].Add(AP.Get(i));
 		int x = rand() % 4;
+		std::cout<<"Ap "<<i<<" class: "<<x<<std::endl;
 		if(x==0)
 			p2phelper.SetDeviceAttribute("DataRate", StringValue("100Mbps"));
 		else if(x==1)
@@ -320,21 +321,21 @@ int main()
 		gossipApplist[i].Stop(Seconds(999.));
 	}
 	
-	ApplicationContainer serverTrafficlist[ApNumber];
-	ApplicationContainer userTrafficlist[ApNumber];
-	for(int i=0; i<ApNumber; i++)
-	{
-		ServerTrafficHelper ServerTraffic(109);
-		serverTrafficlist[i] = ServerTraffic.Install(Router.Get(i));
-		serverTrafficlist[i].Start(Seconds(20.0));
-		serverTrafficlist[i].Stop(Seconds(1000.0));
+	// ApplicationContainer serverTrafficlist[ApNumber];
+	// ApplicationContainer userTrafficlist[ApNumber];
+	// for(int i=0; i<ApNumber; i++)
+	// {
+	// 	ServerTrafficHelper ServerTraffic(109);
+	// 	serverTrafficlist[i] = ServerTraffic.Install(Router.Get(i));
+	// 	serverTrafficlist[i].Start(Seconds(0.0));
+	// 	serverTrafficlist[i].Stop(Seconds(1000.0));
 
-		UserTrafficHelper UserTraffic(ap2rInterface[i].GetAddress(0), 109);
-		userTrafficlist[i] = UserTraffic.Install(UserNode.Get(i));
-		userTrafficlist[i].Start(Seconds(20.0));
-		userTrafficlist[i].Stop(Seconds(1000.0));
+	// 	UserTrafficHelper UserTraffic(ap2rInterface[i].GetAddress(0), 109);
+	// 	userTrafficlist[i] = UserTraffic.Install(UserNode.Get(i));
+	// 	userTrafficlist[i].Start(Seconds(0.0));
+	// 	userTrafficlist[i].Stop(Seconds(1000.0));
 
-	}
+	// }
 
 	// int client_ = 1;
 	// // int server_ = 9;
