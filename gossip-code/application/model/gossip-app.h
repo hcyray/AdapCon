@@ -28,7 +28,7 @@
 #include <map>
 #include <string>
 #include <vector>
-
+#include <queue>
 
 namespace ns3 {
 
@@ -82,7 +82,7 @@ public:
   void ScheduleTransmit (Time dt, int dest, int type);
   void InitializeReputationMessage();
   void InitializeStateMessage();
-  std::pair<int, int> ReputationComputation();
+  std::pair<int, int> NewLenComputation();
   void GossipBlockOut();
   void GossipBlockAfterReceive(int from_node);
   void GossipVotingMessageOut(int type);
@@ -93,6 +93,9 @@ public:
   void DetermineConsens();
   void SolicitBlockFromOthers();
   void SolicitConsensusMessageFromOthers();
+
+  void SilenceAttack();
+  void InductionAttack();
 
   std::string MessagetypeToString(int x);
   std::vector<std::string> SplitMessage(const std::string& str, const char pattern);
@@ -166,6 +169,11 @@ private:
   std::map<int, std::map<int, float> > map_epoch_node_getblocktime;
   std::map<int, std::map<int, float> > map_epoch_node_getpreparedtime;
   std::map<int, std::map<int, float> > map_epoch_node_getcommittedtime;
+
+  std::map<int, std::queue<float> > map_node_CR_gain_queue;
+  std::map<int, float> map_node_CR_previous;
+  std::map<int, float> map_node_CR;
+  std::map<int, float> map_node_BR;
   
   
 

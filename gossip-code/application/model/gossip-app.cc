@@ -643,10 +643,63 @@ void GossipApp::InitializeStateMessage()
   block_got = false;
 }
 
-// std::pair<int, int> GossipApp::ReputationComputation()
-// {
+std::pair<int, int> GossipApp::ReputationComputation()
+{
+  for(int i=0; i<NODE_NUMBER; i++)
+  {
+    if(map_node_getblocktime[i] == -1)
+      map_node_getblocktime[i] = len_phase1;
+    if(map_node_getcommittedtime[i] == -1)
+      map_node_getcommittedtime[i] = len_phase2;
+  }
+
+  for(int i=0; i<NODE_NUMBER; i++)
+  {
+    float CR_gain = map_node_getblockornot[i]*(len_phase1 - map_node_getblocktime[i])/len_phase1 +
+      map_node_getcommitedornot[i]*(len_phase2 - map_node_getcommittedtime[i]);
+    if(map_node_CR_gain_queue[i].size()>=WINDOW_SIZE)
+    {
+      map_node_CR_gain_queue[i].pop();
+    }
+    map_node_CR_gain_queue[i].push(CR_gain);
+    std::queue<int> tmp(map_node_CR_gain_queue[i]);
+    float sum = 0;
+    while(!tmp.empty())
+    {
+      sum += tmp.front();
+      tmp.pop();
+    }
+    map_node_CR[i] = sum/WINDOW_SIZE;
+  }
+
+  for(int i=0; i<NODE_NUMBER; i++)
+  {
+    map_node_BR[i] *= exp(-1*DistanceOfPermu(map_node_CR_previous[i], map_node_CR[i])); // TODO the function
+  }
   
-// }
+  map_node_CR_previous[i] = map_node_CR[i]; // TODO don't know the assignment work or not
+
+  std::vector<float> time_block_predicted;
+  std::vector<float> time_vote_predicted;
+  for(int i=0; i<NODE_NUMBER; i++)
+  {
+    if(map_node_CR[i]<1)
+    {
+      time_block_predicted.push_back((EPSILON + map_node_getblocktime[i]));
+      time_vote_predicted.push_back((EPSILON + map_node_getcommittedtime[i]));
+    }
+  } // TODO may need refinement
+  
+  auto maxPosition = max_element(time_block_predicted.begin(), time_block_predicted.end());
+  len1 = time_block_predicted[maxPosition - time_block_predicted.begin()];
+  auto maxPosition = max_element(time_vote_predicted.begin(), time_vote_predicted.end());
+  len2 = time_vote_predicted[maxPosition - time_vote_predicted.begin()];
+
+  std::pair<float, float> p;
+  p.first = len1;
+  p.second = len2;
+  return p;
+}
 // TODO, compute reputation value and phase lenth accordingly
 
 void GossipApp::GossipBlockOut()
@@ -771,6 +824,19 @@ void GossipApp::SolicitBlockFromOthers()
 
 // }
 // TODO to ask other about last epoch consensus or not
+
+void Gossip::SilenceAttack()
+{
+  m_leader = false;
+
+  // TODO 
+}
+
+// void Gossip::InductionAttack()
+// {
+
+// }
+// TODO launch an inductionattack
 
 void 
 GossipApp::HandleRead (Ptr<Socket> socket)
