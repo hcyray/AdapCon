@@ -44,8 +44,8 @@ const int OUT_GOSSIP_ROUND = 5;
 const int IN_GOSSIP_ROUND = 3;
 const int SOLICIT_ROUND = 1;
 const int SOLICIT_INTERVAL = 10;
-const double DETERMINECOMMIT_INTERVAL = 0.2;
-const double DETERMINECONSENS_INTERVAL = 0.2;
+const float DETERMINECOMMIT_INTERVAL = 0.2;
+const float DETERMINECONSENS_INTERVAL = 0.2;
 
 const uint8_t TYPE_BLOCK[1000] = "BLOCK";
 const uint8_t TYPE_SOLICIT[80] = "SOLICIT";
@@ -55,7 +55,7 @@ const uint8_t TYPE_COMMIT[80] = "COMMIT";
 const uint8_t TYPE_REPUTATION[100] = "REPUTATION";
 
 const int WINDOW_SIZE = 3;
-const double EPSILON = 5.0;
+const float EPSILON = 5.0;
 
 enum MESSAGE_TYPE {BLOCK, SOLICIT, ACK, PREPARE, COMMIT, REPUTATION};
 
@@ -81,6 +81,7 @@ public:
 
   void ScheduleTransmit (Time dt, int dest, int type);
   void InitializeReputationMessage();
+  void InitializeStateMessage();
   std::pair<int, int> ReputationComputation();
   void GossipBlockOut();
   void GossipBlockAfterReceive(int from_node);
@@ -90,7 +91,9 @@ public:
   void RelayReputationMessage(Ptr<Packet> p);
   void DetermineCommit();
   void DetermineConsens();
-  void SolicitMessageFromOthers();
+  void SolicitBlockFromOthers();
+  void SolicitConsensusMessageFromOthers();
+
   std::string MessagetypeToString(int x);
   std::vector<std::string> SplitMessage(const std::string& str, const char pattern);
 
@@ -121,9 +124,9 @@ private:
 
   uint8_t m_height;
   uint8_t m_epoch;
-  double len_phase1;
-  double len_phase2;
-  double waitting_time;
+  float len_phase1;
+  float len_phase2;
+  float waitting_time;
 
   // bool current_consensus_success;
   bool m_leader;
@@ -131,9 +134,9 @@ private:
   std::map<int, int> map_blockpiece_received;
   std::map<int, int> map_node_PREPARE;
   std::map<int, int> map_node_COMMIT;
-  std::map<double, double> map_node_BLOCK_time;
-  std::map<double, double> map_node_PREPARE_time;
-  std::map<double, double> map_node_COMMIT_time;
+  std::map<float, float> map_node_BLOCK_time;
+  std::map<float, float> map_node_PREPARE_time;
+  std::map<float, float> map_node_COMMIT_time;
 
   // int neighborsforpush[OUT_GOSSIP_ROUND];
   // int neighborsforpull[SOLICIT_ROUND]; 
@@ -143,27 +146,26 @@ private:
   int in_neighbor_choosed[IN_GOSSIP_ROUND];
 
   Time m_interval = Seconds(2.0); 
-  double m_epoch_beginning;
+  float m_epoch_beginning;
   // EventId m_sendEvent;
   
   int get_block_or_not;
   int get_committed_or_not;
-  double get_block_time;
-  double get_prepared_time;
-  double get_committed_time;
+  float get_block_time;
+  float get_prepared_time;
+  float get_committed_time;
   
   std::map<int, int> map_node_getblockornot;
   std::map<int, int> map_node_getcommitedornot;
-  std::map<int, double> map_node_getblocktime;
-  std::map<int, double> map_node_getpreparedtime;
-  std::map<int, double> map_node_getcommittedtime;
-
-  std::vector<std::map<int, int> > vector_map_node_getblockornot;
-  std::vector<std::map<int, int> > vector_map_node_getcommitedornot;
-  std::vector<std::map<int, double> > vector_map_node_getblocktime;
-  std::vector<std::map<int, double> > vector_map_node_getpreparedtime;
-  std::vector<std::map<int, double> > vector_map_node_getcommittedtime;
+  std::map<int, float> map_node_getblocktime;
+  std::map<int, float> map_node_getpreparedtime;
+  std::map<int, float> map_node_getcommittedtime;
   
+  std::map<int, std::map<int, float> > map_epoch_node_getblockornot;
+  std::map<int, std::map<int, int> > map_epoch_node_getcommitedornot;
+  std::map<int, std::map<int, float> > map_epoch_node_getblocktime;
+  std::map<int, std::map<int, float> > map_epoch_node_getpreparedtime;
+  std::map<int, std::map<int, float> > map_epoch_node_getcommittedtime;
   
   
 

@@ -145,16 +145,7 @@ void GossipApp::ConsensProcess()
   m_epoch++;
   m_epoch_beginning = Simulator::Now().GetSeconds();
   InitializeReputationMessage();
-  for(int i=0; i<NODE_NUMBER; i++)
-  {
-    map_blockpiece_received[i] = 0;
-    map_node_PREPARE[i] = 0;
-    map_node_COMMIT[i] = 0;
-  }
-
-  block_got = false;
-  
-
+  InitializeStateMessage();
   if_leader();
   GetNeighbor(OUT_GOSSIP_ROUND, out_neighbor_choosed);
   GetNeighbor(IN_GOSSIP_ROUND, in_neighbor_choosed);
@@ -167,7 +158,7 @@ void GossipApp::ConsensProcess()
   }
   else
   {
-    Simulator::Schedule(Seconds(waitting_time), &GossipApp::SolicitMessageFromOthers, this);
+    Simulator::Schedule(Seconds(waitting_time), &GossipApp::SolicitBlockFromOthers, this);
   }
 
   
@@ -640,6 +631,18 @@ void GossipApp::InitializeReputationMessage()
   get_committed_time = -1;
 }
 
+void GossipApp::InitializeStateMessage()
+{
+  for(int i=0; i<NODE_NUMBER; i++)
+  {
+    map_blockpiece_received[i] = 0;
+    map_node_PREPARE[i] = 0;
+    map_node_COMMIT[i] = 0;
+  }
+
+  block_got = false;
+}
+
 // std::pair<int, int> GossipApp::ReputationComputation()
 // {
   
@@ -741,7 +744,7 @@ void GossipApp::DetermineConsens()
   }
 }
 
-void GossipApp::SolicitMessageFromOthers()
+void GossipApp::SolicitBlockFromOthers()
 {
   if((Simulator::Now().GetSeconds() - m_epoch_beginning) >= waitting_time)
   {
@@ -758,13 +761,16 @@ void GossipApp::SolicitMessageFromOthers()
       int i = rand() % IN_GOSSIP_ROUND;
       ScheduleTransmit(Seconds (0.), in_neighbor_choosed[i], 1);
       if((Simulator::Now().GetSeconds() - m_epoch_beginning + SOLICIT_INTERVAL)<len_phase1 + len_phase2)
-        Simulator::Schedule(Seconds(SOLICIT_INTERVAL), &GossipApp::SolicitMessageFromOthers, this);
+        Simulator::Schedule(Seconds(SOLICIT_INTERVAL), &GossipApp::SolicitBlockFromOthers, this);
     }
   }
-  
-
-
 }
+
+// void GossipApp::SolicitConsensusMessageFromOthers()
+// {
+
+// }
+// TODO to ask other about last epoch consensus or not
 
 void 
 GossipApp::HandleRead (Ptr<Socket> socket)
@@ -887,13 +893,13 @@ GossipApp::HandleRead (Ptr<Socket> socket)
           
         }
       }
-      else if(strcmp(time_of_recived_message, (std::to_string(m_epoch-1)).c_str())==0)
-      {
-        if(strcmp(type_of_received_message, "REPUTATION")==0)
-        {
-          
-        }
-      }
+      // else if(strcmp(time_of_recived_message, (std::to_string(m_epoch-1)).c_str())==0)
+      // {
+      //   if(strcmp(type_of_received_message, "REPUTATION")==0)
+      //   {
+
+      //   }
+      // }
 
 
       
