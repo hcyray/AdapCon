@@ -137,7 +137,7 @@ void GossipApp::ConsensProcess()
 {
   // if(m_epoch>=1)
   //   GossipReputationMessage();
-    // std::pair<int, int> p = ReputationComputation();
+    // std::pair<int, int> p = NewLenComputation();
     // len_phase1 = p.first;
     // len_phase2 = p.second;
     // waitting_time = len_phase1*2/4.;
@@ -643,7 +643,7 @@ void GossipApp::InitializeStateMessage()
   block_got = false;
 }
 
-std::pair<int, int> GossipApp::ReputationComputation()
+std::pair<int, int> GossipApp::NewLenComputation()
 {
   for(int i=0; i<NODE_NUMBER; i++)
   {
@@ -674,10 +674,10 @@ std::pair<int, int> GossipApp::ReputationComputation()
 
   for(int i=0; i<NODE_NUMBER; i++)
   {
-    map_node_BR[i] *= exp(-1*DistanceOfPermu(map_node_CR_previous[i], map_node_CR[i])); // TODO the function
+    map_node_BR[i] *= exp(-1*DistanceOfPermu(map_node_CR_previous[i], map_node_CR[i]));  // TODO distance function
   }
   
-  map_node_CR_previous[i] = map_node_CR[i]; // TODO don't know the assignment work or not
+  map_node_CR_previous[i] = map_node_CR[i];
 
   std::vector<float> time_block_predicted;
   std::vector<float> time_vote_predicted;
@@ -688,7 +688,7 @@ std::pair<int, int> GossipApp::ReputationComputation()
       time_block_predicted.push_back((EPSILON + map_node_getblocktime[i]));
       time_vote_predicted.push_back((EPSILON + map_node_getcommittedtime[i]));
     }
-  } // TODO may need refinement
+  } // TODO prediction time is the avg of 5 time value of nodes who's reputation value is near to node i;
   
   auto maxPosition = max_element(time_block_predicted.begin(), time_block_predicted.end());
   len1 = time_block_predicted[maxPosition - time_block_predicted.begin()];
@@ -700,7 +700,6 @@ std::pair<int, int> GossipApp::ReputationComputation()
   p.second = len2;
   return p;
 }
-// TODO, compute reputation value and phase lenth accordingly
 
 void GossipApp::GossipBlockOut()
 {
