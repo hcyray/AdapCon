@@ -35,10 +35,10 @@ namespace ns3 {
 class Socket;
 class Packet;
 
-const int TOTAL_EPOCH_FOR_SIMULATION = 2;
+const int TOTAL_EPOCH_FOR_SIMULATION = 3;
 
-const int AP_NUMBER = 10;
-const int NODE_NUMBER = 33;
+const int AP_NUMBER = 5;
+const int NODE_NUMBER = 16;
 const int FAN_OUT = 4;
 const int OUT_GOSSIP_ROUND = 5;
 const int IN_GOSSIP_ROUND = 3;
@@ -170,7 +170,7 @@ private:
   std::map<int, std::map<int, float> > map_epoch_node_getpreparedtime;
   std::map<int, std::map<int, float> > map_epoch_node_getcommittedtime;
 
-  std::map<int, std::queue<float> > map_node_CR_gain_queue;
+  // std::map<int, std::queue<float> > map_node_CR_gain_queue;
   std::map<int, float> map_node_CR_previous;
   std::map<int, float> map_node_CR;
   std::map<int, float> map_node_BR;
