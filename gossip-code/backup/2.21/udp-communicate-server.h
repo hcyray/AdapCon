@@ -16,8 +16,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef SERVER_TRAFFIC_H
-#define SERVER_TRAFFIC_H
+#ifndef UDP_Communicate_SERVER_H
+#define UDP_Communicate_SERVER_H
 
 #include "ns3/application.h"
 #include "ns3/event-id.h"
@@ -27,7 +27,7 @@
 #include "ns3/traced-callback.h"
 #include <map>
 #include <string>
-#include <vector>
+
 
 
 namespace ns3 {
@@ -35,33 +35,61 @@ namespace ns3 {
 class Socket;
 class Packet;
 
+const uint8_t TYPE_SOLICIT = 21;
+const uint8_t TYPE_ACK = 23;
+const uint8_t TYPE_BLOCK[10240] = "BLOCK";
+const uint8_t TYPE_PREPARE[80] = "PREPARED";
+const uint8_t TYPE_COMMIT[80] = "COMMIT";
 
+/**
+ * \ingroup applications 
+ * \defgroup udpcommunicate Udpcommunicate
+ */
 
-class ServerTraffic : public Application 
+/**
+ * \ingroup udpcommunicate
+ * \brief A Udp communicate server
+ *
+ * Every packet received is sent back.
+ */
+class UdpCommunicateServer : public Application 
 {
 public:
-
+  /**
+   * \brief Get the type ID.
+   * \return the object TypeId
+   */
   static TypeId GetTypeId (void);
-  ServerTraffic ();
-  virtual ~ServerTraffic ();
-  std::vector<std::string> SplitMessage(const std::string& str, const char pattern);
+  UdpCommunicateServer ();
+  virtual ~UdpCommunicateServer ();
 
+  Ptr<Packet> ComputePacketToSend();
+  uint8_t GetNodeId(void);
 
 protected:
   virtual void DoDispose (void);
-
 
 private:
 
   virtual void StartApplication (void);
   virtual void StopApplication (void);
-  void HandleAccept(Ptr<Socket> s, const Address& from);
-  void HandleTraffic(Ptr<Socket> socket);
+  void Send (void);
+  void ScheduleTransmit (Time dt);
+  void HandleRead (Ptr<Socket> socket);
 
+  uint8_t node_id;
+  uint16_t m_port; //!< Port on which we listen for incoming packets.
+  std::map<uint8_t, Ipv4Address> map_node_addr;
+  uint32_t m_sent;
+  uint32_t m_count= 1;
 
-  Ptr<Socket> m_socket;
-  uint16_t m_port;
-  float total_traffic;
+  Ptr<Socket> m_socket_receive; //!< IPv4 Socket
+  Ptr<Socket> m_socket_send;
+
+  Time m_interval = Seconds(2.0); 
+  EventId m_sendEvent;
+  
+  
 
   /// Callbacks for tracing the packet Rx events
   // TracedCallback<Ptr<const Packet> > m_rxTrace;
@@ -72,5 +100,5 @@ private:
 
 } // namespace ns3
 
-#endif /* SERVER_TRAFFIC_H */
+#endif /* UDP_Communicate_SERVER_H */
 

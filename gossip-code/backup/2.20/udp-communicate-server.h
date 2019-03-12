@@ -16,18 +16,16 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef SERVER_TRAFFIC_H
-#define SERVER_TRAFFIC_H
+#ifndef UDP_Communicate_SERVER_H
+#define UDP_Communicate_SERVER_H
 
 #include "ns3/application.h"
 #include "ns3/event-id.h"
 #include "ns3/ptr.h"
 #include "ns3/address.h"
-#include "ns3/ipv4-address.h"
 #include "ns3/traced-callback.h"
-#include <map>
-#include <string>
-#include <vector>
+
+
 
 
 namespace ns3 {
@@ -36,41 +34,64 @@ class Socket;
 class Packet;
 
 
+/**
+ * \ingroup applications 
+ * \defgroup udpcommunicate Udpcommunicate
+ */
 
-class ServerTraffic : public Application 
+/**
+ * \ingroup udpcommunicate
+ * \brief A Udp communicate server
+ *
+ * Every packet received is sent back.
+ */
+class UdpCommunicateServer : public Application 
 {
 public:
-
+  /**
+   * \brief Get the type ID.
+   * \return the object TypeId
+   */
   static TypeId GetTypeId (void);
-  ServerTraffic ();
-  virtual ~ServerTraffic ();
-  std::vector<std::string> SplitMessage(const std::string& str, const char pattern);
-
+  UdpCommunicateServer ();
+  Ptr<Packet> ComputePacketToSend();
+  // UdpCommunicateServer (std::queue<Ptr<Packet>>* queue1);
+  virtual ~UdpCommunicateServer ();
 
 protected:
   virtual void DoDispose (void);
-
 
 private:
 
   virtual void StartApplication (void);
   virtual void StopApplication (void);
-  void HandleAccept(Ptr<Socket> s, const Address& from);
-  void HandleTraffic(Ptr<Socket> socket);
 
+  /**
+   * \brief Handle a packet reception.
+   *
+   * This function is called by lower layers.
+   *
+   * \param socket the socket the packet was received to.
+   */
+  void HandleRead (Ptr<Socket> socket);
 
-  Ptr<Socket> m_socket;
-  uint16_t m_port;
-  float total_traffic;
+  uint16_t m_port; //!< Port on which we listen for incoming packets.
+  Ptr<Socket> m_socket; //!< IPv4 Socket
+  Ptr<Socket> m_socket6; //!< IPv6 Socket
+  Address m_local; //!< local multicast address
+  
+  std::string m_contentDir;
+
+  
 
   /// Callbacks for tracing the packet Rx events
-  // TracedCallback<Ptr<const Packet> > m_rxTrace;
+  TracedCallback<Ptr<const Packet> > m_rxTrace;
 
   /// Callbacks for tracing the packet Rx events, includes source and destination addresses
-  // TracedCallback<Ptr<const Packet>, const Address &, const Address &> m_rxTraceWithAddresses;
+  TracedCallback<Ptr<const Packet>, const Address &, const Address &> m_rxTraceWithAddresses;
 };
 
 } // namespace ns3
 
-#endif /* SERVER_TRAFFIC_H */
+#endif /* UDP_Communicate_SERVER_H */
 

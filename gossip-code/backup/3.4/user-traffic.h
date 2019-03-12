@@ -16,8 +16,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef SERVER_TRAFFIC_H
-#define SERVER_TRAFFIC_H
+#ifndef USER_TRAFFIC_H
+#define USER_TRAFFIC_H
 
 #include "ns3/application.h"
 #include "ns3/event-id.h"
@@ -37,15 +37,14 @@ class Packet;
 
 
 
-class ServerTraffic : public Application 
+class UserTraffic : public Application 
 {
 public:
 
   static TypeId GetTypeId (void);
-  ServerTraffic ();
-  virtual ~ServerTraffic ();
+  UserTraffic ();
+  virtual ~UserTraffic ();
   std::vector<std::string> SplitMessage(const std::string& str, const char pattern);
-
 
 protected:
   virtual void DoDispose (void);
@@ -55,13 +54,25 @@ private:
 
   virtual void StartApplication (void);
   virtual void StopApplication (void);
-  void HandleAccept(Ptr<Socket> s, const Address& from);
-  void HandleTraffic(Ptr<Socket> socket);
+
+  void SendTraffic();
+  void QueryTraffic();
 
 
   Ptr<Socket> m_socket;
-  uint16_t m_port;
-  float total_traffic;
+  uint16_t m_peerPort;
+  Address m_peerAddress;
+
+
+
+  
+
+  
+
+  
+  
+  
+  
 
   /// Callbacks for tracing the packet Rx events
   // TracedCallback<Ptr<const Packet> > m_rxTrace;
@@ -72,5 +83,5 @@ private:
 
 } // namespace ns3
 
-#endif /* SERVER_TRAFFIC_H */
+#endif /* USER_TRAFFIC_H */
 

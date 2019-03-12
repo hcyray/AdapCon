@@ -1,7 +1,8 @@
-/* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
+
+/* -*- Mode:C; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright 2007 University of Washington
- * 
+ * Copyright 2012
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation;
@@ -16,61 +17,82 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef SERVER_TRAFFIC_H
-#define SERVER_TRAFFIC_H
+#ifndef TCP_ECHO_SERVER
+#define TCP_ECHO_SERVER
 
 #include "ns3/application.h"
 #include "ns3/event-id.h"
 #include "ns3/ptr.h"
 #include "ns3/address.h"
-#include "ns3/ipv4-address.h"
-#include "ns3/traced-callback.h"
-#include <map>
-#include <string>
-#include <vector>
-
 
 namespace ns3 {
 
 class Socket;
 class Packet;
 
+/**
+ * \ingroup applications
+ * \defgroup TcpEcho 
+ */
 
-
-class ServerTraffic : public Application 
+/**
+ * \ingroup tcpecho
+ * \brief A Tcp Echo server
+ *
+ * Every packet received is sent back to the client.
+ */
+class TcpEchoServer : public Application
 {
 public:
-
   static TypeId GetTypeId (void);
-  ServerTraffic ();
-  virtual ~ServerTraffic ();
-  std::vector<std::string> SplitMessage(const std::string& str, const char pattern);
+  TcpEchoServer ();
+  virtual ~TcpEchoServer ();
 
+  /**
+   *
+   * Receive the packet from client echo on socket level (layer 4), 
+   * handle the packet and return to the client.
+   *
+   * \param socket TCP socket.
+   *
+   */
+  void ReceivePacket(Ptr<Socket> socket);
+  
+  /**
+  *
+  * Handle packet from accept connections.
+  *
+  * \parm s TCP socket.
+  * \parm from Address from client echo.
+  */
+  void HandleAccept (Ptr<Socket> s, const Address& from);
+  
+  /**
+  *
+  * Handle successful closing connections.
+  *
+  * \parm s TCP socket.
+  *
+  */
+  void HandleSuccessClose(Ptr<Socket> s);
 
 protected:
   virtual void DoDispose (void);
-
 
 private:
 
   virtual void StartApplication (void);
   virtual void StopApplication (void);
-  void HandleAccept(Ptr<Socket> s, const Address& from);
-  void HandleTraffic(Ptr<Socket> socket);
 
+  void HandleRead (Ptr<Socket> socket);
 
   Ptr<Socket> m_socket;
+  Ptr<Socket> m_socket6;
   uint16_t m_port;
-  float total_traffic;
-
-  /// Callbacks for tracing the packet Rx events
-  // TracedCallback<Ptr<const Packet> > m_rxTrace;
-
-  /// Callbacks for tracing the packet Rx events, includes source and destination addresses
-  // TracedCallback<Ptr<const Packet>, const Address &, const Address &> m_rxTraceWithAddresses;
+  bool m_running;
 };
 
 } // namespace ns3
 
-#endif /* SERVER_TRAFFIC_H */
+#endif /* TCP_ECHO_SERVER */
 

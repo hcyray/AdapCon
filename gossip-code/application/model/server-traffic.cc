@@ -74,7 +74,7 @@ ServerTraffic::ServerTraffic ()
 {
   NS_LOG_FUNCTION (this);
   m_socket = 0;
-
+  total_traffic = 0;
 }
 
 
@@ -110,8 +110,7 @@ void
 ServerTraffic::StartApplication (void)
 {
   NS_LOG_FUNCTION (this);
-  std::cout<<"Server starts"<<std::endl;
-
+  // std::cout<<"Server starts"<<std::endl;
   if (m_socket == 0)
     {
       TypeId tid = TypeId::LookupByName ("ns3::UdpSocketFactory");
@@ -139,6 +138,7 @@ ServerTraffic::StopApplication ()
       m_socket->Close ();
       m_socket->SetRecvCallback (MakeNullCallback<void, Ptr<Socket> > ());
     }
+  std::cout<<"total traffic received: "<<total_traffic<<std::endl;
 }
 
 
@@ -165,12 +165,12 @@ ServerTraffic::HandleTraffic (Ptr<Socket> socket)
       // int from_node = (int)map_addr_node[from_addr];
       // std::cout<<"Server received a "<<content_<<" "<<packet->GetSize()
       //   <<" bytes at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
-      std::cout<<"Server received "<<packet->GetSize()<<" bytes from "<<InetSocketAddress::ConvertFrom (from).GetIpv4 ()<<
-        " at "<<Simulator::Now().GetSeconds() <<"s"<<std::endl;
+      // std::cout<<"Server received "<<packet->GetSize()<<" bytes from "<<InetSocketAddress::ConvertFrom (from).GetIpv4 ()<<
+      //   " at "<<Simulator::Now().GetSeconds() <<"s"<<std::endl;
       // packet->RemoveAllPacketTags ();
       // packet->RemoveAllByteTags ();
-
-      std::cout<<"Echoing packet"<<std::endl;
+      total_traffic += packet->GetSize();
+      // std::cout<<"Echoing packet"<<std::endl;
       socket->SendTo (packet, 0, from);
       // std::string str_of_content(content_, content_+20);
       // std::vector<std::string> res = SplitMessage(str_of_content, '+');

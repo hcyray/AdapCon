@@ -39,7 +39,7 @@ const int TOTAL_EPOCH_FOR_SIMULATION = 1;
 
 const int AP_NUMBER = 5;
 const int NODE_NUMBER = 16;
-const int FAN_OUT = 5;
+const int FAN_OUT = 4;
 const int OUT_GOSSIP_ROUND = 5;
 const int IN_GOSSIP_ROUND = 3;
 const int SOLICIT_ROUND = 1;
@@ -87,8 +87,8 @@ public:
   void GossipBlockAfterReceive(int from_node);
   void GossipVotingMessageOut(int type);
   void GossipReputationMessage();
-  void RelayVotingMessage(int dest, Ptr<Packet> p);
-  void RelayReputationMessage(int dest, Ptr<Packet> p);
+  void RelayVotingMessage(Ptr<Packet> p);
+  void RelayReputationMessage(Ptr<Packet> p);
   void DetermineCommit();
   void DetermineConsens();
   void SolicitBlockFromOthers();
@@ -111,9 +111,7 @@ private:
   virtual void StopApplication (void);
   void Send (int dest, MESSAGE_TYPE);
   void SendBlock(int dest);
-  void SendBlockPiece(int dest, int piece);
   void SendBlockAck(int dest);
-  void SendBlockAckPiece(int dest, int piece);
   void HandleRead (Ptr<Socket> socket);
 
 

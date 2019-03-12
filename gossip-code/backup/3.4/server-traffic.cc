@@ -22,7 +22,7 @@
 #include "ns3/nstime.h"
 #include "ns3/inet-socket-address.h"
 #include "ns3/socket.h"
-#include "ns3/udp-socket.h"
+#include "ns3/tcp-socket.h"
 #include "ns3/simulator.h"
 #include "ns3/socket-factory.h"
 #include "ns3/packet.h"
@@ -30,7 +30,7 @@
 #include "ns3/string.h"
 #include "ns3/pointer.h"
 
-#include "user-traffic.h"
+#include "server-traffic.h"
 
 #include <stdlib.h>
 #include <time.h>
@@ -39,43 +39,38 @@
 
 namespace ns3 {
 
-NS_LOG_COMPONENT_DEFINE ("UserTrafficApplication");
+NS_LOG_COMPONENT_DEFINE ("ServerTrafficApplication");
 
-NS_OBJECT_ENSURE_REGISTERED (UserTraffic);
+NS_OBJECT_ENSURE_REGISTERED (ServerTraffic);
 
 
 
 TypeId
-UserTraffic::GetTypeId (void)
+ServerTraffic::GetTypeId (void)
 {
-  static TypeId tid = TypeId ("ns3::UserTraffic")
+  static TypeId tid = TypeId ("ns3::ServerTraffic")
     .SetParent<Application> ()
     .SetGroupName("Applications")
-    .AddConstructor<UserTraffic> ()
+    .AddConstructor<ServerTraffic> ()
     // .AddAttribute ("NodeId", "Node on which the application runs.",
     //                UintegerValue (0),
-    //                MakeUintegerAccessor (&UserTraffic::m_node_id),
+    //                MakeUintegerAccessor (&ServerTraffic::m_node_id),
     //                MakeUintegerChecker<uint8_t> ())
     .AddAttribute ("Port", "Port on which we listen for incoming packets.",
-                   UintegerValue (27),
-                   MakeUintegerAccessor (&UserTraffic::m_peerPort),
+                   UintegerValue (9),
+                   MakeUintegerAccessor (&ServerTraffic::m_port),
                    MakeUintegerChecker<uint16_t> ())
-    .AddAttribute ("RemoteAddress",
-                   "The destination address of the outbound packets",
-                   AddressValue (),
-                   MakeAddressAccessor (&UserTraffic::m_peerAddress),
-                   MakeAddressChecker ())
     // .AddTraceSource ("Rx", "A packet has been received",
-    //                  MakeTraceSourceAccessor (&UserTraffic::m_rxTrace),
+    //                  MakeTraceSourceAccessor (&ServerTraffic::m_rxTrace),
     //                  "ns3::Packet::TracedCallback")
     // .AddTraceSource ("RxWithAddresses", "A packet has been received",
-    //                  MakeTraceSourceAccessor (&UserTraffic::m_rxTraceWithAddresses),
+    //                  MakeTraceSourceAccessor (&ServerTraffic::m_rxTraceWithAddresses),
     //                  "ns3::Packet::TwoAddressTracedCallback")
   ;
   return tid;
 }
 
-UserTraffic::UserTraffic ()
+ServerTraffic::ServerTraffic ()
 {
   NS_LOG_FUNCTION (this);
   m_socket = 0;
@@ -84,16 +79,15 @@ UserTraffic::UserTraffic ()
 
 
 
-UserTraffic::~UserTraffic()
+ServerTraffic::~ServerTraffic()
 {
   NS_LOG_FUNCTION (this);
   m_socket = 0;
-  
 }
 
 
 
-std::vector<std::string> UserTraffic::SplitMessage(const std::string& str, const char pattern)
+std::vector<std::string> ServerTraffic::SplitMessage(const std::string& str, const char pattern)
 {
     std::vector<std::string> res;
     std::stringstream input(str);   
@@ -106,34 +100,35 @@ std::vector<std::string> UserTraffic::SplitMessage(const std::string& str, const
 }
 
 void
-UserTraffic::DoDispose (void)
+ServerTraffic::DoDispose (void)
 {
   NS_LOG_FUNCTION (this);
   Application::DoDispose ();
 }
 
 void 
-UserTraffic::StartApplication (void)
+ServerTraffic::StartApplication (void)
 {
   NS_LOG_FUNCTION (this);
   
 
   if (m_socket == 0)
     {
-      TypeId tid = TypeId::LookupByName ("ns3::UdpSocketFactory");
+      TypeId tid = TypeId::LookupByName ("ns3::TcpSocketFactory");
       m_socket = Socket::CreateSocket (GetNode (), tid);
-      InetSocketAddress remote = InetSocketAddress (Ipv4Address::ConvertFrom (m_peerAddress), m_peerPort);
-      m_socket->Bind();
-      if(m_socket->Connect(remote)!=0)
-        std::cout<<"user socket connection failed!"<<std::endl;
+      InetSocketAddress local = InetSocketAddress (Ipv4Address::GetAny (), m_port);
+      if (m_socket->Bind (local) == -1)
+        {
+          NS_FATAL_ERROR ("Failed to bind socket");
+        }
+      m_socket->Listen();
     }
-  m_socket->SetRecvCallback (MakeCallback (&UserTraffic::HandleTraffic, this));
+  m_socket->SetRecvCallback (MakeCallback (&ServerTraffic::HandleRead, this));
 
-  Simulator::Schedule(Seconds(0.), &UserTraffic::ScheduleTransmit, this);
 }
 
 void 
-UserTraffic::StopApplication ()
+ServerTraffic::StopApplication ()
 {
   NS_LOG_FUNCTION (this);
   // printf("%s\n", "Server stops!");
@@ -144,44 +139,14 @@ UserTraffic::StopApplication ()
     }
 }
 
-void UserTraffic::ScheduleTransmit()
-{
-  double time = Simulator::Now().GetSeconds();
-  if(time<32)
-  {
-    double traffic = TrafficData(time);
-    SendTraffic(traffic);
-  }
-  Simulator::Schedule(Seconds(4.), &UserTraffic::ScheduleTransmit, this);
-}
 
-double UserTraffic::TrafficData(double time)
-{
-  if(time>0)
-    return 1024*32*64;
-  return 1024*32;
-}
 
-void UserTraffic::SendTraffic(double traffic)
-{
-  Ptr<Packet> p;
-  double x = 1024*32;
-  double loop_number = traffic/x;
-  // uint8_t const buffer[x] = "Hello world";
-  p = Create<Packet> (x);
-  for(int i=0; i<loop_number; i++)
-  {
-    if(m_socket->Send(p)==-1)
-      std::cout<<"User fail to send a packet to server!"<<std::endl;
-    // std::cout<<"user send a packet to server at "<<Simulator::Now().GetSeconds()<<"s"<<std::endl;
-  }
-  
-}
+
 
 
 
 void 
-UserTraffic::HandleTraffic (Ptr<Socket> socket)
+ServerTraffic::HandleTraffic (Ptr<Socket> socket)
 {
   NS_LOG_FUNCTION (this << socket);
   Ptr<Packet> packet;
@@ -194,8 +159,7 @@ UserTraffic::HandleTraffic (Ptr<Socket> socket)
       // int from_node = (int)map_addr_node[from_addr];
       // std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" "<<packet->GetSize()
       //   <<" bytes from node "<<from_node<<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
-      // std::cout<<"user received "<<packet->GetSize()<<" bytes from "<<InetSocketAddress::ConvertFrom (from).GetIpv4 ()
-      //   <<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
+         std::cout<<"Server received "<<packet->GetSize()<<" bytes from "<<InetSocketAddress::ConvertFrom (from).GetIpv4 ()<<std::endl;
 
       // std::string str_of_content(content_, content_+20);
       // std::vector<std::string> res = SplitMessage(str_of_content, '+');

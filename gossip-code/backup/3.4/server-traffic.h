@@ -55,13 +55,11 @@ private:
 
   virtual void StartApplication (void);
   virtual void StopApplication (void);
-  void HandleAccept(Ptr<Socket> s, const Address& from);
-  void HandleTraffic(Ptr<Socket> socket);
+  void HandleTraffic(void);
 
 
   Ptr<Socket> m_socket;
   uint16_t m_port;
-  float total_traffic;
 
   /// Callbacks for tracing the packet Rx events
   // TracedCallback<Ptr<const Packet> > m_rxTrace;

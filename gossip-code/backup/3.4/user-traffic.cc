@@ -120,16 +120,15 @@ UserTraffic::StartApplication (void)
 
   if (m_socket == 0)
     {
-      TypeId tid = TypeId::LookupByName ("ns3::UdpSocketFactory");
+      TypeId tid = TypeId::LookupByName ("ns3::TcpSocketFactory");
       m_socket = Socket::CreateSocket (GetNode (), tid);
-      InetSocketAddress remote = InetSocketAddress (Ipv4Address::ConvertFrom (m_peerAddress), m_peerPort);
+      InetSocketAddress remote = InetSocketAddress (Ipv4Address::ConverFrom (m_peerAddress), m_peerPort);
       m_socket->Bind();
-      if(m_socket->Connect(remote)!=0)
-        std::cout<<"user socket connection failed!"<<std::endl;
+      m_socket->Connect(remote);
     }
   m_socket->SetRecvCallback (MakeCallback (&UserTraffic::HandleTraffic, this));
 
-  Simulator::Schedule(Seconds(0.), &UserTraffic::ScheduleTransmit, this);
+  SendTraffic();
 }
 
 void 
@@ -144,38 +143,13 @@ UserTraffic::StopApplication ()
     }
 }
 
-void UserTraffic::ScheduleTransmit()
-{
-  double time = Simulator::Now().GetSeconds();
-  if(time<32)
-  {
-    double traffic = TrafficData(time);
-    SendTraffic(traffic);
-  }
-  Simulator::Schedule(Seconds(4.), &UserTraffic::ScheduleTransmit, this);
-}
 
-double UserTraffic::TrafficData(double time)
-{
-  if(time>0)
-    return 1024*32*64;
-  return 1024*32;
-}
 
-void UserTraffic::SendTraffic(double traffic)
+void UserTraffic::SendTraffic()
 {
   Ptr<Packet> p;
-  double x = 1024*32;
-  double loop_number = traffic/x;
-  // uint8_t const buffer[x] = "Hello world";
-  p = Create<Packet> (x);
-  for(int i=0; i<loop_number; i++)
-  {
-    if(m_socket->Send(p)==-1)
-      std::cout<<"User fail to send a packet to server!"<<std::endl;
-    // std::cout<<"user send a packet to server at "<<Simulator::Now().GetSeconds()<<"s"<<std::endl;
-  }
-  
+  p = Create<Packet> (100);
+  m_socket->Send(p);
 }
 
 
@@ -194,8 +168,7 @@ UserTraffic::HandleTraffic (Ptr<Socket> socket)
       // int from_node = (int)map_addr_node[from_addr];
       // std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" "<<packet->GetSize()
       //   <<" bytes from node "<<from_node<<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
-      // std::cout<<"user received "<<packet->GetSize()<<" bytes from "<<InetSocketAddress::ConvertFrom (from).GetIpv4 ()
-      //   <<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
+      std::cout<<"user received "<<packet->GetSize()<<" bytes from "<<InetSocketAddress::ConvertFrom (from).GetIpv4 ()<<std::endl;
 
       // std::string str_of_content(content_, content_+20);
       // std::vector<std::string> res = SplitMessage(str_of_content, '+');
