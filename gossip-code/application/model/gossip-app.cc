@@ -364,7 +364,8 @@ GossipApp::StopApplication ()
     }
     for(int i=0; i<(int)m_local_ledger.size(); i++)
     {
-      std::cout<<"local ledger: "<<m_local_ledger[i]<<std::endl;
+      std::cout<<"local ledger: "<<m_local_ledger[i]<<"    ";
+      std::cout<<"in epoch "<<m_ledger_built_epoch[i]<<std::endl;
     }
     std::cout<<"******************************"<<std::endl;
   }
@@ -1034,8 +1035,8 @@ GossipApp::HandleRead (Ptr<Socket> socket)
                       block_received.block_name = tmp1;
                       block_received.block_height = tmp2;
 
-                      // std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" for the first time "<<packet->GetSize()
-                      // <<" bytes from node "<<from_node<<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
+                      std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" for the first time "<<packet->GetSize()
+                      <<" bytes from node "<<from_node<<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
                       get_block_time = Simulator::Now ().GetSeconds ();
                       get_block_time = ((int) (get_block_time * 100000)) / 100000.;
                       get_block_or_not = 1;
