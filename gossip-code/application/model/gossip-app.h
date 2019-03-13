@@ -96,7 +96,7 @@ public:
   void GossipReputationMessage();
   void RelayVotingMessage(int dest, Ptr<Packet> p);
   void RelayReputationMessage(int dest, Ptr<Packet> p);
-  void DetermineCommit();
+  void GossipCommitOut();
   void DetermineConsens();
   void SolicitBlockFromOthers();
   void SolicitConsensusMessageFromOthers();
@@ -116,7 +116,7 @@ private:
 
   virtual void StartApplication (void);
   virtual void StopApplication (void);
-  void Send (int dest, MESSAGE_TYPE);
+  // void Send (int dest, MESSAGE_TYPE);
   void SendBlock (int dest, Block b);
   void SendBlockPiece (int dest, int piece, Block b);
   void SendBlockAck(int dest, Block b);
@@ -188,7 +188,6 @@ private:
   std::map<int, std::map<int, float> > map_epoch_node_getpreparedtime;
   std::map<int, std::map<int, float> > map_epoch_node_getcommittedtime;
 
-  // std::map<int, std::queue<float> > map_node_CR_gain_queue;
   std::map<int, float> map_node_CR_previous;
   std::map<int, float> map_node_CR;
   std::map<int, float> map_node_BR;
