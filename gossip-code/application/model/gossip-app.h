@@ -29,17 +29,18 @@
 #include <string>
 #include <vector>
 #include <queue>
+#include "/home/hqw/repos/ns-3-allinone/ns-3-dev/scratch/data-struc.h"
+
 
 namespace ns3 {
 
 class Socket;
 class Packet;
 
-const int TOTAL_EPOCH_FOR_SIMULATION = 1;
+const int TOTAL_EPOCH_FOR_SIMULATION = 2;
 
 const int AP_NUMBER = 5;
 const int NODE_NUMBER = 16;
-const int FAN_OUT = 5;
 const int OUT_GOSSIP_ROUND = 5;
 const int IN_GOSSIP_ROUND = 3;
 const int SOLICIT_ROUND = 1;
@@ -56,6 +57,9 @@ const uint8_t TYPE_REPUTATION[100] = "REPUTATION";
 
 const int WINDOW_SIZE = 3;
 const float EPSILON = 5.0;
+
+
+
 
 enum MESSAGE_TYPE {BLOCK, SOLICIT, ACK, PREPARE, COMMIT, REPUTATION};
 
@@ -82,9 +86,11 @@ public:
   void ScheduleTransmit (Time dt, int dest, int type);
   void InitializeReputationMessage();
   void InitializeEpoch();
+  void InitializeState();
   std::pair<int, int> NewLenComputation();
-  void GossipBlockOut();
-  void GossipBlockAfterReceive(int from_node);
+  Block BlockPropose();
+  void GossipBlockOut(Block b);
+  void GossipBlockAfterReceive(int from_node, Block b);
   void GossipVotingMessageOut(int type);
   void GossipReputationMessage();
   void RelayVotingMessage(int dest, Ptr<Packet> p);
@@ -110,10 +116,10 @@ private:
   virtual void StartApplication (void);
   virtual void StopApplication (void);
   void Send (int dest, MESSAGE_TYPE);
-  void SendBlock(int dest);
-  void SendBlockPiece(int dest, int piece);
-  void SendBlockAck(int dest);
-  void SendBlockAckPiece(int dest, int piece);
+  void SendBlock (int dest, Block b);
+  void SendBlockPiece (int dest, int piece, Block b);
+  void SendBlockAck(int dest, Block b);
+  void SendBlockAckPiece(int dest, int piece, Block b);
   void HandleRead (Ptr<Socket> socket);
 
 
@@ -122,12 +128,12 @@ private:
   std::map<uint8_t, Ipv4Address> map_node_addr;
   std::map<Ipv4Address, uint8_t> map_addr_node; 
   std::map<int, int> map_epoch_consensed;
-
+  std::vector<uint32_t> m_local_ledger;  //block name 
+  std::vector<int> m_ledger_built_epoch;  //in which epoch the block was added
 
   // uint32_t m_sent;
   // uint32_t m_count;
 
-  uint8_t m_height;
   uint8_t m_epoch;
   float len_phase1;
   float len_phase2;
@@ -136,6 +142,13 @@ private:
   // bool current_consensus_success;
   bool m_leader;
   bool block_got;
+  int state;  //  state = 0,1,2,3, means Init, Ped, Ced, Tced
+  State_Quad quad;
+  Block block;
+  Block EMPTY_BLOCK;
+  Block GENESIS_BLOCK;
+  uint32_t block_name;
+  int block_height;
   std::map<int, int> map_blockpiece_received;
   std::map<int, int> map_node_PREPARE;
   std::map<int, int> map_node_COMMIT;

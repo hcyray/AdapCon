@@ -81,6 +81,13 @@ GossipApp::GossipApp ()
   len_phase2 = 10.0;
   waitting_time = len_phase1 * 2 / 4.;
 
+  m_local_ledger.push_back(0xFFFFFFFF);
+  m_ledger_built_epoch.push_back(0);
+  EMPTY_BLOCK.block_name = 0;
+  EMPTY_BLOCK.block_height = 0;
+  GENESIS_BLOCK.block_name = 0xFFFFFFFF;
+  GENESIS_BLOCK.block_height = 0;
+
   const int LINE_LENGTH = 100;
   char str1[LINE_LENGTH];
   std::ifstream infile1;
@@ -142,6 +149,7 @@ GossipApp::ConsensProcess ()
   m_epoch_beginning = Simulator::Now ().GetSeconds ();
   // InitializeReputationMessage();
   InitializeEpoch ();
+
   if_leader ();
   // GetNeighbor(OUT_GOSSIP_ROUND, out_neighbor_choosed);
   // GetNeighbor(IN_GOSSIP_ROUND, in_neighbor_choosed);
@@ -152,7 +160,8 @@ GossipApp::ConsensProcess ()
                 << "**********" << std::endl;
       std::cout << "node " << (int) GetNodeId () << " is the leader" << std::endl;
       std::cout << "time now: " << m_epoch_beginning << std::endl;
-      GossipBlockOut ();
+      Block b = BlockPropose();
+      GossipBlockOut (b);
     }
   // else
   // {
@@ -169,8 +178,8 @@ GossipApp::ConsensProcess ()
 void
 GossipApp::if_leader (void)
 {
-  // uint8_t x = m_epoch % NODE_NUMBER;
-  uint8_t x = 1;
+  uint8_t x = m_epoch % NODE_NUMBER;
+  // uint8_t x = 1;
   if (m_node_id == x)
     {
       m_leader = true;
@@ -348,6 +357,10 @@ GossipApp::StartApplication (void)
         NS_FATAL_ERROR ("Failer to connect socket");
     }
 
+  quad.B_root = GENESIS_BLOCK;
+  quad.H_root = 0;
+  quad.B_pending = EMPTY_BLOCK;
+  quad.freshness = 0;
   Simulator::Schedule (Seconds (0.), &GossipApp::ConsensProcess, this); // TODO debug
 }
 
@@ -544,29 +557,33 @@ GossipApp::Send (int dest, MESSAGE_TYPE message_type)
 }
 
 void
-GossipApp::SendBlock (int dest)
+GossipApp::SendBlock (int dest, Block b)
 {
   for (int piece = 0; piece < 1; piece++)
     {
       srand (Simulator::Now ().GetSeconds ());
       float x = rand () % 100;
       x = x / 100;
-      Simulator::Schedule (Seconds (x), &GossipApp::SendBlockPiece, this, dest, piece);
+      Simulator::Schedule (Seconds (x), &GossipApp::SendBlockPiece, this, dest, piece, b);
     }
-  std::cout << "node " << (int) GetNodeId () << " send a block to node " << dest << " at "
-            << Simulator::Now ().GetSeconds () << "s" << std::endl;
+  // std::cout << "node " << (int) GetNodeId () << " send a block to node " << dest << " at "
+  //           << Simulator::Now ().GetSeconds () << "s" << std::endl;
 }
 
 void
-GossipApp::SendBlockPiece (int dest, int piece)
+GossipApp::SendBlockPiece (int dest, int piece, Block b)
 {
   std::string str1 = "";
   str1.append (std::to_string ((int) m_epoch));
   str1.append ("+");
   str1.append (std::to_string ((int) m_node_id));
   str1.append ("+");
-  std::string str2 (TYPE_BLOCK, TYPE_BLOCK + 10);
+  std::string str2 = "BLOCK";
   str1.append (str2);
+  str1.append ("+");
+  str1.append(std::to_string(b.block_name));
+  str1.append ("+");
+  str1.append(std::to_string(b.block_height));
   str1.append ("+");
   str1.append (std::to_string ((int) piece));
   const uint8_t *str3 = reinterpret_cast<const uint8_t *> (str1.c_str ());
@@ -577,21 +594,21 @@ GossipApp::SendBlockPiece (int dest, int piece)
 }
 
 void
-GossipApp::SendBlockAck (int dest)
+GossipApp::SendBlockAck (int dest, Block b)
 {
   for (int piece = 0; piece < 1; piece++)
     {
       srand (Simulator::Now ().GetSeconds ());
       float x = rand () % 100;
       x = x / 100;
-      Simulator::Schedule (Seconds (x), &GossipApp::SendBlockPiece, this, dest, piece);
+      Simulator::Schedule (Seconds (x), &GossipApp::SendBlockPiece, this, dest, piece, b);
     }
   std::cout << "node " << (int) GetNodeId () << " reply a block to node " << dest << " at "
             << Simulator::Now ().GetSeconds () << "s" << std::endl;
 }
 
 void
-GossipApp::SendBlockAckPiece (int dest, int piece)
+GossipApp::SendBlockAckPiece (int dest, int piece, Block b)
 {
 
   std::string str1 = "";
@@ -599,8 +616,12 @@ GossipApp::SendBlockAckPiece (int dest, int piece)
   str1.append ("+");
   str1.append (std::to_string ((int) m_node_id));
   str1.append ("+");
-  std::string str2 (TYPE_ACK, TYPE_ACK + 10);
+  std::string str2 = "BLOCK";
   str1.append (str2);
+  str1.append ("+");
+  str1.append(std::to_string(b.block_name));
+  str1.append ("+");
+  str1.append(std::to_string(b.block_height));
   str1.append ("+");
   str1.append (std::to_string ((int) piece));
   const uint8_t *str3 = reinterpret_cast<const uint8_t *> (str1.c_str ());
@@ -729,21 +750,39 @@ GossipApp::InitializeEpoch ()
 //   return p;
 // }
 
-void
-GossipApp::GossipBlockOut ()
+Block GossipApp::BlockPropose()
 {
+  Block block_proposed;
+  if(quad.B_pending.block_name == 0)
+  {
+    srand(Simulator::Now ().GetSeconds () + m_node_id);
+    block_proposed.block_name = rand() % 0xFFFFFFFF;
+    block_proposed.block_height = m_local_ledger.size() + 1;
+  }
+  else
+  {
+    block_proposed.block_name = quad.B_pending.block_name;
+    block_proposed.block_height = quad.B_pending.block_height;
+  }
+  return block_proposed;
+}
+
+void
+GossipApp::GossipBlockOut (Block b)
+{
+  std::cout<<b.block_name<<"*****"<<std::endl;
   for (int i = 0; i < OUT_GOSSIP_ROUND; i++)
     {
       srand (Simulator::Now ().GetSeconds () + m_node_id);
       float x = rand () % 100;
       x = x / 100;
-      Simulator::Schedule (Seconds (x), &GossipApp::SendBlock, this, out_neighbor_choosed[i]);
+      Simulator::Schedule (Seconds (x), &GossipApp::SendBlock, this, out_neighbor_choosed[i], b);
       // SendBlock(out_neighbor_choosed[i]);
     }
 }
 
 void
-GossipApp::GossipBlockAfterReceive (int from_node)
+GossipApp::GossipBlockAfterReceive (int from_node, Block b)
 {
 
   for (int i = 0; i < OUT_GOSSIP_ROUND; i++)
@@ -753,7 +792,7 @@ GossipApp::GossipBlockAfterReceive (int from_node)
           srand (Simulator::Now ().GetSeconds () + m_node_id);
           float x = rand () % 100;
           x = x / 100;
-          Simulator::Schedule (Seconds (x), &GossipApp::SendBlock, this, out_neighbor_choosed[i]);
+          Simulator::Schedule (Seconds (x), &GossipApp::SendBlock, this, out_neighbor_choosed[i], b);
         }
     }
 }
@@ -902,8 +941,8 @@ GossipApp::HandleRead (Ptr<Socket> socket)
   while ((packet = socket->RecvFrom (from)))
     {
       // std::cout<<"A packet is received by node "<<(int)m_node_id<<std::endl;
-      uint8_t content_[80];
-      packet->CopyData (content_, 80);
+      uint8_t content_[200];
+      packet->CopyData (content_, 200);
       Ipv4Address from_addr = InetSocketAddress::ConvertFrom (from).GetIpv4 ();
       int from_node = (int) map_addr_node[from_addr];
       // std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" "<<packet->GetSize()
@@ -920,20 +959,25 @@ GossipApp::HandleRead (Ptr<Socket> socket)
             {
               if (block_got == false)
                 {
-                  int u = (atoi) (res[3].c_str ());
+                  int u = (atoi) (res[5].c_str ());
                   map_blockpiece_received[u] = 1;
                   if_get_block ();
                   if (block_got == true)
                     {
-                      // std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" for the first time "<<packet->GetSize()
-                      // <<" bytes from node "<<from_node<<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
+                      std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" for the first time "<<packet->GetSize()
+                      <<" bytes from node "<<from_node<<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
                       get_block_time = Simulator::Now ().GetSeconds ();
                       get_block_time = ((int) (get_block_time * 1000)) / 1000.;
                       get_block_or_not = 1;
                       std::cout << "node " << (int) GetNodeId () << " received a " << content_
                                 << " for the first time from node " << from_node << " at "
                                 << get_block_time << "s" << std::endl;
-                      GossipBlockAfterReceive (from_node);
+                      Block b;
+                      uint32_t tmp1 = atoi(res[3].c_str ());
+                      b.block_name = tmp1;
+                      int tmp2 = (atoi)(res[4].c_str ());
+                      b.block_height = tmp2;
+                      GossipBlockAfterReceive (from_node, b);
                     }
                 }
               // else
@@ -961,20 +1005,20 @@ GossipApp::HandleRead (Ptr<Socket> socket)
                     }
                 }
             }
-          else if (strcmp (type_of_received_message, "SOLICIT") == 0)
-            {
-              if (block_got == true)
-                {
-                  SendBlockAck (from_node);
-                  std::cout << "node " << (int) GetNodeId () << " responds node " << from_node
-                            << " and send him an ack block at " << Simulator::Now ().GetSeconds ()
-                            << "s" << std::endl;
-                }
-              // else{
-              // std::cout<<"node "<<(int)GetNodeId()<<" can't respond node "<<from_node<<" because until "<<
-              //   Simulator::Now().GetSeconds()<<" s he has not received a block yet"<<std::endl;
-              // }
-            }
+          // else if (strcmp (type_of_received_message, "SOLICIT") == 0)
+          //   {
+          //     if (block_got == true)
+          //       {
+          //         SendBlockAck (from_node);
+          //         std::cout << "node " << (int) GetNodeId () << " responds node " << from_node
+          //                   << " and send him an ack block at " << Simulator::Now ().GetSeconds ()
+          //                   << "s" << std::endl;
+          //       }
+          //     // else{
+          //     // std::cout<<"node "<<(int)GetNodeId()<<" can't respond node "<<from_node<<" because until "<<
+          //     //   Simulator::Now().GetSeconds()<<" s he has not received a block yet"<<std::endl;
+          //     // }
+          //   }
           else if (strcmp (type_of_received_message, "PREPARE") == 0)
             {
               int x = (atoi) (res[1].c_str ());
