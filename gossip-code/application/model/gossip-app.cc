@@ -159,7 +159,7 @@ GossipApp::ConsensProcess ()
                 << "epoch " << (int) m_epoch << " starts"
                 << "**********" << std::endl;
       std::cout << "node " << (int) GetNodeId () << " is the leader" << std::endl;
-      std::cout << "time now: " << m_epoch_beginning << std::endl;
+      std::cout << "time now: " << m_epoch_beginning <<"s"<< std::endl;
       Block b = BlockPropose();
       GossipBlockOut (b);
     }
@@ -167,10 +167,10 @@ GossipApp::ConsensProcess ()
   // {
   //   Simulator::Schedule(Seconds(waitting_time), &GossipApp::SolicitBlockFromOthers, this);
   // }
-
-  Simulator::Schedule (Seconds (len_phase1), &GossipApp::GossipVotingMessageOut, this, 3);
+  Simulator::Schedule(Seconds(len_phase1), &GossipApp::GossipPrepareOut, this);
+  // Simulator::Schedule (Seconds (len_phase1), &GossipApp::GossipVotingMessageOut, this, 3);
   Simulator::Schedule (Seconds (len_phase1), &GossipApp::DetermineCommit, this);
-  Simulator::Schedule(Seconds(len_phase1+len_phase2-2), &GossipApp::GossipReputationMessage, this);
+  // Simulator::Schedule(Seconds(len_phase1+len_phase2-2), &GossipApp::GossipReputationMessage, this);
   if (m_epoch < TOTAL_EPOCH_FOR_SIMULATION)
     Simulator::Schedule (Seconds (len_phase1 + len_phase2), &GossipApp::ConsensProcess, this);
 }
@@ -575,6 +575,44 @@ GossipApp::SendBlockAckPiece (int dest, int piece, Block b)
     std::cout << "Failed to send ack packet" << std::endl;
 }
 
+void GossipApp::SendPrepare(int dest, Block b)
+{
+  std::string str1 = "";
+  str1.append (std::to_string ((int) m_epoch));
+  str1.append ("+");
+  str1.append (std::to_string ((int) m_node_id));
+  str1.append ("+");
+  std::string str2 = "PREPARE";
+  str1.append (str2);
+  str1.append ("+");
+  str1.append(std::to_string(b.block_name));
+  str1.append ("+");
+  str1.append(std::to_string(b.block_height));
+  const uint8_t *str3 = reinterpret_cast<const uint8_t *> (str1.c_str ());
+  Packet pack1 (str3, 120);
+  Ptr<Packet> p = &pack1;
+  m_socket_send[dest]->Send (p);
+}
+
+void GossipApp::SendCommit(int dest, Block b)
+{
+  std::string str1 = "";
+  str1.append (std::to_string ((int) m_epoch));
+  str1.append ("+");
+  str1.append (std::to_string ((int) m_node_id));
+  str1.append ("+");
+  std::string str2 = "COMMIT";
+  str1.append (str2);
+  str1.append ("+");
+  str1.append(std::to_string(b.block_name));
+  str1.append ("+");
+  str1.append(std::to_string(b.block_height));
+  const uint8_t *str3 = reinterpret_cast<const uint8_t *> (str1.c_str ());
+  Packet pack1 (str3, 120);
+  Ptr<Packet> p = &pack1;
+  m_socket_send[dest]->Send (p);
+}
+
 void
 GossipApp::RelayVotingMessage (int dest, Ptr<Packet> p)
 {
@@ -704,7 +742,7 @@ Block GossipApp::BlockPropose()
   Block block_proposed;
   if(quad.B_pending.block_name == 0)
   {
-    srand(Simulator::Now ().GetSeconds () + m_node_id);
+    srand(time(NULL));
     block_proposed.block_name = rand() % 0xFFFFFFFF;
     block_proposed.block_height = m_local_ledger.size() + 1;
   }
@@ -730,6 +768,45 @@ GossipApp::GossipBlockOut (Block b)
     }
 }
 
+void GossipApp::GossipPrepareOut()
+{
+   
+  if (block_got)
+  {
+    if(block_received.block_height == (int)m_local_ledger.size() + 1)
+    {
+      if(quad.B_pending.block_name == EMPTY_BLOCK.block_name)
+      {
+        state = 1;
+        quad.B_pending = EMPTY_BLOCK;
+        quad.freshness = 0;
+        for (int i = 0; i < OUT_GOSSIP_ROUND; i++)
+        {
+          srand(Simulator::Now().GetSeconds() +m_node_id);
+          float x = rand()%100;
+          x = x/100;
+          SendPrepare( out_neighbor_choosed[i], block_received);
+        }
+      }
+      else if(m_epoch>quad.freshness)
+      {
+        state = 1;
+        quad.B_pending = EMPTY_BLOCK;
+        quad.freshness = 0;
+        for (int i = 0; i < OUT_GOSSIP_ROUND; i++)
+        {
+          srand(Simulator::Now().GetSeconds() +m_node_id);
+          float x = rand()%100;
+          x = x/100;
+          SendPrepare( out_neighbor_choosed[i], block_received);
+        }
+      }
+    }
+    
+  }
+    
+}
+
 void
 GossipApp::GossipBlockAfterReceive (int from_node, Block b)
 {
@@ -746,36 +823,58 @@ GossipApp::GossipBlockAfterReceive (int from_node, Block b)
     }
 }
 
-void
-GossipApp::GossipVotingMessageOut (int type)
-{
-  // TODO some logic ambiguity
-  if (type == 3)
-    {
-      if (block_got)
-        {
-          for (int i = 0; i < OUT_GOSSIP_ROUND; i++)
-            {
-              // srand(Simulator::Now().GetSeconds() +m_node_id);
-              // float x = rand()%100;
-              // x = x/100;
-              // ScheduleTransmit(Seconds(x), out_neighbor_choosed[i], 3);
-              ScheduleTransmit (Seconds (0.), out_neighbor_choosed[i], 3);
-            }
-        }
-    }
-  else if (type == 4)
-    {
-      for (int i = 0; i < OUT_GOSSIP_ROUND; i++)
-        {
-          // srand(Simulator::Now().GetSeconds() +m_node_id);
-          // float x = rand()%100;
-          // x = x/100;
-          // ScheduleTransmit(Seconds(x), out_neighbor_choosed[i], 4);
-          ScheduleTransmit (Seconds (0.), out_neighbor_choosed[i], 4);
-        }
-    }
-}
+// void
+// GossipApp::GossipVotingMessageOut (int type)
+// {
+//   // TODO some logic ambiguity
+//   if (type == 3)
+//     {
+//       if (block_got)
+//       {
+//         if(block_received.block_height == (int)m_local_ledger.size() + 1)
+//         {
+//           if(quad.B_pending.block_name == EMPTY_BLOCK.block_name)
+//           {
+//             state = 1;
+//             quad.B_pending = EMPTY_BLOCK;
+//             quad.freshness = 0;
+//             for (int i = 0; i < OUT_GOSSIP_ROUND; i++)
+//             {
+//               srand(Simulator::Now().GetSeconds() +m_node_id);
+//               float x = rand()%100;
+//               x = x/100;
+//               SendPrepare( out_neighbor_choosed[i], block_received);
+//             }
+//           }
+//           else if(m_epoch>quad.freshness)
+//           {
+//             state = 1;
+//             quad.B_pending = EMPTY_BLOCK;
+//             quad.freshness = 0;
+//             for (int i = 0; i < OUT_GOSSIP_ROUND; i++)
+//             {
+//               srand(Simulator::Now().GetSeconds() +m_node_id);
+//               float x = rand()%100;
+//               x = x/100;
+//               SendPrepare( out_neighbor_choosed[i], block_received);
+//             }
+//           }
+//         }
+        
+//       }
+//     }
+//   else if (type == 4)
+//     {
+//       for (int i = 0; i < OUT_GOSSIP_ROUND; i++)
+//         {
+//           // srand(Simulator::Now().GetSeconds() +m_node_id);
+//           // float x = rand()%100;
+//           // x = x/100;
+//           // ScheduleTransmit(Seconds(x), out_neighbor_choosed[i], 4);
+//           ScheduleTransmit (Seconds (0.), out_neighbor_choosed[i], 4);
+//         }
+//     }
+// }
 
 void
 GossipApp::GossipReputationMessage ()
@@ -802,9 +901,19 @@ void GossipApp::DetermineCommit () // send commit msg out
         }
       if (sum >= (2 * NODE_NUMBER / 3.0 + 1))
         {
+          state = 2;
+          quad.B_pending = block_received;
+          quad.freshness = m_epoch;
           get_prepared_time = Simulator::Now ().GetSeconds ();
           get_prepared_time = ((int) (get_prepared_time * 100000)) / 100000.;
-          GossipVotingMessageOut (4);
+          for (int i = 0; i < OUT_GOSSIP_ROUND; i++)
+          {
+            // srand(Simulator::Now().GetSeconds() +m_node_id);
+            // float x = rand()%100;
+            // x = x/100;
+            // ScheduleTransmit(Seconds(x), out_neighbor_choosed[i], 4);
+            SendCommit(out_neighbor_choosed[i], block_received);
+          }
           Simulator::Schedule (Seconds (DETERMINECONSENS_INTERVAL), &GossipApp::DetermineConsens,
                                this);
         }
@@ -825,10 +934,15 @@ GossipApp::DetermineConsens ()
         }
       if (sum >= (2 * NODE_NUMBER / 3.0 + 1))
         {
+          state = 3;
           get_committed_time = Simulator::Now ().GetSeconds ();
           get_committed_time = (int(get_committed_time * 100000)) / 100000.;
           get_committed_or_not = 1;
           map_epoch_consensed[m_epoch] = 1;
+          quad.B_root = block_received;
+          quad.H_root = block_received.block_height;
+          quad.B_pending = EMPTY_BLOCK;
+          quad.freshness = 0;
           m_local_ledger.push_back(block_received.block_name);
           m_ledger_built_epoch.push_back(m_epoch);
         }
@@ -920,8 +1034,8 @@ GossipApp::HandleRead (Ptr<Socket> socket)
                       block_received.block_name = tmp1;
                       block_received.block_height = tmp2;
 
-                      std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" for the first time "<<packet->GetSize()
-                      <<" bytes from node "<<from_node<<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
+                      // std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" for the first time "<<packet->GetSize()
+                      // <<" bytes from node "<<from_node<<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
                       get_block_time = Simulator::Now ().GetSeconds ();
                       get_block_time = ((int) (get_block_time * 100000)) / 100000.;
                       get_block_or_not = 1;
@@ -937,8 +1051,11 @@ GossipApp::HandleRead (Ptr<Socket> socket)
             }
           else if (strcmp (type_of_received_message, "PREPARE") == 0)
             {
-              int x = (atoi) (res[1].c_str ());
-              if (map_node_PREPARE[x] == 0)
+              uint32_t block_prepared = atoi(res[3].c_str ());
+              if(block_prepared == block_received.block_name)
+              {
+                int x = (atoi) (res[1].c_str ());
+                if (map_node_PREPARE[x] == 0)
                 {
                   map_node_PREPARE[x] = 1;
                   // std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" "<<packet->GetSize()
@@ -953,25 +1070,32 @@ GossipApp::HandleRead (Ptr<Socket> socket)
                                            packet);
                     }
                 }
+              }
+              
             }
           else if (strcmp (type_of_received_message, "COMMIT") == 0)
             {
-              int x = (atoi) (res[1].c_str ());
-              if (map_node_COMMIT[x] == 0)
+              uint32_t block_committed = atoi(res[3].c_str ());
+              if(block_committed == block_received.block_name)
+              {
+                int x = (atoi) (res[1].c_str ());
+                if (map_node_COMMIT[x] == 0)
                 {
                   map_node_COMMIT[x] = 1;
                   // std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" "<<packet->GetSize()
                   //   <<" bytes from node "<<from_node<<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
                   for (int i = 0; i < OUT_GOSSIP_ROUND; i++)
-                    {
-                      srand (Simulator::Now ().GetSeconds ());
-                      float x = rand () % 100;
-                      x = x / 100;
-                      int dest = out_neighbor_choosed[i];
-                      Simulator::Schedule (Seconds (x), &GossipApp::RelayVotingMessage, this, dest,
-                                           packet);
-                    }
+                  {
+                    srand (Simulator::Now ().GetSeconds ());
+                    float x = rand () % 100;
+                    x = x / 100;
+                    int dest = out_neighbor_choosed[i];
+                    Simulator::Schedule (Seconds (x), &GossipApp::RelayVotingMessage, this, dest,
+                                          packet);
+                  }
                 }
+              }
+              
             }
           else if(strcmp(type_of_received_message, "REPUTATION")==0)
           {

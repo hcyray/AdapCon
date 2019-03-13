@@ -90,8 +90,9 @@ public:
   std::pair<int, int> NewLenComputation();
   Block BlockPropose();
   void GossipBlockOut(Block b);
+  void GossipPrepareOut();
   void GossipBlockAfterReceive(int from_node, Block b);
-  void GossipVotingMessageOut(int type);
+  // void GossipVotingMessageOut(int type);
   void GossipReputationMessage();
   void RelayVotingMessage(int dest, Ptr<Packet> p);
   void RelayReputationMessage(int dest, Ptr<Packet> p);
@@ -120,6 +121,8 @@ private:
   void SendBlockPiece (int dest, int piece, Block b);
   void SendBlockAck(int dest, Block b);
   void SendBlockAckPiece(int dest, int piece, Block b);
+  void SendPrepare(int dest, Block b);
+  void SendCommit(int dest, Block b);
   void HandleRead (Ptr<Socket> socket);
 
 
