@@ -37,7 +37,7 @@ namespace ns3 {
 class Socket;
 class Packet;
 
-const int TOTAL_EPOCH_FOR_SIMULATION = 2;
+const int TOTAL_EPOCH_FOR_SIMULATION = 4;
 
 const int AP_NUMBER = 5;
 const int NODE_NUMBER = 16;
@@ -144,7 +144,7 @@ private:
   bool block_got;
   int state;  //  state = 0,1,2,3, means Init, Ped, Ced, Tced
   State_Quad quad;
-  Block block;
+  Block block_received;
   Block EMPTY_BLOCK;
   Block GENESIS_BLOCK;
   uint32_t block_name;
