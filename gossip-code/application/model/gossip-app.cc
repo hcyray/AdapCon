@@ -37,6 +37,7 @@
 #include <time.h>
 #include <algorithm>
 #include <fstream>
+#include <iomanip>
 
 namespace ns3 {
 
@@ -151,8 +152,6 @@ GossipApp::ConsensProcess ()
   InitializeEpoch ();
   InitializeState();
   if_leader ();
-  // GetNeighbor(OUT_GOSSIP_ROUND, out_neighbor_choosed);
-  // GetNeighbor(IN_GOSSIP_ROUND, in_neighbor_choosed);
   if (m_leader)
     {
       std::cout << "*****************"
@@ -161,6 +160,7 @@ GossipApp::ConsensProcess ()
       std::cout << "node " << (int) GetNodeId () << " is the leader" << std::endl;
       std::cout << "time now: " << m_epoch_beginning <<"s"<< std::endl;
       Block b = BlockPropose();
+      block_received = b;
       GossipBlockOut (b);
     }
   // else
@@ -362,7 +362,7 @@ GossipApp::StopApplication ()
     }
     for(int i=0; i<(int)m_local_ledger.size(); i++)
     {
-      std::cout<<"local ledger: "<<m_local_ledger[i]<<"    ";
+      std::cout<<"local ledger: "<<std::setw(12)<<m_local_ledger[i]<<"    ";
       std::cout<<"in epoch "<<m_ledger_built_epoch[i]<<std::endl;
     }
     std::cout<<"******************************"<<std::endl;
