@@ -87,7 +87,7 @@ public:
   void EndSummary();
   std::pair<int, int> NewLenComputation();
   Block BlockPropose();
-  void GossipBlockOut(Block b);
+  void LeaderGossipBlockOut(Block b);
   void GossipPrepareOut();
   void GossipBlockAfterReceive(int from_node, Block b);
   void GossipTimeMessage(int t);

@@ -160,7 +160,7 @@ GossipApp::ConsensProcess ()
       std::cout << "time now: " << m_epoch_beginning << "s" << std::endl;
       Block b = BlockPropose ();
       block_received = b;
-      GossipBlockOut (b);
+      LeaderGossipBlockOut (b);
     }
   // else
   // {
@@ -369,7 +369,7 @@ GossipApp::StopApplication ()
 
       for (int i = 0; i < (int) m_local_ledger.size (); i++)
         {
-          std::cout << "local ledger height " << std::setw (4)<< i << ": " << std::setw (12) << m_local_ledger[i]
+          std::cout << "local ledger height " << std::setw (3)<< i << ": " << std::setw (12) << m_local_ledger[i]
                     << "    ";
           std::cout << "in epoch " << m_ledger_built_epoch[i] << std::endl;
         }
@@ -403,6 +403,9 @@ GossipApp::SendBlockPiece (int dest, int piece, Block b)
   str1.append (str2);
   str1.append ("+");
   str1.append (std::to_string (b.name));
+  str1.append ("+");
+  int u = m_local_ledger.size() - 1;
+  str1.append (std::to_string (m_local_ledger[u]));
   str1.append ("+");
   str1.append (std::to_string (b.height));
   str1.append ("+");
@@ -682,7 +685,7 @@ GossipApp::BlockPropose ()
 }
 
 void
-GossipApp::GossipBlockOut (Block b)
+GossipApp::LeaderGossipBlockOut (Block b)
 {
   std::cout << b.name << "*****" << std::endl;
   for (int i = 0; i < OUT_GOSSIP_ROUND; i++)
@@ -896,31 +899,41 @@ GossipApp::HandleRead (Ptr<Socket> socket)
           const char *type_of_received_message = res[2].c_str ();
           if (strcmp (type_of_received_message, "BLOCK") == 0)
             {
-              if (block_got == false)
+              uint32_t received_former_block = (atoi) (res[4].c_str ());
+              uint32_t local_former_block = m_local_ledger[m_local_ledger.size()-1];
+              if(received_former_block == local_former_block)
+              {
+                if (block_got == false)
                 {
-                  int u = (atoi) (res[5].c_str ());
+                  int u = (atoi) (res[6].c_str ());
                   map_blockpiece_received[u] = 1;
                   if_get_block ();
                   if (block_got == true)
-                    {
-                      uint32_t tmp1 = atoi (res[3].c_str ());
-                      int tmp2 = (atoi) (res[4].c_str ());
-                      block_received.name = tmp1;
-                      block_received.height = tmp2;
+                  {
+                    uint32_t tmp1 = atoi (res[3].c_str ());
+                    int tmp2 = (atoi) (res[5].c_str ());
+                    block_received.name = tmp1;
+                    block_received.height = tmp2;
 
-                      std::cout << "node " << (int) GetNodeId () << " received a " << content_
-                                << " for the first time " << packet->GetSize ()
-                                << " bytes from node " << from_node << " at "
-                                << Simulator::Now ().GetSeconds () << " s" << std::endl;
-                      get_block_time = Simulator::Now ().GetSeconds () - m_epoch_beginning;
-                      get_block_time = ((int) (get_block_time * 1000)) / 1000.;
-                      get_block_or_not = 1;
-                      // std::cout << "node " << (int) GetNodeId () << " received a " << content_
-                      //           << " for the first time from node " << from_node << " at "
-                      //           << get_block_time << "s" << std::endl;
-                      GossipBlockAfterReceive (from_node, block_received);
-                    }
+                    std::cout << "node " << (int) GetNodeId () << " received a " << content_
+                              << " for the first time " << packet->GetSize ()
+                              << " bytes from node " << from_node << " at "
+                              << Simulator::Now ().GetSeconds () << " s" << std::endl;
+                    get_block_time = Simulator::Now ().GetSeconds () - m_epoch_beginning;
+                    get_block_time = ((int) (get_block_time * 1000)) / 1000.;
+                    get_block_or_not = 1;
+                    // std::cout << "node " << (int) GetNodeId () << " received a " << content_
+                    //           << " for the first time from node " << from_node << " at "
+                    //           << get_block_time << "s" << std::endl;
+                    GossipBlockAfterReceive (from_node, block_received);
+                  }
                 }
+              }
+              else
+              {
+                // TODO query the node who give me this block
+              }
+              
               // else
               //   std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" "<<packet->GetSize()
               //     <<" bytes from node "<<from_node<<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
