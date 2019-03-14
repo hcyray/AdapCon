@@ -96,6 +96,7 @@ public:
   void GossipCommitOut();
   void DetermineConsens();
   void ReplyBlockSolicit(int dest);
+  void RecoverHistory(std::vector<uint32_t> b, std::vector<int> b_epo, int dest);
   void SolicitConsensusMessageFromOthers();
 
   void SilenceAttack();
@@ -121,6 +122,7 @@ private:
   void SendCommit(int dest, Block b);
   void SendTimeMessage(int dest, int t);
   void SolicitBlockHistory(int dest);
+  void SolicitBlock(int dest);
   void HandleRead (Ptr<Socket> socket);
 
 

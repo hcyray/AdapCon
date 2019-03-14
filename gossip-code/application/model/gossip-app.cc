@@ -855,6 +855,22 @@ GossipApp::SilenceAttack ()
 // }
 // TODO launch an inductionattack
 
+void GossipApp::SolicitBlock(int dest)
+{
+  std::string str1 = "";
+  str1.append(std::to_string(m_epoch));
+  str1.append("+");
+  str1.append(std::to_string(m_node_id));
+  str1.append("+");
+  std::string str2 = "SOLICITBLOCK";
+  str1.append(str2);
+  const uint8_t *str3 = reinterpret_cast<const uint8_t *> (str1.c_str ());
+  Packet pack1 (str3, 80);
+  Ptr<Packet> p = &pack1;
+  if (m_socket_send[dest]->Send (p) == -1)
+    std::cout << "Failed to send packet" << std::endl;
+}
+
 void GossipApp::SolicitBlockHistory(int dest)
 {
   std::string str1 = "";
@@ -862,7 +878,7 @@ void GossipApp::SolicitBlockHistory(int dest)
   str1.append("+");
   str1.append(std::to_string(m_node_id));
   str1.append("+");
-  std::string str2 = "SOLICIT";
+  std::string str2 = "SOLICITHISTORY";
   str1.append(str2);
   const uint8_t *str3 = reinterpret_cast<const uint8_t *> (str1.c_str ());
   Packet pack1 (str3, 200);
@@ -881,7 +897,7 @@ void GossipApp::ReplyBlockSolicit(int dest)
   str1.append("+");
   str1.append(std::to_string(m_node_id));
   str1.append("+");
-  std::string str2 = "REPLYSOLICIT";
+  std::string str2 = "REPLYHISTORY";
   str1.append(str2);
   int len = m_local_ledger.size();
   if(len>=6)
@@ -912,6 +928,30 @@ void GossipApp::ReplyBlockSolicit(int dest)
     std::cout << "Failed to send packet" << std::endl;
   std::cout<<"node "<<(int)m_node_id<<" reply node "<<dest<<" for query at "
     <<Simulator::Now().GetSeconds()<<"s"<<std::endl;
+}
+
+void GossipApp::RecoverHistory(std::vector<uint32_t> b, std::vector<int> b_epo, int dest)
+{
+  std::vector<uint32_t>::iterator it;
+  it = std::find (b.begin (), b.end (), quad.B_root.name);
+  std::vector<int>::iterator ti = b_epo.begin() + (it - b.begin())/sizeof(uint32_t);
+  if(it != b.end())
+  {
+    m_local_ledger.push_back(*it);
+    it++;
+  }
+  if(ti != b_epo.end())
+  {
+    m_ledger_built_epoch.push_back(*ti);
+  }
+
+  quad.B_root.name = *it;
+  quad.B_root.height = 0;
+  quad.H_root = m_local_ledger.size();
+  quad.B_pending = EMPTY_BLOCK;
+  quad.freshness = 0;
+
+  SolicitBlock(dest);
 }
 
 void
@@ -955,7 +995,6 @@ GossipApp::HandleRead (Ptr<Socket> socket)
                 int tmp2 = (atoi) (res[5].c_str ());
                 block_received.name = tmp1;
                 block_received.height = tmp2;
-
                 std::cout << "node " << (int) GetNodeId () << " received a " << content_
                           << " for the first time " << packet->GetSize ()
                           << " bytes from node " << from_node << " at "
@@ -975,6 +1014,7 @@ GossipApp::HandleRead (Ptr<Socket> socket)
             SolicitBlockHistory(from_node);
             // TODO query the node who give me this block
           }
+          
         }
         else if (strcmp (type_of_received_message, "PREPARE") == 0)
         {
@@ -1028,13 +1068,30 @@ GossipApp::HandleRead (Ptr<Socket> socket)
                 }
             }
         }
-        else if(strcmp (type_of_received_message, "SOLICIT") == 0)
+        else if(strcmp (type_of_received_message, "SOLICITHISTORY") == 0)
         {
           ReplyBlockSolicit(from_node);
         }
-        else if(strcmp (type_of_received_message, "REPLYSOLICIT") == 0)
+        else if(strcmp (type_of_received_message, "SOLICITBLOCK") == 0)
         {
-
+          SendBlock(from_node, block_received);
+        }
+        else if(strcmp (type_of_received_message, "REPLYHISTORY") == 0)
+        {
+          std::vector<uint32_t> history;
+          std::vector<int> history_built_height;
+          int i=3;
+          int j=4;
+          while(i<(int)res.size())
+          {
+            uint32_t x = (atoi) (res[i].c_str());
+            history.push_back(x);
+            int y = (atoi) (res[j].c_str());
+            history_built_height.push_back(y);
+            i += 2;
+            j += 2;
+          }
+          RecoverHistory(history, history_built_height, from_node);
         }
       }
       else if (strcmp (time_of_recived_message, (std::to_string (m_epoch - 1)).c_str ()) == 0 &&
