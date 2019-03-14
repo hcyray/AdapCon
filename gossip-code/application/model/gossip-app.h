@@ -37,7 +37,7 @@ namespace ns3 {
 class Socket;
 class Packet;
 
-const int TOTAL_EPOCH_FOR_SIMULATION = 4;
+const int TOTAL_EPOCH_FOR_SIMULATION = 15;
 
 const int AP_NUMBER = 5;
 const int NODE_NUMBER = 16;
@@ -75,26 +75,24 @@ public:
   virtual ~GossipApp ();
   void ConsensProcess();
 
-  // Ptr<Packet> ComputeWhatToSend();
-  // void ChooseNeighbor(int number, int x[]);
-  // void ChooseNeighbor(int number, int x[], int node_excluded);
   void GetNeighbor(int n, int x[]);
   uint8_t GetNodeId(void);
   void if_leader(void);
   void if_get_block(void);
 
   void ScheduleTransmit (Time dt, int dest, int type);
-  void InitializeReputationMessage();
+  void InitializeTimeMessage();
   void InitializeEpoch();
   void InitializeState();
+  void EndSummary();
   std::pair<int, int> NewLenComputation();
   Block BlockPropose();
   void GossipBlockOut(Block b);
   void GossipPrepareOut();
   void GossipBlockAfterReceive(int from_node, Block b);
-  void GossipReputationMessage();
+  void GossipTimeMessage(int t);
   void RelayVotingMessage(int dest, Ptr<Packet> p);
-  void RelayReputationMessage(int dest, Ptr<Packet> p);
+  void RelayTimeMessage(int dest, Ptr<Packet> p);
   void GossipCommitOut();
   void DetermineConsens();
   void SolicitBlockFromOthers();
@@ -115,13 +113,13 @@ private:
 
   virtual void StartApplication (void);
   virtual void StopApplication (void);
-  // void Send (int dest, MESSAGE_TYPE);
   void SendBlock (int dest, Block b);
   void SendBlockPiece (int dest, int piece, Block b);
   void SendBlockAck(int dest, Block b);
   void SendBlockAckPiece(int dest, int piece, Block b);
   void SendPrepare(int dest, Block b);
   void SendCommit(int dest, Block b);
+  void SendTimeMessage(int dest, int t);
   void HandleRead (Ptr<Socket> socket);
 
 
@@ -136,7 +134,7 @@ private:
   // uint32_t m_sent;
   // uint32_t m_count;
 
-  uint8_t m_epoch;
+  int m_epoch;
   float len_phase1;
   float len_phase2;
   float waitting_time;
@@ -181,7 +179,7 @@ private:
   std::map<int, float> map_node_getpreparedtime;
   std::map<int, float> map_node_getcommittedtime;
   
-  std::map<int, std::map<int, float> > map_epoch_node_getblockornot;
+  std::map<int, std::map<int, int> > map_epoch_node_getblockornot;
   std::map<int, std::map<int, int> > map_epoch_node_getcommitedornot;
   std::map<int, std::map<int, float> > map_epoch_node_getblocktime;
   std::map<int, std::map<int, float> > map_epoch_node_getpreparedtime;
