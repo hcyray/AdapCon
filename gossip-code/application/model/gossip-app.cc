@@ -84,10 +84,10 @@ GossipApp::GossipApp ()
 
   m_local_ledger.push_back(0xFFFFFFFF);
   m_ledger_built_epoch.push_back(0);
-  EMPTY_BLOCK.block_name = 0;
-  EMPTY_BLOCK.block_height = 0;
-  GENESIS_BLOCK.block_name = 0xFFFFFFFF;
-  GENESIS_BLOCK.block_height = 0;
+  EMPTY_BLOCK.name = 0;
+  EMPTY_BLOCK.height = 0;
+  GENESIS_BLOCK.name = 0xFFFFFFFF;
+  GENESIS_BLOCK.height = 0;
 
   const int LINE_LENGTH = 100;
   char str1[LINE_LENGTH];
@@ -169,6 +169,7 @@ GossipApp::ConsensProcess ()
   // }
   Simulator::Schedule(Seconds(len_phase1), &GossipApp::GossipPrepareOut, this);
   Simulator::Schedule(Seconds(len_phase1), &GossipApp::GossipCommitOut, this);
+  
   if (m_epoch < TOTAL_EPOCH_FOR_SIMULATION)
     Simulator::Schedule (Seconds (len_phase1 + len_phase2), &GossipApp::ConsensProcess, this);
 }
@@ -328,11 +329,11 @@ GossipApp::StopApplication ()
   //   }
   // if(block_got)
   //   std::cout<<"node "<<(int)m_node_id<<" has received the block"<<std::endl;
-  int sum=0;
-  for(int i=1; i<=TOTAL_EPOCH_FOR_SIMULATION; i++)
-  {
-    sum += map_epoch_consensed[i];
-  }
+  int sum=m_local_ledger.size();
+  // for(int i=1; i<=TOTAL_EPOCH_FOR_SIMULATION; i++)
+  // {
+  //   sum += map_epoch_consensed[i];
+  // }
   std::cout<<"node "<<(int)m_node_id<<" got "<<sum<<" consensed block"<<std::endl;
   // for (int i = 0; i < NODE_NUMBER; i++)
   // {
@@ -524,9 +525,9 @@ GossipApp::SendBlockPiece (int dest, int piece, Block b)
   std::string str2 = "BLOCK";
   str1.append (str2);
   str1.append ("+");
-  str1.append(std::to_string(b.block_name));
+  str1.append(std::to_string(b.name));
   str1.append ("+");
-  str1.append(std::to_string(b.block_height));
+  str1.append(std::to_string(b.height));
   str1.append ("+");
   str1.append (std::to_string ((int) piece));
   const uint8_t *str3 = reinterpret_cast<const uint8_t *> (str1.c_str ());
@@ -562,9 +563,9 @@ GossipApp::SendBlockAckPiece (int dest, int piece, Block b)
   std::string str2 = "BLOCK";
   str1.append (str2);
   str1.append ("+");
-  str1.append(std::to_string(b.block_name));
+  str1.append(std::to_string(b.name));
   str1.append ("+");
-  str1.append(std::to_string(b.block_height));
+  str1.append(std::to_string(b.height));
   str1.append ("+");
   str1.append (std::to_string ((int) piece));
   const uint8_t *str3 = reinterpret_cast<const uint8_t *> (str1.c_str ());
@@ -584,9 +585,9 @@ void GossipApp::SendPrepare(int dest, Block b)
   std::string str2 = "PREPARE";
   str1.append (str2);
   str1.append ("+");
-  str1.append(std::to_string(b.block_name));
+  str1.append(std::to_string(b.name));
   str1.append ("+");
-  str1.append(std::to_string(b.block_height));
+  str1.append(std::to_string(b.height));
   const uint8_t *str3 = reinterpret_cast<const uint8_t *> (str1.c_str ());
   Packet pack1 (str3, 120);
   Ptr<Packet> p = &pack1;
@@ -603,9 +604,9 @@ void GossipApp::SendCommit(int dest, Block b)
   std::string str2 = "COMMIT";
   str1.append (str2);
   str1.append ("+");
-  str1.append(std::to_string(b.block_name));
+  str1.append(std::to_string(b.name));
   str1.append ("+");
-  str1.append(std::to_string(b.block_height));
+  str1.append(std::to_string(b.height));
   const uint8_t *str3 = reinterpret_cast<const uint8_t *> (str1.c_str ());
   Packet pack1 (str3, 120);
   Ptr<Packet> p = &pack1;
@@ -739,25 +740,25 @@ GossipApp::InitializeEpoch ()
 Block GossipApp::BlockPropose()
 {
   Block block_proposed;
-  if(quad.B_pending.block_name == 0)
+  if(quad.B_pending.name == 0)
   {
     srand(time(NULL));
-    block_proposed.block_name = rand() % 0xFFFFFFFF;
-    block_proposed.block_height = m_local_ledger.size() + 1;
+    block_proposed.name = rand() % 0xFFFFFFFF;
+    block_proposed.height = m_local_ledger.size() + 1;
   }
   else
   {
-    block_proposed.block_name = quad.B_pending.block_name;
-    block_proposed.block_height = quad.B_pending.block_height;
+    block_proposed.name = quad.B_pending.name;
+    block_proposed.height = quad.B_pending.height;
   }
-  std::cout<<"leader select block "<<block_proposed.block_name<<" to consens"<<std::endl;
+  std::cout<<"leader select block "<<block_proposed.name<<" to propose"<<std::endl;
   return block_proposed;
 }
 
 void
 GossipApp::GossipBlockOut (Block b)
 {
-  std::cout<<b.block_name<<"*****"<<std::endl;
+  std::cout<<b.name<<"*****"<<std::endl;
   for (int i = 0; i < OUT_GOSSIP_ROUND; i++)
     {
       srand (Simulator::Now ().GetSeconds () + m_node_id);
@@ -772,14 +773,14 @@ void GossipApp::GossipPrepareOut()
 {
   if (block_got)
   {
-    if(block_received.block_height == (int)m_local_ledger.size() + 1)
+    if(block_received.height == (int)m_local_ledger.size() + 1)
     {
-      if(quad.B_pending.block_name == EMPTY_BLOCK.block_name)
+      if(quad.B_pending.name == EMPTY_BLOCK.name)
       {
         state = 1;
         quad.B_pending = EMPTY_BLOCK;
         quad.freshness = 0;
-        std::cout<<"node "<<(int)m_node_id<<" prepared to block "<<block_received.block_name<<std::endl;
+        std::cout<<"node "<<(int)m_node_id<<" prepared to block "<<block_received.name<<std::endl;
         for (int i = 0; i < OUT_GOSSIP_ROUND; i++)
         {
           srand(Simulator::Now().GetSeconds() +m_node_id);
@@ -831,9 +832,9 @@ GossipApp::GossipBlockAfterReceive (int from_node, Block b)
 //     {
 //       if (block_got)
 //       {
-//         if(block_received.block_height == (int)m_local_ledger.size() + 1)
+//         if(block_received.height == (int)m_local_ledger.size() + 1)
 //         {
-//           if(quad.B_pending.block_name == EMPTY_BLOCK.block_name)
+//           if(quad.B_pending.name == EMPTY_BLOCK.name)
 //           {
 //             state = 1;
 //             quad.B_pending = EMPTY_BLOCK;
@@ -932,7 +933,7 @@ GossipApp::DetermineConsens ()
         }
       if (sum >= (2 * NODE_NUMBER / 3.0 + 1))
         {
-          std::cout<<"node "<<(int)m_node_id<<" committed block "<<block_received.block_name
+          std::cout<<"node "<<(int)m_node_id<<" committed block "<<block_received.name
             <<" to its local ledger"<<std::endl;
           state = 3;
           get_committed_time = Simulator::Now ().GetSeconds ();
@@ -940,10 +941,10 @@ GossipApp::DetermineConsens ()
           get_committed_or_not = 1;
           map_epoch_consensed[m_epoch] = 1;
           quad.B_root = block_received;
-          quad.H_root = block_received.block_height;
+          quad.H_root = block_received.height;
           quad.B_pending = EMPTY_BLOCK;
           quad.freshness = 0;
-          m_local_ledger.push_back(block_received.block_name);
+          m_local_ledger.push_back(block_received.name);
           m_ledger_built_epoch.push_back(m_epoch);
         }
       else
@@ -1031,8 +1032,8 @@ GossipApp::HandleRead (Ptr<Socket> socket)
                     {
                       uint32_t tmp1 = atoi(res[3].c_str ());
                       int tmp2 = (atoi)(res[4].c_str ());
-                      block_received.block_name = tmp1;
-                      block_received.block_height = tmp2;
+                      block_received.name = tmp1;
+                      block_received.height = tmp2;
 
                       std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" for the first time "<<packet->GetSize()
                       <<" bytes from node "<<from_node<<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
@@ -1052,7 +1053,7 @@ GossipApp::HandleRead (Ptr<Socket> socket)
           else if (strcmp (type_of_received_message, "PREPARE") == 0)
             {
               uint32_t block_prepared = atoi(res[3].c_str ());
-              if(block_prepared == block_received.block_name)
+              if(block_prepared == block_received.name)
               {
                 int x = (atoi) (res[1].c_str ());
                 if (map_node_PREPARE[x] == 0)
@@ -1076,7 +1077,7 @@ GossipApp::HandleRead (Ptr<Socket> socket)
           else if (strcmp (type_of_received_message, "COMMIT") == 0)
             {
               uint32_t block_committed = atoi(res[3].c_str ());
-              if(block_committed == block_received.block_name)
+              if(block_committed == block_received.name)
               {
                 int x = (atoi) (res[1].c_str ());
                 if (map_node_COMMIT[x] == 0)
