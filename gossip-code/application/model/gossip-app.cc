@@ -324,57 +324,37 @@ void
 GossipApp::StopApplication ()
 {
   NS_LOG_FUNCTION (this);
-  // printf("%s\n", "Server stops!");
-  // if (m_socket_receive != 0)
-  //   {
-  //     m_socket_receive->Close ();
-  //     m_socket_receive->SetRecvCallback (MakeNullCallback<void, Ptr<Socket> > ());
-  //   }
-  // if(block_got)
-  //   std::cout<<"node "<<(int)m_node_id<<" has received the block"<<std::endl;
-  int sum = m_local_ledger.size ();
-  // for(int i=1; i<=TOTAL_EPOCH_FOR_SIMULATION; i++)
-  // {
-  //   sum += map_epoch_consensed[i];
-  // }
-  std::cout << "node " << (int) m_node_id << " got " << sum << " consensed block" << std::endl;
-  // for (int i = 0; i < NODE_NUMBER; i++)
-  // {
-  //   sum += map_node_COMMIT[i];
-  // }
-  // std::cout<<"node "<<(int)m_node_id<<" got "<<sum<<" commit msg"<<std::endl;
-  // if (block_got == true)
-  //   std::cout << "node " << (int) m_node_id << " received block" << std::endl;
-  // std::cout<<"node "<<(int)m_node_id<<" get block at "<<get_block_time<<"s"<<std::endl;
-  // std::cout<<"node "<<(int)m_node_id<<" get prepared at "<<get_prepared_time<<"s"<<std::endl;
-  // std::cout<<"node "<<(int)m_node_id<<" get committed at "<<get_committed_time<<"s"<<std::endl;
-
-  if (m_node_id == 15)
+  if (m_socket_receive != 0)
     {
-      std::cout << "******************************" << std::endl;
-      for (int j = 1; j < TOTAL_EPOCH_FOR_SIMULATION; j++)
-        {
-          std::cout << "****************epoch " << j << " receving time information****" << std::endl;
-          for (int n = 1; n < NODE_NUMBER; n++)
-            {
-              std::cout << "node " << n << " got block at " << map_epoch_node_getblocktime[j][n]
-                        << "s" << std::endl;
-            }
-          for (int n = 1; n < NODE_NUMBER; n++)
-            {
-              std::cout << "node " << n << " got committed at "
-                        << map_epoch_node_getcommittedtime[j][n] << "s" << std::endl;
-            }
-        }
-
-      for (int i = 0; i < (int) m_local_ledger.size (); i++)
-        {
-          std::cout << "local ledger height " << std::setw (3)<< i << ": " << std::setw (12) << m_local_ledger[i]
-                    << "    ";
-          std::cout << "in epoch " << m_ledger_built_epoch[i] << std::endl;
-        }
-      std::cout << "******************************" << std::endl;
+      m_socket_receive->Close ();
+      m_socket_receive->SetRecvCallback (MakeNullCallback<void, Ptr<Socket> > ());
     }
+  int sum = m_local_ledger.size ();
+
+  std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~"<<(int)m_node_id<<" information~~~~~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
+  std::cout << "node " << (int) m_node_id << " got " << sum << " consensed block" << std::endl; 
+  // for (int j = 1; j < TOTAL_EPOCH_FOR_SIMULATION; j++)
+  // {
+  //   std::cout << "epoch " << j << " receving time information****" << std::endl;
+  //   for (int n = 1; n < NODE_NUMBER; n++)
+  //   {
+  //     std::cout << "node " << n << " got block at " << map_epoch_node_getblocktime[j][n]
+  //               << "s" << std::endl;
+  //   }
+  //   for (int n = 1; n < NODE_NUMBER; n++)
+  //   {
+  //     std::cout << "node " << n << " got committed at "
+  //               << map_epoch_node_getcommittedtime[j][n] << "s" << std::endl;
+  //   }
+  // }
+
+  for (int i = 0; i < (int) m_local_ledger.size (); i++)
+  {
+    std::cout << "local ledger height " << std::setw (3)<< i << ": " << std::setw (12) << m_local_ledger[i]
+              << "    ";
+    std::cout << "in epoch " << m_ledger_built_epoch[i] << std::endl;
+  }
+  std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~"<<(int)m_node_id<< " information~~~~~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
 }
 
 void
@@ -710,8 +690,8 @@ GossipApp::GossipPrepareOut ()
               state = 1;
               quad.B_pending = EMPTY_BLOCK;
               quad.freshness = 0;
-              std::cout << "node " << (int) m_node_id << " prepared to block "
-                        << block_received.name << std::endl;
+              std::cout << "node " << (int) m_node_id << " prepared to block "<< block_received.name 
+                <<" in epoch "<<m_epoch << std::endl;
               for (int i = 0; i < OUT_GOSSIP_ROUND; i++)
                 {
                   srand (Simulator::Now ().GetSeconds () + m_node_id);
@@ -811,7 +791,7 @@ GossipApp::DetermineConsens ()
       if (sum >= (2 * NODE_NUMBER / 3.0 + 1))
         {
           std::cout << "node " << (int) m_node_id << " committed block " << block_received.name
-                    << " to its local ledger" << std::endl;
+                    << " to its local ledger in epoch "<<m_epoch<< std::endl;
           state = 3;
           get_committed_time = Simulator::Now ().GetSeconds () - m_epoch_beginning;
           get_committed_time = (int(get_committed_time * 1000)) / 1000.;
@@ -875,6 +855,65 @@ GossipApp::SilenceAttack ()
 // }
 // TODO launch an inductionattack
 
+void GossipApp::SolicitBlockHistory(int dest)
+{
+  std::string str1 = "";
+  str1.append(std::to_string(m_epoch));
+  str1.append("+");
+  str1.append(std::to_string(m_node_id));
+  str1.append("+");
+  std::string str2 = "SOLICIT";
+  str1.append(str2);
+  const uint8_t *str3 = reinterpret_cast<const uint8_t *> (str1.c_str ());
+  Packet pack1 (str3, 200);
+  Ptr<Packet> p = &pack1;
+  if (m_socket_send[dest]->Send (p) == -1)
+    std::cout << "Failed to send packet" << std::endl;
+  std::cout<<"node "<<(int)m_node_id<<" query node "<<dest<<" for block history at "
+    <<Simulator::Now().GetSeconds()<<"s"<<std::endl;
+
+}
+
+void GossipApp::ReplyBlockSolicit(int dest)
+{
+  std::string str1 = "";
+  str1.append(std::to_string(m_epoch));
+  str1.append("+");
+  str1.append(std::to_string(m_node_id));
+  str1.append("+");
+  std::string str2 = "REPLYSOLICIT";
+  str1.append(str2);
+  int len = m_local_ledger.size();
+  if(len>=6)
+  {
+    for(int i=0; i<6; i++)
+    {
+      int j = len-6+i;
+      str1.append(std::to_string(m_local_ledger[j]));
+      str1.append("+");
+      str1.append(std::to_string(m_ledger_built_epoch[j]));
+      str1.append("+");
+    }
+  }
+  else
+  {
+    for(int i=0; i<len; i++)
+    {
+      str1.append(std::to_string(m_local_ledger[i]));
+      str1.append("+");
+      str1.append(std::to_string(m_ledger_built_epoch[i]));
+      str1.append("+");
+    }
+  }
+  const uint8_t *str3 = reinterpret_cast<const uint8_t *> (str1.c_str ());
+  Packet pack1 (str3, 200);
+  Ptr<Packet> p = &pack1;
+  if (m_socket_send[dest]->Send (p) == -1)
+    std::cout << "Failed to send packet" << std::endl;
+  std::cout<<"node "<<(int)m_node_id<<" reply node "<<dest<<" for query at "
+    <<Simulator::Now().GetSeconds()<<"s"<<std::endl;
+}
+
 void
 GossipApp::HandleRead (Ptr<Socket> socket)
 {
@@ -887,135 +926,117 @@ GossipApp::HandleRead (Ptr<Socket> socket)
       packet->CopyData (content_, 200);
       Ipv4Address from_addr = InetSocketAddress::ConvertFrom (from).GetIpv4 ();
       int from_node = (int) map_addr_node[from_addr];
-      // std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" "<<packet->GetSize()
-      //   <<" bytes from node "<<from_node<<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
-
       std::string str_of_content (content_, content_ + 200);
       std::vector<std::string> res = SplitMessage (str_of_content, '+');
       const char *time_of_recived_message = res[0].c_str ();
 
+      // std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" "<<packet->GetSize()
+      //   <<" bytes from node "<<from_node<<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
+
+      
+
       if (strcmp (time_of_recived_message, (std::to_string (m_epoch)).c_str ()) == 0)
+      {
+        const char *type_of_received_message = res[2].c_str ();
+        if (strcmp (type_of_received_message, "BLOCK") == 0)
         {
-          const char *type_of_received_message = res[2].c_str ();
-          if (strcmp (type_of_received_message, "BLOCK") == 0)
+          uint32_t received_former_block = (atoi) (res[4].c_str ());
+          uint32_t local_former_block = m_local_ledger[m_local_ledger.size()-1];
+          if(received_former_block == local_former_block)
+          {
+            if (block_got == false)
             {
-              uint32_t received_former_block = (atoi) (res[4].c_str ());
-              uint32_t local_former_block = m_local_ledger[m_local_ledger.size()-1];
-              if(received_former_block == local_former_block)
+              int u = (atoi) (res[6].c_str ());
+              map_blockpiece_received[u] = 1;
+              if_get_block ();
+              if (block_got == true)
               {
-                if (block_got == false)
-                {
-                  int u = (atoi) (res[6].c_str ());
-                  map_blockpiece_received[u] = 1;
-                  if_get_block ();
-                  if (block_got == true)
-                  {
-                    uint32_t tmp1 = atoi (res[3].c_str ());
-                    int tmp2 = (atoi) (res[5].c_str ());
-                    block_received.name = tmp1;
-                    block_received.height = tmp2;
+                uint32_t tmp1 = atoi (res[3].c_str ());
+                int tmp2 = (atoi) (res[5].c_str ());
+                block_received.name = tmp1;
+                block_received.height = tmp2;
 
-                    std::cout << "node " << (int) GetNodeId () << " received a " << content_
-                              << " for the first time " << packet->GetSize ()
-                              << " bytes from node " << from_node << " at "
-                              << Simulator::Now ().GetSeconds () << " s" << std::endl;
-                    get_block_time = Simulator::Now ().GetSeconds () - m_epoch_beginning;
-                    get_block_time = ((int) (get_block_time * 1000)) / 1000.;
-                    get_block_or_not = 1;
-                    // std::cout << "node " << (int) GetNodeId () << " received a " << content_
-                    //           << " for the first time from node " << from_node << " at "
-                    //           << get_block_time << "s" << std::endl;
-                    GossipBlockAfterReceive (from_node, block_received);
-                  }
-                }
+                std::cout << "node " << (int) GetNodeId () << " received a " << content_
+                          << " for the first time " << packet->GetSize ()
+                          << " bytes from node " << from_node << " at "
+                          << Simulator::Now ().GetSeconds () << " s" << std::endl;
+                get_block_time = Simulator::Now ().GetSeconds () - m_epoch_beginning;
+                get_block_time = ((int) (get_block_time * 1000)) / 1000.;
+                get_block_or_not = 1;
+                // std::cout << "node " << (int) GetNodeId () << " received a " << content_
+                //           << " for the first time from node " << from_node << " at "
+                //           << get_block_time << "s" << std::endl;
+                GossipBlockAfterReceive (from_node, block_received);
               }
-              else
-              {
-                // TODO query the node who give me this block
-              }
-              
-              // else
-              //   std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" "<<packet->GetSize()
-              //     <<" bytes from node "<<from_node<<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
             }
-          else if (strcmp (type_of_received_message, "PREPARE") == 0)
-            {
-              if (state == 1)
-                {
-                  uint32_t block_prepared = atoi (res[3].c_str ());
-                  if (block_prepared == block_received.name)
-                    {
-                      int x = (atoi) (res[1].c_str ());
-                      if (map_node_PREPARE[x] == 0)
-                        {
-                          map_node_PREPARE[x] = 1;
-                          // std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" "<<packet->GetSize()
-                          //   <<" bytes from node "<<from_node<<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
-                          for (int i = 0; i < OUT_GOSSIP_ROUND; i++)
-                            {
-                              srand (Simulator::Now ().GetSeconds ());
-                              float x = rand () % 100;
-                              x = x / 100;
-                              int dest = out_neighbor_choosed[i];
-                              Simulator::Schedule (Seconds (x), &GossipApp::RelayVotingMessage,
-                                                   this, dest, packet);
-                            }
-                        }
-                    }
-                }
-            }
-          else if (strcmp (type_of_received_message, "COMMIT") == 0)
-            {
-              if (state == 2)
-                {
-                  uint32_t block_committed = atoi (res[3].c_str ());
-                  if (block_committed == block_received.name)
-                    {
-                      int x = (atoi) (res[1].c_str ());
-                      if (map_node_COMMIT[x] == 0)
-                        {
-                          map_node_COMMIT[x] = 1;
-                          // std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" "<<packet->GetSize()
-                          //   <<" bytes from node "<<from_node<<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
-                          for (int i = 0; i < OUT_GOSSIP_ROUND; i++)
-                            {
-                              srand (Simulator::Now ().GetSeconds ());
-                              float x = rand () % 100;
-                              x = x / 100;
-                              int dest = out_neighbor_choosed[i];
-                              Simulator::Schedule (Seconds (x), &GossipApp::RelayVotingMessage,
-                                                   this, dest, packet);
-                            }
-                        }
-                    }
-                }
-            }
-          // else if(strcmp(type_of_received_message, "TIMEMESSAGE")==0)
-          // {
-          //   int x = (atoi)(res[1].c_str());
-          //   if(map_node_getblockornot[x]==-1)
-          //   {
-          //     map_node_getblockornot[x] = (atoi)(res[3].c_str());
-          //     map_node_getcommitedornot[x] = (atoi)(res[4].c_str());
-          //     map_node_getblocktime[x] = std::stod(res[5].c_str());
-          //     // map_node_getpreparedtime[x] = std::stod(res[6].c_str());
-          //     map_node_getcommittedtime[x] = std::stod(res[6].c_str());
-          //     // std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" "<<packet->GetSize()
-          //     //     <<" bytes from node "<<from_node<<" at "<<Simulator::Now().GetSeconds()<<"s"<<std::endl;
-          //     for (int i = 0; i < OUT_GOSSIP_ROUND; i++)
-          //           {
-          //             srand (Simulator::Now ().GetSeconds ());
-          //             float x = rand () % 100;
-          //             x = x / 100;
-          //             int dest = out_neighbor_choosed[i];
-          //             Simulator::Schedule (Seconds (x), &GossipApp::RelayTimeMessage, this, dest,
-          //                                  packet);
-          //           }
-          //   }
-
-          // }
+          }
+          else
+          {
+            SolicitBlockHistory(from_node);
+            // TODO query the node who give me this block
+          }
         }
+        else if (strcmp (type_of_received_message, "PREPARE") == 0)
+        {
+          if (state == 1)
+            {
+              uint32_t block_prepared = atoi (res[3].c_str ());
+              if (block_prepared == block_received.name)
+                {
+                  int x = (atoi) (res[1].c_str ());
+                  if (map_node_PREPARE[x] == 0)
+                    {
+                      map_node_PREPARE[x] = 1;
+                      // std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" "<<packet->GetSize()
+                      //   <<" bytes from node "<<from_node<<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
+                      for (int i = 0; i < OUT_GOSSIP_ROUND; i++)
+                        {
+                          srand (Simulator::Now ().GetSeconds ());
+                          float x = rand () % 100;
+                          x = x / 100;
+                          int dest = out_neighbor_choosed[i];
+                          Simulator::Schedule (Seconds (x), &GossipApp::RelayVotingMessage,
+                                                this, dest, packet);
+                        }
+                    }
+                }
+            }
+        }
+        else if (strcmp (type_of_received_message, "COMMIT") == 0)
+        {
+          if (state == 2)
+            {
+              uint32_t block_committed = atoi (res[3].c_str ());
+              if (block_committed == block_received.name)
+                {
+                  int x = (atoi) (res[1].c_str ());
+                  if (map_node_COMMIT[x] == 0)
+                    {
+                      map_node_COMMIT[x] = 1;
+                      // std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" "<<packet->GetSize()
+                      //   <<" bytes from node "<<from_node<<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
+                      for (int i = 0; i < OUT_GOSSIP_ROUND; i++)
+                        {
+                          srand (Simulator::Now ().GetSeconds ());
+                          float x = rand () % 100;
+                          x = x / 100;
+                          int dest = out_neighbor_choosed[i];
+                          Simulator::Schedule (Seconds (x), &GossipApp::RelayVotingMessage,
+                                                this, dest, packet);
+                        }
+                    }
+                }
+            }
+        }
+        else if(strcmp (type_of_received_message, "SOLICIT") == 0)
+        {
+          ReplyBlockSolicit(from_node);
+        }
+        else if(strcmp (type_of_received_message, "REPLYSOLICIT") == 0)
+        {
 
+        }
+      }
       else if (strcmp (time_of_recived_message, (std::to_string (m_epoch - 1)).c_str ()) == 0 &&
                m_epoch > 1)
         {

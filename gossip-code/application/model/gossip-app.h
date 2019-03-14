@@ -37,7 +37,7 @@ namespace ns3 {
 class Socket;
 class Packet;
 
-const int TOTAL_EPOCH_FOR_SIMULATION = 15;
+const int TOTAL_EPOCH_FOR_SIMULATION = 20;
 
 const int AP_NUMBER = 5;
 const int NODE_NUMBER = 16;
@@ -95,7 +95,7 @@ public:
   void RelayTimeMessage(int dest, Ptr<Packet> p);
   void GossipCommitOut();
   void DetermineConsens();
-  void SolicitBlockFromOthers();
+  void ReplyBlockSolicit(int dest);
   void SolicitConsensusMessageFromOthers();
 
   void SilenceAttack();
@@ -120,6 +120,7 @@ private:
   void SendPrepare(int dest, Block b);
   void SendCommit(int dest, Block b);
   void SendTimeMessage(int dest, int t);
+  void SolicitBlockHistory(int dest);
   void HandleRead (Ptr<Socket> socket);
 
 
