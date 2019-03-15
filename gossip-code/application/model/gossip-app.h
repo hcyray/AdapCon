@@ -42,18 +42,13 @@ const int TOTAL_EPOCH_FOR_SIMULATION = 20;
 const int AP_NUMBER = 5;
 const int NODE_NUMBER = 16;
 const int OUT_GOSSIP_ROUND = 5;
+const int BLOCK_PIECE_NUMBER = 1;
 const int IN_GOSSIP_ROUND = 3;
 const int SOLICIT_ROUND = 1;
 const int SOLICIT_INTERVAL = 10;
 const float DETERMINECOMMIT_INTERVAL = 0.2;
 const float DETERMINECONSENS_INTERVAL = 0.2;
 
-const uint8_t TYPE_BLOCK[1000] = "BLOCK";
-const uint8_t TYPE_SOLICIT[80] = "SOLICIT";
-const uint8_t TYPE_ACK[80] = "ACK";
-const uint8_t TYPE_PREPARE[80] = "PREPARE";
-const uint8_t TYPE_COMMIT[80] = "COMMIT";
-const uint8_t TYPE_REPUTATION[100] = "REPUTATION";
 
 const int WINDOW_SIZE = 3;
 const float EPSILON = 5.0;
