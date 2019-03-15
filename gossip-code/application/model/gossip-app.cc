@@ -671,8 +671,8 @@ GossipApp::LeaderGossipBlockOut (Block b)
   for (int i = 0; i < OUT_GOSSIP_ROUND; i++)
     {
       srand (Simulator::Now ().GetSeconds () + m_node_id);
-      float x = rand () % 1000;
-      x = x / 1000;
+      float x = rand () % 2000;
+      x = x / 2000;
       Simulator::Schedule (Seconds (x), &GossipApp::SendBlock, this, out_neighbor_choosed[i], b);
       // SendBlock(out_neighbor_choosed[i]);
     }
@@ -1077,7 +1077,7 @@ GossipApp::HandleRead (Ptr<Socket> socket)
       }
       else if(strcmp (type_of_received_message, "REPLYHISTORY") == 0)
       {
-        std::cout<<"node "<<(int)m_node_id<<" get REPLYHISTORY!!!!!!!!!!!"<<(int)res.size()<<std::endl;
+        std::cout<<"node "<<(int)m_node_id<<" get REPLYHISTORY!!!!!!"<<std::endl;
         // for(int i=0; i<(int)res.size(); i++)
         //   std::cout<<res[i].c_str()<<"~~~~";
         // std::cout<<std::endl;
