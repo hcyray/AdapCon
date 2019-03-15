@@ -77,7 +77,7 @@ GossipApp::GossipApp ()
   // m_count = 1;
   m_epoch = 0;
   m_epoch_beginning = 0.;
-  len_phase1 = 15.0;
+  len_phase1 = 25.0;
   len_phase2 = 5.0;
   waitting_time = len_phase1 * 2 / 4.;
 
@@ -333,21 +333,23 @@ GossipApp::StopApplication ()
 
   std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~"<<(int)m_node_id<<" information~~~~~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
   std::cout << "node " << (int) m_node_id << " got " << sum << " consensed block" << std::endl; 
-  // for (int j = 1; j < TOTAL_EPOCH_FOR_SIMULATION; j++)
-  // {
-  //   std::cout << "epoch " << j << " receving time information****" << std::endl;
-  //   for (int n = 1; n < NODE_NUMBER; n++)
-  //   {
-  //     std::cout << "node " << n << " got block at " << map_epoch_node_getblocktime[j][n]
-  //               << "s" << std::endl;
-  //   }
-  //   for (int n = 1; n < NODE_NUMBER; n++)
-  //   {
-  //     std::cout << "node " << n << " got committed at "
-  //               << map_epoch_node_getcommittedtime[j][n] << "s" << std::endl;
-  //   }
-  // }
-
+  if((int)m_node_id == 15)
+  {
+    for (int j = 1; j < TOTAL_EPOCH_FOR_SIMULATION; j++)
+    {
+      std::cout << "****epoch " << j << " receiving time information****" << std::endl;
+      for (int n = 1; n < NODE_NUMBER; n++)
+      {
+        std::cout << "node " << n << " got block at " << map_epoch_node_getblocktime[j][n]
+                  << "s" << std::endl;
+      }
+      for (int n = 1; n < NODE_NUMBER; n++)
+      {
+        std::cout << "node " << n << " got committed at "
+                  << map_epoch_node_getcommittedtime[j][n] << "s" << std::endl;
+      }
+    }
+  }
   for (int i = 0; i < (int) m_local_ledger.size (); i++)
   {
     std::cout << "local ledger height " << std::setw (3)<< i << ": " << std::setw (12) << m_local_ledger[i]
@@ -391,7 +393,7 @@ GossipApp::SendBlockPiece (int dest, int piece, Block b)
   str1.append ("+");
   str1.append (std::to_string ((int) piece));
   const uint8_t *str3 = reinterpret_cast<const uint8_t *> (str1.c_str ());
-  Packet pack1 (str3, 1024 * 8);
+  Packet pack1 (str3, 1024 * 32);
   Ptr<Packet> p = &pack1;
   if (m_socket_send[dest]->Send (p) == -1)
     std::cout << "Failed to send packet" << std::endl;
@@ -690,7 +692,7 @@ GossipApp::GossipPrepareOut ()
               state = 1;
               quad.B_pending = EMPTY_BLOCK;
               quad.freshness = 0;
-              std::cout << "node " << (int) m_node_id << " prepared to block "<< block_received.name 
+              std::cout << "node " << (int) m_node_id << " send prepare msg for block "<< block_received.name 
                 <<" in epoch "<<m_epoch << std::endl;
               for (int i = 0; i < OUT_GOSSIP_ROUND; i++)
                 {
@@ -762,6 +764,8 @@ void GossipApp::GossipCommitOut () // send commit msg out
           quad.freshness = m_epoch;
           get_prepared_time = Simulator::Now ().GetSeconds () - m_epoch_beginning;
           get_prepared_time = ((int) (get_prepared_time * 1000)) / 1000.;
+          std::cout << "node " << (int) m_node_id << " send commit msg for block "<< block_received.name 
+            <<" in epoch "<<m_epoch << std::endl;
           for (int i = 0; i < OUT_GOSSIP_ROUND; i++)
             {
               srand (Simulator::Now ().GetSeconds () + m_node_id);
@@ -790,7 +794,7 @@ GossipApp::DetermineConsens ()
         }
       if (sum >= (2 * NODE_NUMBER / 3.0 + 1))
         {
-          std::cout << "node " << (int) m_node_id << " committed block " << block_received.name
+          std::cout << "node " << (int) m_node_id << " consensed block " << block_received.name
                     << " to its local ledger in epoch "<<m_epoch<< std::endl;
           state = 3;
           get_committed_time = Simulator::Now ().GetSeconds () - m_epoch_beginning;
@@ -912,7 +916,7 @@ void GossipApp::ReplyHistorySolicit(int dest, int h)
   str1.append("+");
   str1.append(str2);
   const uint8_t *str3 = reinterpret_cast<const uint8_t *> (str1.c_str ());
-  Packet pack1 (str3, 200);
+  Packet pack1 (str3, 100);
   Ptr<Packet> p = &pack1;
   if (m_socket_send[dest]->Send (p) == -1)
     std::cout << "Failed to send packet" << std::endl;
@@ -938,12 +942,12 @@ void GossipApp::RecoverHistory(std::vector<uint32_t> b, std::vector<int> b_epo, 
   quad.freshness = 0;
 
   std::cout<<"node "<<(int)m_node_id<<" recoverd his local ledger"<<std::endl;
-  std::cout<<"node "<<(int)m_node_id<<"'s local ledger: "<<std::endl;
-  for(int i=0; i<(int)m_local_ledger.size(); i++)
-  {
-    std::cout<<m_local_ledger[i]<<"-->";
-  }
-  std::cout<<std::endl;
+  // std::cout<<"node "<<(int)m_node_id<<"'s local ledger: "<<std::endl;
+  // for(int i=0; i<(int)m_local_ledger.size(); i++)
+  // {
+  //   std::cout<<m_local_ledger[i]<<"-->";
+  // }
+  // std::cout<<std::endl;
   SolicitBlock(dest);
 }
 
@@ -1008,7 +1012,9 @@ GossipApp::HandleRead (Ptr<Socket> socket)
           if(received_block_height>((int)m_local_ledger.size()+1))
           {
             int local_ledger_height = (int) (m_local_ledger.size());
-            SolicitHistory(from_node, local_ledger_height);
+            int piece = (atoi) (res[6].c_str());
+            if(piece==0)
+              SolicitHistory(from_node, local_ledger_height);
           }
           // TODO query the node who give me this block
         }
