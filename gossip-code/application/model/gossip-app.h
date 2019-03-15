@@ -90,7 +90,7 @@ public:
   void RelayTimeMessage(int dest, Ptr<Packet> p);
   void GossipCommitOut();
   void DetermineConsens();
-  void ReplyHistorySolicit(int dest);
+  void ReplyHistorySolicit(int dest, int h);
   void RecoverHistory(std::vector<uint32_t> b, std::vector<int> b_epo, int dest);
   void SolicitConsensusMessageFromOthers();
 
@@ -116,7 +116,7 @@ private:
   void SendPrepare(int dest, Block b);
   void SendCommit(int dest, Block b);
   void SendTimeMessage(int dest, int t);
-  void SolicitHistory(int dest);
+  void SolicitHistory(int dest, int h);
   void SolicitBlock(int dest);
   void HandleRead (Ptr<Socket> socket);
 

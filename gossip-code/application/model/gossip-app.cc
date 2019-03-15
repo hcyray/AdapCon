@@ -871,7 +871,7 @@ void GossipApp::SolicitBlock(int dest)
     std::cout << "Failed to send packet" << std::endl;
 }
 
-void GossipApp::SolicitHistory(int dest)
+void GossipApp::SolicitHistory(int dest, int h)
 {
   std::string str1 = "";
   str1.append(std::to_string(m_epoch));
@@ -880,6 +880,8 @@ void GossipApp::SolicitHistory(int dest)
   str1.append("+");
   std::string str2 = "SOLICITHISTORY";
   str1.append(str2);
+  str1.append("+");
+  str1.append(std::to_string(h));
   const uint8_t *str3 = reinterpret_cast<const uint8_t *> (str1.c_str ());
   Packet pack1 (str3, 200);
   Ptr<Packet> p = &pack1;
@@ -890,7 +892,7 @@ void GossipApp::SolicitHistory(int dest)
 
 }
 
-void GossipApp::ReplyHistorySolicit(int dest)
+void GossipApp::ReplyHistorySolicit(int dest, int h)
 {
   std::string str1 = "";
   str1.append(std::to_string(m_epoch));
@@ -900,26 +902,12 @@ void GossipApp::ReplyHistorySolicit(int dest)
   std::string str2 = "REPLYHISTORY";
   str1.append(str2);
   int len = m_local_ledger.size();
-  if(len>=6)
+  for(int i=h; i<len; i++)
   {
-    for(int i=0; i<6; i++)
-    {
-      int j = len-6+i;
-      str1.append("+");
-      str1.append(std::to_string(m_local_ledger[j]));
-      str1.append("+");
-      str1.append(std::to_string(m_ledger_built_epoch[j]));
-    }
-  }
-  else
-  {
-    for(int i=0; i<len; i++)
-    {
-      str1.append("+");
-      str1.append(std::to_string(m_local_ledger[i]));
-      str1.append("+");
-      str1.append(std::to_string(m_ledger_built_epoch[i]));
-    }
+    str1.append("+");
+    str1.append(std::to_string(m_local_ledger[i]));
+    str1.append("+");
+    str1.append(std::to_string(m_ledger_built_epoch[i]));
   }
   str1.append("+");
   str1.append(str2);
@@ -934,26 +922,16 @@ void GossipApp::ReplyHistorySolicit(int dest)
 
 void GossipApp::RecoverHistory(std::vector<uint32_t> b, std::vector<int> b_epo, int dest)
 {
-  std::cout<<"node "<<(int)m_node_id<<"'s local ledger: "<<std::endl;
-  for(int i=0; i<(int)m_local_ledger.size(); i++)
+  int i=0;
+  for(; i<(int)b.size(); i++)
   {
-    std::cout<<m_local_ledger[i]<<"-->";
+    m_local_ledger.push_back(b[i]);
+    m_ledger_built_epoch.push_back(b_epo[i]);
+    i++;
   }
 
-  std::vector<uint32_t>::iterator it;
-  it = std::find (b.begin (), b.end (), quad.B_root.name);
-  std::vector<int>::iterator ti = b_epo.begin() + (it - b.begin())/sizeof(uint32_t);
-  if(it != b.end())
-  {
-    m_local_ledger.push_back(*it);
-    it++;
-  }
-  if(ti != b_epo.end())
-  {
-    m_ledger_built_epoch.push_back(*ti);
-  }
 
-  quad.B_root.name = *it;
+  quad.B_root.name = b[i-1];
   quad.B_root.height = 0;
   quad.H_root = m_local_ledger.size();
   quad.B_pending = EMPTY_BLOCK;
@@ -965,6 +943,7 @@ void GossipApp::RecoverHistory(std::vector<uint32_t> b, std::vector<int> b_epo, 
   {
     std::cout<<m_local_ledger[i]<<"-->";
   }
+  std::cout<<std::endl;
   SolicitBlock(dest);
 }
 
@@ -1027,7 +1006,10 @@ GossipApp::HandleRead (Ptr<Socket> socket)
         {
           int received_block_height = (atoi) (res[5].c_str());
           if(received_block_height>((int)m_local_ledger.size()+1))
-            SolicitHistory(from_node);
+          {
+            int local_ledger_height = (int) (m_local_ledger.size());
+            SolicitHistory(from_node, local_ledger_height);
+          }
           // TODO query the node who give me this block
         }
         
@@ -1086,37 +1068,37 @@ GossipApp::HandleRead (Ptr<Socket> socket)
       }
       else if(strcmp (type_of_received_message, "SOLICITHISTORY") == 0)
       {
-        Simulator::Schedule(Seconds(0.3), &GossipApp::ReplyHistorySolicit, this, from_node);
-        // ReplyHistorySolicit(from_node);
+        int solicit_height = (atoi) (res[3].c_str());
+        Simulator::Schedule(Seconds(0.3), &GossipApp::ReplyHistorySolicit, this, from_node, solicit_height);
       }
       else if(strcmp (type_of_received_message, "SOLICITBLOCK") == 0)
       {
         SendBlock(from_node, block_received);
       }
-      // else if(strcmp (type_of_received_message, "REPLYHISTORY") == 0)
-      // {
-      //   std::cout<<"node "<<(int)m_node_id<<" get REPLYHISTORY!!!!!!!!!!!"<<(int)res.size()<<std::endl;
-      //   for(int i=0; i<(int)res.size(); i++)
-      //     std::cout<<res[i].c_str()<<"~~~~";
-      //   std::cout<<std::endl;
-      //   std::vector<uint32_t> history;
-      //   std::vector<int> history_built_height;
-      //   int i=3;
-      //   const char* next_str = res[i].c_str();
-      //   while(strcmp (next_str, "REPLYHISTORY") != 0)
-      //   {
-      //     uint32_t x = (atoi) (res[i].c_str());
-      //     // history.push_back(x);
-      //     i++;
-      //     int y = (atoi) (res[i].c_str());
-      //     // history_built_height.push_back(y);
-      //     i++;
-      //     next_str = res[i].c_str();
-      //     std::cout<<std::setw(12)<<x<<std::setw(4)<<y<<std::endl;
-      //   }
+      else if(strcmp (type_of_received_message, "REPLYHISTORY") == 0)
+      {
+        std::cout<<"node "<<(int)m_node_id<<" get REPLYHISTORY!!!!!!!!!!!"<<(int)res.size()<<std::endl;
+        // for(int i=0; i<(int)res.size(); i++)
+        //   std::cout<<res[i].c_str()<<"~~~~";
+        // std::cout<<std::endl;
+        std::vector<uint32_t> history;
+        std::vector<int> history_built_height;
+        int i=3;
+        const char* next_str = res[i].c_str();
+        while(strcmp (next_str, "REPLYHISTORY") != 0)
+        {
+          uint32_t x = (atoi) (res[i].c_str());
+          history.push_back(x);
+          i++;
+          int y = (atoi) (res[i].c_str());
+          history_built_height.push_back(y);
+          i++;
+          next_str = res[i].c_str();
+          std::cout<<std::setw(12)<<x<<std::setw(4)<<y<<std::endl;
+        }
 
-      //   // RecoverHistory(history, history_built_height, from_node);
-      // }
+        RecoverHistory(history, history_built_height, from_node);
+      }
     }
     else if (strcmp (time_of_recived_message, (std::to_string (m_epoch - 1)).c_str ()) == 0 &&
               m_epoch > 1)
