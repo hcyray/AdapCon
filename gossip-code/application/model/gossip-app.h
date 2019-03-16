@@ -37,7 +37,7 @@ namespace ns3 {
 class Socket;
 class Packet;
 
-const int TOTAL_EPOCH_FOR_SIMULATION = 20;
+const int TOTAL_EPOCH_FOR_SIMULATION = 12;
 
 const int AP_NUMBER = 5;
 const int NODE_NUMBER = 16;
