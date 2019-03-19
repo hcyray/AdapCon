@@ -138,7 +138,8 @@ ServerTraffic::StopApplication ()
       m_socket->Close ();
       m_socket->SetRecvCallback (MakeNullCallback<void, Ptr<Socket> > ());
     }
-  std::cout<<"total traffic received: "<<total_traffic<<std::endl;
+  float sum = total_traffic / (1024*1024);
+  std::cout<<"total traffic received: "<<sum<< "MB" << std::endl;
 }
 
 

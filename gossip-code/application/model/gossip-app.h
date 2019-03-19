@@ -174,6 +174,7 @@ private:
   EventId id1;
   EventId id2;
   EventId id3;
+  EventId id4;
   
   int get_block_or_not;
   int get_committed_or_not;

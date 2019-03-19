@@ -147,7 +147,7 @@ UserTraffic::StopApplication ()
 void UserTraffic::ScheduleTransmit()
 {
   double time = Simulator::Now().GetSeconds();
-  if(time<32)
+  if(time<300)
   {
     double traffic = TrafficData(time);
     SendTraffic(traffic);
@@ -158,7 +158,7 @@ void UserTraffic::ScheduleTransmit()
 double UserTraffic::TrafficData(double time)
 {
   if(time>0)
-    return 1024*32*64;
+    return 1024*1024*3;
   return 1024*32;
 }
 
