@@ -77,8 +77,8 @@ GossipApp::GossipApp ()
   // m_count = 1;
   m_epoch = 0;
   m_epoch_beginning = 0.;
-  len_phase1 = 25.0;
-  len_phase2 = 5.0;
+  len_phase1 = 10.0;
+  len_phase2 = 2.5;
   waitting_time = len_phase1 * 2 / 4.;
 
   m_local_ledger.push_back (0xFFFFFFFF);
@@ -143,6 +143,8 @@ GossipApp::ConsensProcess ()
   // std::pair<int, int> p = NewLenComputation();
   // len_phase1 = p.first;
   // len_phase2 = p.second;
+  // map_epoch_len_phase1[m_epoch] = len_phase1;
+  // map_epoch_len_phase2[m_epoch] = len_phase2;
   // waitting_time = len_phase1*2/4.;
 
   m_epoch++;

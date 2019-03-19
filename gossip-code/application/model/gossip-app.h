@@ -193,7 +193,9 @@ private:
   std::map<int, std::map<int, float> > map_epoch_node_getblocktime;
   std::map<int, std::map<int, float> > map_epoch_node_getpreparedtime;
   std::map<int, std::map<int, float> > map_epoch_node_getcommittedtime;
-
+  std::map<int, float> map_epoch_len_phase1;
+  std::map<int, float> map_epoch_len_phase2;
+  
   std::map<int, float> map_node_CR_previous;
   std::map<int, float> map_node_CR;
   std::map<int, float> map_node_BR;
