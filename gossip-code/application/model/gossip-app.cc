@@ -168,9 +168,9 @@ GossipApp::ConsensProcess ()
   // {
   //   Simulator::Schedule(Seconds(waitting_time), &GossipApp::SolicitBlockFromOthers, this);
   // }
-  Simulator::Schedule (Seconds (len_phase1), &GossipApp::GossipPrepareOut, this);
-  Simulator::Schedule (Seconds (len_phase1), &GossipApp::GossipCommitOut, this);
-  Simulator::Schedule (Seconds (len_phase1 + len_phase2 - 0.1), &GossipApp::EndSummary, this);
+  id1 = Simulator::Schedule (Seconds (len_phase1), &GossipApp::GossipPrepareOut, this);
+  id2 = Simulator::Schedule (Seconds (len_phase1), &GossipApp::GossipCommitOut, this);
+  id3 = Simulator::Schedule (Seconds (len_phase1 + len_phase2 - 0.1), &GossipApp::EndSummary, this);
   if (m_epoch < TOTAL_EPOCH_FOR_SIMULATION)
   {  
     Simulator::Schedule (Seconds (len_phase1 + len_phase2), &GossipApp::ConsensProcess, this);
@@ -621,11 +621,13 @@ GossipApp::InitializeEpoch ()
   receive_viewplusplus_time = 0;
   receive_history = 0;
   block_got = false;
-  // if(m_ledger_built_epoch[m_local_ledger.size()]<m_epoch-1)
-  // {
-  //   len_phase1 *= 2;
-  //   len_phase2 *= 2;
-  // }
+
+  if(consensed_this_epoch==false && m_epoch>1)
+  {
+    len_phase1 *= 2;
+    len_phase2 *= 2;
+    std::cout<<"node "<<(int)m_node_id<<" doubles his epoch length"<<std::endl;
+  }
 }
 
 void
@@ -762,7 +764,7 @@ GossipApp::GossipPrepareOut ()
               quad.B_pending = EMPTY_BLOCK;
               quad.freshness = 0;
               std::cout << "node " << (int) m_node_id << " send prepare msg for block "<< block_received.name 
-                <<" in epoch "<<m_epoch << std::endl;
+                <<" at "<<Simulator::Now().GetSeconds()<<"s in epoch "<<m_epoch << std::endl;
               for (int i = 0; i < OUT_GOSSIP_ROUND; i++)
               {
                 srand (Simulator::Now ().GetSeconds () + m_node_id);
@@ -834,7 +836,7 @@ void GossipApp::GossipCommitOut () // send commit msg out
           get_prepared_time = Simulator::Now ().GetSeconds () - m_epoch_beginning;
           get_prepared_time = ((int) (get_prepared_time * 1000)) / 1000.;
           std::cout << "node " << (int) m_node_id << " send commit msg for block "<< block_received.name 
-            <<" in epoch "<<m_epoch << std::endl;
+            <<"at "<<Simulator::Now().GetSeconds()<<"s in epoch "<<m_epoch << std::endl;
           for (int i = 0; i < OUT_GOSSIP_ROUND; i++)
             {
               srand (Simulator::Now ().GetSeconds () + m_node_id);
@@ -864,7 +866,7 @@ GossipApp::DetermineConsens ()
       if (sum >= (2 * NODE_NUMBER / 3.0 + 1))
         {
           std::cout << "node " << (int) m_node_id << " consensed block " << block_received.name
-                    << " to its local ledger in epoch "<<m_epoch<< std::endl;
+                    << " to its local ledger at "<<Simulator::Now().GetSeconds()<<"s in epoch "<<m_epoch<< std::endl;
           state = 3;
           get_committed_time = Simulator::Now ().GetSeconds () - m_epoch_beginning;
           get_committed_time = (int(get_committed_time * 1000)) / 1000.;
@@ -1011,7 +1013,17 @@ void GossipApp::RecoverHistory(std::vector<uint32_t> b, std::vector<int> b_epo, 
   quad.B_pending = EMPTY_BLOCK;
   quad.freshness = 0;
 
-  std::cout<<"node "<<(int)m_node_id<<" recoverd his local ledger"<<std::endl;
+  Simulator::Cancel(id1);
+  Simulator::Cancel(id2);
+  Simulator::Cancel(id3);
+  len_phase1 /= 2;
+  len_phase2 /= 2;
+  float x1 = Simulator::Now().GetSeconds() - m_epoch_beginning;
+  EventId id1 = Simulator::Schedule (Seconds (len_phase1 - x1), &GossipApp::GossipPrepareOut, this);
+  EventId id2 = Simulator::Schedule (Seconds (len_phase1 - x1), &GossipApp::GossipCommitOut, this);
+  EventId id3 = Simulator::Schedule (Seconds (len_phase1 + len_phase2 - 0.1 - x1), &GossipApp::EndSummary, this);
+
+  std::cout<<"node "<<(int)m_node_id<<" recoverd his local ledger and set his epoch length to normal value"<<std::endl;
   // std::cout<<"node "<<(int)m_node_id<<"'s local ledger: "<<std::endl;
   // for(int i=0; i<(int)m_local_ledger.size(); i++)
   // {

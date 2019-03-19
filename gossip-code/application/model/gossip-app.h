@@ -37,7 +37,7 @@ namespace ns3 {
 class Socket;
 class Packet;
 
-const int TOTAL_EPOCH_FOR_SIMULATION = 18;
+const int TOTAL_EPOCH_FOR_SIMULATION = 10;
 
 const int AP_NUMBER = 5;
 const int NODE_NUMBER = 16;
@@ -171,6 +171,9 @@ private:
   Time m_interval = Seconds(2.0); 
   float m_epoch_beginning;
   // EventId m_sendEvent;
+  EventId id1;
+  EventId id2;
+  EventId id3;
   
   int get_block_or_not;
   int get_committed_or_not;
