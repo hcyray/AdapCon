@@ -93,19 +93,19 @@ GossipApp::GossipApp ()
   std::ifstream infile1;
   infile1.open ("scratch/subdir/topologydata/node-address.txt");
   while (infile1.getline (str1, LINE_LENGTH))
+  {
+    if (strcmp (str1, "Node and Ip address") == 0)
+      continue;
+    std::string str2 (str1);
+    std::vector<std::string> res = SplitMessage (str2, ' ');
+    if (res.size () == 2)
     {
-      if (strcmp (str1, "Node and Ip address") == 0)
-        continue;
-      std::string str2 (str1);
-      std::vector<std::string> res = SplitMessage (str2, ' ');
-      if (res.size () == 2)
-        {
-          int x = (atoi) (res[0].c_str ());
-          char *ipaddress = (char *) res[1].data ();
-          Ipv4Address y = Ipv4Address (ipaddress);
-          map_node_addr[x] = y;
-        }
+      int x = (atoi) (res[0].c_str ());
+      char *ipaddress = (char *) res[1].data ();
+      Ipv4Address y = Ipv4Address (ipaddress);
+      map_node_addr[x] = y;
     }
+  }
   infile1.close ();
 
   std::ifstream infile2;
@@ -156,7 +156,9 @@ GossipApp::ConsensProcess ()
       std::cout << "*****************"
                 << "epoch " << (int) m_epoch << " starts"
                 << "**********" << std::endl;
-      std::cout << "node " << (int) GetNodeId () << " is the leader" << std::endl;
+      std::cout << "****block propagation time: " << len_phase1 << "s" <<
+        "  ****voting time: " << len_phase2 <<"s" << "****" << std::endl;
+      std::cout << "node " << (int) GetNodeId () << " is the leader, current view: "<< view << std::endl;
       std::cout << "time now: " << m_epoch_beginning << "s" << std::endl;
       Block b = BlockPropose ();
       block_received = b;
@@ -178,15 +180,35 @@ GossipApp::ConsensProcess ()
 void
 GossipApp::if_leader (void)
 {
-  uint8_t x = m_epoch % NODE_NUMBER;
+  uint8_t x = view % NODE_NUMBER;
   // uint8_t x = 1;
   if (m_node_id == x)
+  {
+    if(m_epoch==1)
     {
       m_leader = true;
       block_got = true;
       get_block_or_not = 1;
       get_block_time = 0;
     }
+    else
+    {
+      if(consensed_this_epoch==true)
+      {
+        m_leader = true;
+        block_got = true;
+        get_block_or_not = 1;
+        get_block_time = 0;
+      }
+      else
+      {
+        m_leader = false;
+        view++;
+        GossipViewplusplusMsg();
+        std::cout<<"the previous leader "<<(int) m_node_id<< " launched a view change!"<<std::endl;
+      }
+    }
+  }
   else
     m_leader = false;
 }
@@ -311,13 +333,15 @@ GossipApp::StartApplication (void)
         NS_FATAL_ERROR ("Failer to connect socket");
     }
 
+  view = 1;
   quad.B_root = GENESIS_BLOCK;
   quad.H_root = 0;
   quad.B_pending = EMPTY_BLOCK;
   quad.freshness = 0;
   block_received.name = 0;
   block_received.height = 0;
-  Simulator::Schedule (Seconds (0.), &GossipApp::ConsensProcess, this); // TODO debug
+  consensed_this_epoch=false;
+  Simulator::Schedule (Seconds (0.), &GossipApp::ConsensProcess, this);
 }
 
 void
@@ -330,26 +354,30 @@ GossipApp::StopApplication ()
       m_socket_receive->SetRecvCallback (MakeNullCallback<void, Ptr<Socket> > ());
     }
   int sum = m_local_ledger.size ();
-
   std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~"<<(int)m_node_id<<" information~~~~~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
   std::cout << "node " << (int) m_node_id << " got " << sum << " consensed block" << std::endl; 
-  if((int)m_node_id == 15)
+  
+  std::string str1 = "scratch/subdir/log_cmjj/node_";
+	str1.append(std::to_string((int)m_node_id));
+	str1.append("_receiving_time_log.txt");
+	std::ofstream outfile1;
+	outfile1.open(str1);
+  for (int j = 1; j < TOTAL_EPOCH_FOR_SIMULATION; j++)
   {
-    for (int j = 1; j < TOTAL_EPOCH_FOR_SIMULATION; j++)
+    outfile1 << "****epoch " << j << " receiving time information****" << std::endl;
+    for (int n = 1; n < NODE_NUMBER; n++)
     {
-      std::cout << "****epoch " << j << " receiving time information****" << std::endl;
-      for (int n = 1; n < NODE_NUMBER; n++)
-      {
-        std::cout << "node " << n << " got block at " << map_epoch_node_getblocktime[j][n]
-                  << "s" << std::endl;
-      }
-      for (int n = 1; n < NODE_NUMBER; n++)
-      {
-        std::cout << "node " << n << " got committed at "
-                  << map_epoch_node_getcommittedtime[j][n] << "s" << std::endl;
-      }
+      outfile1 << "node " << n << " got block at " << map_epoch_node_getblocktime[j][n]
+                << "s" << std::endl;
+    }
+    for (int n = 1; n < NODE_NUMBER; n++)
+    {
+      outfile1 << "node " << n << " got committed at "
+                << map_epoch_node_getcommittedtime[j][n] << "s" << std::endl;
     }
   }
+  outfile1.close();
+
   for (int i = 0; i < (int) m_local_ledger.size (); i++)
   {
     std::cout << "local ledger height " << std::setw (3)<< i << ": " << std::setw (12) << m_local_ledger[i]
@@ -363,12 +391,12 @@ void
 GossipApp::SendBlock (int dest, Block b)
 {
   for (int piece = 0; piece < BLOCK_PIECE_NUMBER; piece++)
-    {
-      srand (Simulator::Now ().GetSeconds ());
-      float x = rand () % 1000;
-      x = x / 1000;
-      Simulator::Schedule (Seconds (x), &GossipApp::SendBlockPiece, this, dest, piece, b);
-    }
+  {
+    srand (Simulator::Now ().GetSeconds ());
+    float x = rand () % 1000;
+    x = x / 1000;
+    Simulator::Schedule (Seconds (x), &GossipApp::SendBlockPiece, this, dest, piece, b);
+  }
   // std::cout << "node " << (int) GetNodeId () << " send a block to node " << dest << " at "
   //           << Simulator::Now ().GetSeconds () << "s" << std::endl;
 }
@@ -504,6 +532,29 @@ GossipApp::SendTimeMessage (int dest, int t)
   //   Simulator::Now().GetSeconds()<<"s"<<std::endl;
 }
 
+void GossipApp::SendViewplusplus(int dest)
+{
+  std::string str1 = "";
+  str1.append (std::to_string ((int) m_epoch));
+  str1.append ("+");
+  str1.append (std::to_string ((int) m_node_id));
+  str1.append ("+");
+  std::string str2 = "VIEWPLUSPLUS";
+  str1.append (str2);
+  const uint8_t *str3 = reinterpret_cast<const uint8_t *> (str1.c_str ());
+  Packet pack1 (str3, 120);
+  Ptr<Packet> p = &pack1;
+  m_socket_send[dest]->Send (p);
+  std::cout << "node " << (int) GetNodeId () << " send a view change msg to node " << dest << " at "
+            << Simulator::Now ().GetSeconds () << "s" << std::endl;
+
+}
+
+void GossipApp::RelayViewpluplusMessage(int dest, Ptr<Packet> p)
+{
+  m_socket_send[dest]->Send(p);
+}
+
 void
 GossipApp::RelayVotingMessage (int dest, Ptr<Packet> p)
 {
@@ -567,8 +618,14 @@ GossipApp::InitializeEpoch ()
       map_node_PREPARE[i] = 0;
       map_node_COMMIT[i] = 0;
     }
-
+  receive_viewplusplus_time = 0;
+  receive_history = 0;
   block_got = false;
+  // if(m_ledger_built_epoch[m_local_ledger.size()]<m_epoch-1)
+  // {
+  //   len_phase1 *= 2;
+  //   len_phase2 *= 2;
+  // }
 }
 
 void
@@ -680,9 +737,21 @@ GossipApp::LeaderGossipBlockOut (Block b)
     }
 }
 
+void GossipApp::GossipViewplusplusMsg()
+{
+  for (int i = 0; i < OUT_GOSSIP_ROUND; i++)
+  {
+    srand (Simulator::Now ().GetSeconds () + m_node_id);
+    float x = rand () % 1000;
+    x = x / 1000;
+    SendViewplusplus (out_neighbor_choosed[i]);
+  }
+}
+
 void
 GossipApp::GossipPrepareOut ()
 {
+  consensed_this_epoch = false;
   if (block_got)
     {
       if (block_received.height == (int) m_local_ledger.size () + 1)
@@ -695,12 +764,12 @@ GossipApp::GossipPrepareOut ()
               std::cout << "node " << (int) m_node_id << " send prepare msg for block "<< block_received.name 
                 <<" in epoch "<<m_epoch << std::endl;
               for (int i = 0; i < OUT_GOSSIP_ROUND; i++)
-                {
-                  srand (Simulator::Now ().GetSeconds () + m_node_id);
-                  float x = rand () % 1000;
-                  x = x / 1000;
-                  SendPrepare (out_neighbor_choosed[i], block_received);
-                }
+              {
+                srand (Simulator::Now ().GetSeconds () + m_node_id);
+                float x = rand () % 1000;
+                x = x / 1000;
+                SendPrepare (out_neighbor_choosed[i], block_received);
+              }
             }
           else if (m_epoch > quad.freshness)
             {
@@ -807,6 +876,7 @@ GossipApp::DetermineConsens ()
           quad.freshness = 0;
           m_local_ledger.push_back (block_received.name);
           m_ledger_built_epoch.push_back (m_epoch);
+          consensed_this_epoch = true;
         }
       else
         Simulator::Schedule (Seconds (DETERMINECONSENS_INTERVAL), &GossipApp::DetermineConsens,
@@ -1034,14 +1104,14 @@ GossipApp::HandleRead (Ptr<Socket> socket)
                     // std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" "<<packet->GetSize()
                     //   <<" bytes from node "<<from_node<<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
                     for (int i = 0; i < OUT_GOSSIP_ROUND; i++)
-                      {
-                        srand (Simulator::Now ().GetSeconds ());
-                        float x = rand () % 1000;
-                        x = x / 1000;
-                        int dest = out_neighbor_choosed[i];
-                        Simulator::Schedule (Seconds (x), &GossipApp::RelayVotingMessage,
-                                              this, dest, packet);
-                      }
+                    {
+                      srand (Simulator::Now ().GetSeconds ());
+                      float x = rand () % 1000;
+                      x = x / 1000;
+                      int dest = out_neighbor_choosed[i];
+                      Simulator::Schedule (Seconds (x), &GossipApp::RelayVotingMessage,
+                                            this, dest, packet);
+                    }
                   }
               }
           }
@@ -1083,27 +1153,66 @@ GossipApp::HandleRead (Ptr<Socket> socket)
       }
       else if(strcmp (type_of_received_message, "REPLYHISTORY") == 0)
       {
-        std::cout<<"node "<<(int)m_node_id<<" get REPLYHISTORY!!!!!!"<<std::endl;
-        // for(int i=0; i<(int)res.size(); i++)
-        //   std::cout<<res[i].c_str()<<"~~~~";
-        // std::cout<<std::endl;
-        std::vector<uint32_t> history;
-        std::vector<int> history_built_height;
-        int i=3;
-        const char* next_str = res[i].c_str();
-        while(strcmp (next_str, "REPLYHISTORY") != 0)
+        if(receive_history==0)
         {
-          uint32_t x = (atoi) (res[i].c_str());
-          history.push_back(x);
-          i++;
-          int y = (atoi) (res[i].c_str());
-          history_built_height.push_back(y);
-          i++;
-          next_str = res[i].c_str();
-          std::cout<<std::setw(12)<<x<<std::setw(4)<<y<<std::endl;
+          receive_history++;
+          std::cout<<"node "<<(int)m_node_id<<" get REPLYHISTORY~~~~"<<std::endl;
+          // for(int i=0; i<(int)res.size(); i++)
+          //   std::cout<<res[i].c_str()<<"~~~~";
+          // std::cout<<std::endl;
+          std::vector<uint32_t> history;
+          std::vector<int> history_built_height;
+          int i=3;
+          const char* next_str = res[i].c_str();
+          while(strcmp (next_str, "REPLYHISTORY") != 0)
+          {
+            uint32_t x = (atoi) (res[i].c_str());
+            history.push_back(x);
+            i++;
+            int y = (atoi) (res[i].c_str());
+            history_built_height.push_back(y);
+            i++;
+            next_str = res[i].c_str();
+            std::cout<<std::setw(12)<<x<<std::setw(4)<<y<<std::endl;
+          }
+          RecoverHistory(history, history_built_height, from_node);
         }
-
-        RecoverHistory(history, history_built_height, from_node);
+      }
+      else if(strcmp (type_of_received_message, "VIEWPLUSPLUS") == 0)
+      {
+        if(receive_viewplusplus_time==0)
+        {
+          view++;
+          receive_viewplusplus_time++;
+          uint8_t x = view % NODE_NUMBER;
+          if (m_node_id == x)
+          {
+            m_leader = true;
+            block_got = true;
+            get_block_or_not = 1;
+            get_block_time = Simulator::Now().GetSeconds();
+            get_block_time = ((int) get_block_time * 1000) / 1000;
+            std::cout << "*****************"
+                      << "epoch " << (int) m_epoch << " starts"
+                      << "**********" << std::endl;
+            std::cout << "****block propagation time: " << len_phase1 << "s" <<
+              "  ****voting time: " << len_phase2 <<"s" << "****" << std::endl;
+            std::cout << "node " << (int) GetNodeId () << " is the leader, current view: "<< view << std::endl;
+            std::cout << "time now: " << m_epoch_beginning << "s" << std::endl;
+            Block b = BlockPropose ();
+            block_received = b;
+            LeaderGossipBlockOut (b);
+          }
+          for (int i = 0; i < OUT_GOSSIP_ROUND; i++)
+          {
+            srand (Simulator::Now ().GetSeconds ());
+            float x = rand () % 1000;
+            x = x / 1000;
+            int dest = out_neighbor_choosed[i];
+            Simulator::Schedule (Seconds (x), &GossipApp::RelayVotingMessage,
+                                  this, dest, packet);
+          }
+        }
       }
     }
     else if (strcmp (time_of_recived_message, (std::to_string (m_epoch - 1)).c_str ()) == 0 &&

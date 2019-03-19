@@ -37,7 +37,7 @@ namespace ns3 {
 class Socket;
 class Packet;
 
-const int TOTAL_EPOCH_FOR_SIMULATION = 12;
+const int TOTAL_EPOCH_FOR_SIMULATION = 18;
 
 const int AP_NUMBER = 5;
 const int NODE_NUMBER = 16;
@@ -83,6 +83,7 @@ public:
   std::pair<int, int> NewLenComputation();
   Block BlockPropose();
   void LeaderGossipBlockOut(Block b);
+  void GossipViewplusplusMsg();
   void GossipPrepareOut();
   void GossipBlockAfterReceive(int from_node, Block b);
   void GossipTimeMessage(int t);
@@ -90,6 +91,7 @@ public:
   void RelayTimeMessage(int dest, Ptr<Packet> p);
   void GossipCommitOut();
   void DetermineConsens();
+  void RelayViewpluplusMessage(int dest, Ptr<Packet> p);
   void ReplyHistorySolicit(int dest, int h);
   void RecoverHistory(std::vector<uint32_t> b, std::vector<int> b_epo, int dest);
   void SolicitConsensusMessageFromOthers();
@@ -116,6 +118,7 @@ private:
   void SendPrepare(int dest, Block b);
   void SendCommit(int dest, Block b);
   void SendTimeMessage(int dest, int t);
+  void SendViewplusplus(int dest);
   void SolicitHistory(int dest, int h);
   void SolicitBlock(int dest);
   void HandleRead (Ptr<Socket> socket);
@@ -140,6 +143,10 @@ private:
   // bool current_consensus_success;
   bool m_leader;
   bool block_got;
+  bool consensed_this_epoch;
+  int view;
+  int receive_viewplusplus_time;
+  int receive_history;
   int state;  //  state = 0,1,2,3, means Init, Ped, Ced, Tced
   State_Quad quad;
   Block block_received;
