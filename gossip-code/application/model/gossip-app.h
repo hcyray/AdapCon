@@ -83,9 +83,9 @@ public:
   void EndSummary();
   void UpdateCR();
   void UpdateBR();
-  float AvgByCR(int node, std::vector<float> vec_CR);
-  float DistanceOfPermu(int i, std::vector<int> v1, std::vector<int> v2);
-  std::pair<int, int> NewLenComputation();
+  float AvgByCR(int node, std::vector<float> vec_CR, std::map<int, float> map_node_time);
+  float DistanceOfPermu(int i, std::vector<float> v1, std::vector<float> v2);
+  std::pair<float, float> NewLenComputation();
   void ReputationGainComputation();
   Block BlockPropose();
   void LeaderGossipBlockOut(Block b);
