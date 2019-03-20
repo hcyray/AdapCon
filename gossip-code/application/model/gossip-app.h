@@ -50,8 +50,9 @@ const float DETERMINECOMMIT_INTERVAL = 0.2;
 const float DETERMINECONSENS_INTERVAL = 0.2;
 
 
-const int WINDOW_SIZE = 3;
+const int WINDOW_SIZE = 4;
 const float EPSILON = 5.0;
+const int PATCH = 3;
 
 
 
@@ -80,7 +81,12 @@ public:
   void InitializeEpoch();
   void InitializeState();
   void EndSummary();
+  void UpdateCR();
+  void UpdateBR();
+  float AvgByCR(int node, std::vector<float> vec_CR);
+  float DistanceOfPermu(int i, std::vector<int> v1, std::vector<int> v2);
   std::pair<int, int> NewLenComputation();
+  void ReputationGainComputation();
   Block BlockPropose();
   void LeaderGossipBlockOut(Block b);
   void GossipViewplusplusMsg();
@@ -195,7 +201,9 @@ private:
   std::map<int, std::map<int, float> > map_epoch_node_getcommittedtime;
   std::map<int, float> map_epoch_len_phase1;
   std::map<int, float> map_epoch_len_phase2;
-  
+
+  std::map<int, std::map<int, float> > map_epoch_node_CR_gain;
+  std::map<int, std::map<int, float> > map_epoch_node_CR;
   std::map<int, float> map_node_CR_previous;
   std::map<int, float> map_node_CR;
   std::map<int, float> map_node_BR;
