@@ -34,7 +34,6 @@
 #include "/home/hqw/repos/ns-3-allinone/ns-3-dev/scratch/data-struc.h"
 
 #include <stdlib.h>
-#include <cmath>
 #include <time.h>
 #include <algorithm>
 #include <fstream>
@@ -77,6 +76,7 @@ GossipApp::GossipApp ()
   m_epoch_beginning = 0.;
   len_phase1 = 10.0;
   len_phase2 = 2.5;
+  waitting_time = len_phase1 * 2 / 4.;
 
   m_local_ledger.push_back (0xFFFFFFFF);
   m_ledger_built_epoch.push_back (0);
@@ -135,35 +135,50 @@ GossipApp::~GossipApp ()
 void
 GossipApp::ConsensProcess ()
 {
+  // if(m_epoch>=1)
+  //   GossipReputationMessage();
   // std::pair<int, int> p = NewLenComputation();
   // len_phase1 = p.first;
   // len_phase2 = p.second;
   // map_epoch_len_phase1[m_epoch] = len_phase1;
   // map_epoch_len_phase2[m_epoch] = len_phase2;
+  // waitting_time = len_phase1*2/4.;
 
   m_epoch++;
   m_epoch_beginning = Simulator::Now ().GetSeconds ();
-  std::pair<float, float> p = NewLenComputation();
-  if(m_node_id==1)
-    std::cout<<"----epoch: "<<m_epoch<<" "<<p.first<<"----"<<p.second<<" , time now: "
-      <<Simulator::Now().GetSeconds()<<"s"<<std::endl;
+  UpdateCRGain();
+  // if(m_epoch==WINDOW_SIZE+2)
+  // {
+  //   if(m_node_id==2)
+  //     std::cout<<"it's time"<<std::endl;
+  //   for(int i=0; i<NODE_NUMBER; i++)
+  //   {
+  //     map_node_BR[i] = 1;
+  //   }
+  //   // UpdateCR();
+  // }
+  // if(m_epoch>WINDOW_SIZE+2)
+  // {
+  //   UpdateCR();
+  //   // UpdateBR();
+  // }
   InitializeTimeMessage ();
   InitializeEpoch ();
   InitializeState ();
   if_leader ();
   if (m_leader)
-  {
-    std::cout << "*****************"
-              << "epoch " << (int) m_epoch << " starts"
-              << "**********" << std::endl;
-    std::cout << "****block propagation time: " << len_phase1 << "s" <<
-      "  ****voting time: " << len_phase2 <<"s" << "****" << std::endl;
-    std::cout << "node " << (int) GetNodeId () << " is the leader, current view: "<< view << std::endl;
-    std::cout << "time now: " << m_epoch_beginning << "s" << std::endl;
-    Block b = BlockPropose ();
-    block_received = b;
-    LeaderGossipBlockOut (b);
-  }
+    {
+      std::cout << "*****************"
+                << "epoch " << (int) m_epoch << " starts"
+                << "**********" << std::endl;
+      std::cout << "****block propagation time: " << len_phase1 << "s" <<
+        "  ****voting time: " << len_phase2 <<"s" << "****" << std::endl;
+      std::cout << "node " << (int) GetNodeId () << " is the leader, current view: "<< view << std::endl;
+      std::cout << "time now: " << m_epoch_beginning << "s" << std::endl;
+      Block b = BlockPropose ();
+      block_received = b;
+      LeaderGossipBlockOut (b);
+    }
   // else
   // {
   //   Simulator::Schedule(Seconds(waitting_time), &GossipApp::SolicitBlockFromOthers, this);
@@ -567,6 +582,24 @@ GossipApp::RelayTimeMessage (int dest, Ptr<Packet> p)
   m_socket_send[dest]->Send (p);
 }
 
+// void
+// GossipApp::ScheduleTransmit (Time dt, int dest, int type)
+// {
+//   // NS_LOG_FUNCTION(this << dt);
+//   // if(m_socket_send == 0)
+//   // {
+//   //   TypeId tid = TypeId::LookupByName("ns3::UdpSocketFactory");
+//   //   m_socket_send = Socket::CreateSocket(GetNode(), tid);
+//   //   m_socket_send->Connect (InetSocketAddress (Ipv4Address::ConvertFrom(map_node_addr[dest]), 17));
+//   // }
+//   MESSAGE_TYPE message_type;
+//   message_type = (MESSAGE_TYPE) type;
+//   // m_sendEvent = Simulator::Schedule (dt, &GossipApp::Send, this, dest, message_type);
+//   Simulator::Schedule (dt, &GossipApp::Send, this, dest, message_type);
+
+//   // std::cout<<"node "<<(int)GetNodeId()<<" send a "<<MessagetypeToString(((int)message_type))<<" to node "<<dest<<" at "<<Simulator::Now().GetSeconds()<<"s"<<std::endl;
+// }
+
 void
 GossipApp::InitializeTimeMessage ()
 {
@@ -595,15 +628,16 @@ void
 GossipApp::InitializeEpoch ()
 {
   for (int i = 0; i < NODE_NUMBER; i++)
-    {
-      map_blockpiece_received[i] = 0;
-      map_node_PREPARE[i] = 0;
-      map_node_COMMIT[i] = 0;
-    }
+  {
+    map_blockpiece_received[i] = 0;
+    map_node_PREPARE[i] = 0;
+    map_node_COMMIT[i] = 0;
+  }
   receive_viewplusplus_time = 0;
   receive_history = 0;
   block_got = false;
 
+  // std::pair<int, int> p = NewLenComputation();
   if(consensed_this_epoch==false && m_epoch>1)
   {
     len_phase1 *= 2;
@@ -611,8 +645,14 @@ GossipApp::InitializeEpoch ()
     std::cout<<"node "<<(int)m_node_id<<" doubles his epoch length as block propagation: "<<len_phase1
       <<", voting: "<<len_phase2<<std::endl;
   }
+  // else
+  // {
+  //   len_phase1 = p.fist;
+  //   len_phase2 = p.second;
+  // }
   map_epoch_len_phase1[m_epoch] = len_phase1;
   map_epoch_len_phase2[m_epoch] = len_phase2;
+  
 }
 
 void
@@ -625,13 +665,13 @@ GossipApp::EndSummary ()
       if (map_epoch_node_getcommitedornot[m_epoch - 1][i] == -1)
         map_epoch_node_getcommitedornot[m_epoch - 1][i] = 0;
       if (map_epoch_node_getblocktime[m_epoch - 1][i] == -1)
-        map_epoch_node_getblocktime[m_epoch - 1][i] = map_epoch_len_phase1[m_epoch-1];
+        map_epoch_node_getblocktime[m_epoch - 1][i] = len_phase1;
       if (map_epoch_node_getcommittedtime[m_epoch - 1][i] == -1)
-        map_epoch_node_getcommittedtime[m_epoch - 1][i] = map_epoch_len_phase1[m_epoch-1] + map_epoch_len_phase2[m_epoch-1];
+        map_epoch_node_getcommittedtime[m_epoch - 1][i] = len_phase1 + len_phase2;
     }
 }
 
-void GossipApp::ReputationGainComputation()
+void GossipApp::UpdateCRGain()
 {
   if(m_epoch>=3)
   {
@@ -643,7 +683,13 @@ void GossipApp::ReputationGainComputation()
         map_epoch_node_getcommittedtime[m_epoch-2][i])/map_epoch_len_phase2[m_epoch-2];
       map_epoch_node_CR_gain[m_epoch-2][i] = CR_gain;
     }
+    // if(map_epoch_node_CR_gain.size()>WINDOW_SIZE)
+    // {
+    //   int x = m_epoch-(WINDOW_SIZE+2);
+    //   map_epoch_node_CR_gain.erase(x);
+    // }
   }
+  std::cout<<"node "<<(int)m_node_id<<"updates his cr gain"<<std::endl;
 }
 
 void GossipApp::UpdateCR()
@@ -656,119 +702,78 @@ void GossipApp::UpdateCR()
       sum += map_epoch_node_CR_gain[m_epoch-2-j][i];
     }
     map_epoch_node_CR[m_epoch-2][i] = sum/WINDOW_SIZE;
-  }
-}
 
-void GossipApp::UpdateBR()
-{
-  for(int i=0; i<NODE_NUMBER; i++)
-  {
-    std::vector<float> v1;
-    std::vector<float> v2;
-    for(int i=0; i<NODE_NUMBER; i++)
+    if(m_node_id==15)
     {
-      v1.push_back(map_epoch_node_CR[m_epoch-3][i]);
-      v2.push_back(map_epoch_node_CR[m_epoch-2][i]);
+      std::cout<<"finish for node "<<i<<std::endl;
     }
-    map_node_BR[i] *= exp(-1*DistanceOfPermu(i, v1, v2)); 
   }
+  // if(map_epoch_node_CR.size()>WINDOW_SIZE)
+  // {
+  //   int x = m_epoch -(WINDOW_SIZE + 2);
+    // map_epoch_node_CR.erase(x);
+  // }
 }
 
 
-float GossipApp::DistanceOfPermu(int i, std::vector<float> v1, std::vector<float> v2)
-{
-  std::vector<float> x(v1);
-  std::vector<float> y(v2);
-  sort(x.begin(), x.end());
-  sort(y.begin(), y.end());
-  std::vector<float>::iterator iElement1 = find(x.begin(), x.end(), map_epoch_node_CR[m_epoch-3][i]);
-  std::vector<float>::iterator iElement2 = find(y.begin(), y.end(), map_epoch_node_CR[m_epoch-2][i]);
-  int pos_1 = distance(x.begin(), iElement1);
-  int pos_2 = distance(y.begin(), iElement2);
-  float res = abs(pos_1 - pos_2) / NODE_NUMBER;
-  return res;
-}
 
-float GossipApp::AvgByCR(int node, std::vector<float> vec_CR, std::map<int, float> map_node_time)
-{
-  std::vector<float> tmp1;
-  for(int i=0; i<NODE_NUMBER; i++)
-  {
-    tmp1.push_back(abs(vec_CR[i] - vec_CR[node]));
-  }
-  std::vector<float> tmp2(tmp1);
-  std::vector<float> nearest_one;
-  sort(tmp2.begin(), tmp2.end());
-  for(int i=0; i<PATCH; i++)
-  {
-    std::vector<float>::iterator iE1 = find(tmp1.begin(), tmp1.end(), tmp2[i]);
-    int pos = distance(tmp1.begin(), iE1);
-    nearest_one.push_back(pos);
-  }
-  float res = 0;
-  for(int i=0; i<PATCH; i++)
-    res += map_node_time[nearest_one[i]];
-  return res/PATCH;
-}
+// std::pair<int, int> GossipApp::NewLenComputation()
+// {
+//   for(int i=0; i<NODE_NUMBER; i++)
+//   {
+//     if(map_node_getblocktime[i] == -1)
+//       map_node_getblocktime[i] = len_phase1;
+//     if(map_node_getcommittedtime[i] == -1)
+//       map_node_getcommittedtime[i] = len_phase2;
+//   }
 
-std::pair<float, float> GossipApp::NewLenComputation()
-{
-  ReputationGainComputation();
-  if(m_epoch<WINDOW_SIZE+3)
-  {
-    if(m_epoch==WINDOW_SIZE+2)
-    {
-      UpdateCR();
-      for(int i=0; i<NODE_NUMBER; i++)
-      {
-        map_node_BR[i] = 1;
-      }
-    }
-    std::pair<float, float> p;
-    p.first = len_phase1;
-    p.second = len_phase2;
-    return p;
-  }
-  else
-  {
-    std::vector<float> time_block_prediction;
-    std::vector<float> time_vote_prediction;
-    //******** time prediction for nodes
-    for(int i=0; i<NODE_NUMBER; i++)
-    {
-      std::vector<float> v1;
-      for(int i=0; i<NODE_NUMBER; i++)
-      {
-        v1.push_back(map_epoch_node_CR[m_epoch-3][i]);
-      }
-      float tmp1 = AvgByCR(i, v1, map_epoch_node_getblocktime[m_epoch-2]); 
-      float tmp2 = AvgByCR(i, v1, map_epoch_node_getcommittedtime[m_epoch-2]);
-      // TODO take time data of 3 nodes whose CR is nearest to node i to average
-      if(map_node_BR[i]>0.9) // some problem with this parameter 0.9
-      { 
-        time_block_prediction.push_back(tmp1);
-        time_vote_prediction.push_back(tmp2);
-      }
-    }
-    //******** get len according to predicted time 
-    auto maxPosition1 = max_element(time_block_prediction.begin(), time_block_prediction.end());
-    float len1 = time_block_prediction[maxPosition1 - time_block_prediction.begin()];
-    auto maxPosition2 = max_element(time_vote_prediction.begin(), time_vote_prediction.end());
-    float len2 = time_vote_prediction[maxPosition2 - time_vote_prediction.begin()];
+//   for(int i=0; i<NODE_NUMBER; i++)
+//   {
+//     float CR_gain = map_node_getblockornot[i]*(len_phase1 - map_node_getblocktime[i])/len_phase1 +
+//       map_node_getcommitedornot[i]*(len_phase2 - map_node_getcommittedtime[i]);
+//     if(map_node_CR_gain_queue[i].size()>=WINDOW_SIZE)
+//     {
+//       map_node_CR_gain_queue[i].pop();
+//     }
+//     map_node_CR_gain_queue[i].push(CR_gain);
+//     std::queue<int> tmp(map_node_CR_gain_queue[i]);
+//     float sum = 0;
+//     while(!tmp.empty())
+//     {
+//       sum += tmp.front();
+//       tmp.pop();
+//     }
+//     map_node_CR[i] = sum/WINDOW_SIZE;
+//   }
 
-    //******** update CR and BR
-    ReputationGainComputation();
-    UpdateCR();
-    UpdateBR();
-    
+//   for(int i=0; i<NODE_NUMBER; i++)
+//   {
+//     map_node_BR[i] *= exp(-1*DistanceOfPermu(map_node_CR_previous[i], map_node_CR[i]));  // TODO distance function
+//   }
 
-    std::pair<float, float> p;
-    p.first = len1;
-    p.second = len2;
-    return p;
+//   map_node_CR_previous[i] = map_node_CR[i];
 
-  }
-}
+//   std::vector<float> time_block_predicted;
+//   std::vector<float> time_vote_predicted;
+//   for(int i=0; i<NODE_NUMBER; i++)
+//   {
+//     if(map_node_CR[i]<1)
+//     {
+//       time_block_predicted.push_back((EPSILON + map_node_getblocktime[i]));
+//       time_vote_predicted.push_back((EPSILON + map_node_getcommittedtime[i]));
+//     }
+//   } // TODO prediction time is the avg of 5 time value of nodes who's reputation value is near to node i;
+
+//   auto maxPosition = max_element(time_block_predicted.begin(), time_block_predicted.end());
+//   len1 = time_block_predicted[maxPosition - time_block_predicted.begin()];
+//   auto maxPosition = max_element(time_vote_predicted.begin(), time_vote_predicted.end());
+//   len2 = time_vote_predicted[maxPosition - time_vote_predicted.begin()];
+
+//   std::pair<float, float> p;
+//   p.first = len1;
+//   p.second = len2;
+//   return p;
+// }
 
 Block
 GossipApp::BlockPropose ()
@@ -1085,8 +1090,6 @@ void GossipApp::RecoverHistory(std::vector<uint32_t> b, std::vector<int> b_epo, 
   Simulator::Cancel(id4);
   len_phase1 /= 2;
   len_phase2 /= 2;
-  map_epoch_len_phase1[m_epoch] = len_phase1;
-  map_epoch_len_phase2[m_epoch] = len_phase2;
   float x1 = Simulator::Now().GetSeconds() - m_epoch_beginning;
   EventId id1 = Simulator::Schedule (Seconds (len_phase1 - x1), &GossipApp::GossipPrepareOut, this);
   EventId id2 = Simulator::Schedule (Seconds (len_phase1 - x1), &GossipApp::GossipCommitOut, this);
@@ -1332,3 +1335,4 @@ GossipApp::HandleRead (Ptr<Socket> socket)
 }
 
 } // Namespace ns3
+

@@ -37,12 +37,12 @@ namespace ns3 {
 class Socket;
 class Packet;
 
-const int TOTAL_EPOCH_FOR_SIMULATION = 10;
+const int TOTAL_EPOCH_FOR_SIMULATION = 7;
 
 const int AP_NUMBER = 5;
 const int NODE_NUMBER = 16;
 const int OUT_GOSSIP_ROUND = 5;
-const int BLOCK_PIECE_NUMBER = 16;
+const int BLOCK_PIECE_NUMBER = 2;
 const int IN_GOSSIP_ROUND = 3;
 const int SOLICIT_ROUND = 1;
 const int SOLICIT_INTERVAL = 10;
@@ -50,9 +50,8 @@ const float DETERMINECOMMIT_INTERVAL = 0.2;
 const float DETERMINECONSENS_INTERVAL = 0.2;
 
 
-const int WINDOW_SIZE = 4;
+const int WINDOW_SIZE = 1;
 const float EPSILON = 5.0;
-const int PATCH = 3;
 
 
 
@@ -81,12 +80,12 @@ public:
   void InitializeEpoch();
   void InitializeState();
   void EndSummary();
+
+  std::pair<int, int> NewLenComputation();
+  void UpdateCRGain();
   void UpdateCR();
   void UpdateBR();
-  float AvgByCR(int node, std::vector<float> vec_CR, std::map<int, float> map_node_time);
-  float DistanceOfPermu(int i, std::vector<float> v1, std::vector<float> v2);
-  std::pair<float, float> NewLenComputation();
-  void ReputationGainComputation();
+
   Block BlockPropose();
   void LeaderGossipBlockOut(Block b);
   void GossipViewplusplusMsg();
@@ -194,6 +193,7 @@ private:
   std::map<int, float> map_node_getpreparedtime;
   std::map<int, float> map_node_getcommittedtime;
   
+  
   std::map<int, std::map<int, int> > map_epoch_node_getblockornot;
   std::map<int, std::map<int, int> > map_epoch_node_getcommitedornot;
   std::map<int, std::map<int, float> > map_epoch_node_getblocktime;
@@ -201,11 +201,9 @@ private:
   std::map<int, std::map<int, float> > map_epoch_node_getcommittedtime;
   std::map<int, float> map_epoch_len_phase1;
   std::map<int, float> map_epoch_len_phase2;
-
+  
   std::map<int, std::map<int, float> > map_epoch_node_CR_gain;
   std::map<int, std::map<int, float> > map_epoch_node_CR;
-  std::map<int, float> map_node_CR_previous;
-  std::map<int, float> map_node_CR;
   std::map<int, float> map_node_BR;
   
   
@@ -220,4 +218,5 @@ private:
 } // namespace ns3
 
 #endif /* GOSSIP_APP_H */
+
 
