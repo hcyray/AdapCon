@@ -37,7 +37,7 @@ namespace ns3 {
 class Socket;
 class Packet;
 
-const int TOTAL_EPOCH_FOR_SIMULATION = 7;
+const int TOTAL_EPOCH_FOR_SIMULATION = 10;
 
 const int AP_NUMBER = 5;
 const int NODE_NUMBER = 16;
@@ -50,7 +50,7 @@ const float DETERMINECOMMIT_INTERVAL = 0.2;
 const float DETERMINECONSENS_INTERVAL = 0.2;
 
 
-const int WINDOW_SIZE = 1;
+const int WINDOW_SIZE = 3;
 const float EPSILON = 5.0;
 
 
