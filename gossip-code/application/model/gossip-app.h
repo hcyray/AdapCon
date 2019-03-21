@@ -37,7 +37,7 @@ namespace ns3 {
 class Socket;
 class Packet;
 
-const int TOTAL_EPOCH_FOR_SIMULATION = 10;
+const int TOTAL_EPOCH_FOR_SIMULATION = 12;
 
 const int AP_NUMBER = 5;
 const int NODE_NUMBER = 16;
@@ -51,8 +51,9 @@ const float DETERMINECONSENS_INTERVAL = 0.2;
 
 
 const int WINDOW_SIZE = 3;
-const float EPSILON = 5.0;
-
+const float EPSILON1 = 5.0;
+const float EPSILON2 = 3.0;
+const int PATCH = 3;
 
 
 
@@ -81,10 +82,13 @@ public:
   void InitializeState();
   void EndSummary();
 
-  std::pair<int, int> NewLenComputation();
+  std::pair<float, float> NewLen();
   void UpdateCRGain();
   void UpdateCR();
   void UpdateBR();
+  float DistanceOfPermu(int i, std::vector<float> v1, std::vector<float> v2);
+  float AvgByCR(int node, std::vector<float> vec_CR, std::map<int, float> map_node_time);
+
 
   Block BlockPropose();
   void LeaderGossipBlockOut(Block b);
@@ -175,6 +179,7 @@ private:
 
   Time m_interval = Seconds(2.0); 
   float m_epoch_beginning;
+  std::pair<float, float> m_len;
   // EventId m_sendEvent;
   EventId id1;
   EventId id2;
@@ -201,6 +206,7 @@ private:
   std::map<int, std::map<int, float> > map_epoch_node_getcommittedtime;
   std::map<int, float> map_epoch_len_phase1;
   std::map<int, float> map_epoch_len_phase2;
+  std::map<int, float> map_epoch_start_time;
   
   std::map<int, std::map<int, float> > map_epoch_node_CR_gain;
   std::map<int, std::map<int, float> > map_epoch_node_CR;
