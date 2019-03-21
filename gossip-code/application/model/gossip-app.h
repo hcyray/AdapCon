@@ -42,12 +42,12 @@ const int TOTAL_EPOCH_FOR_SIMULATION = 12;
 const int AP_NUMBER = 5;
 const int NODE_NUMBER = 16;
 const int OUT_GOSSIP_ROUND = 5;
-const int BLOCK_PIECE_NUMBER = 16;
+const int BLOCK_PIECE_NUMBER = 24;
 const int IN_GOSSIP_ROUND = 3;
 const int SOLICIT_ROUND = 1;
 const int SOLICIT_INTERVAL = 10;
-const float DETERMINECOMMIT_INTERVAL = 0.2;
-const float DETERMINECONSENS_INTERVAL = 0.2;
+const float DETERMINECOMMIT_INTERVAL = 0.3;
+const float DETERMINECONSENS_INTERVAL = 0.3;
 
 
 const int WINDOW_SIZE = 2;

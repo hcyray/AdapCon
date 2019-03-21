@@ -357,7 +357,7 @@ GossipApp::StartApplication (void)
   block_received.name = 0;
   block_received.height = 0;
   consensed_this_epoch=false;
-  Simulator::Schedule (Seconds (10.), &GossipApp::ConsensProcess, this);
+  Simulator::Schedule (Seconds (0.), &GossipApp::ConsensProcess, this);
 }
 
 void
@@ -1017,7 +1017,7 @@ void GossipApp::GossipCommitOut () // send commit msg out
         }
       if(m_node_id==2)
         std::cout<<"######################node "<<2<<" has "<<sum<<" prepare msg at "
-          <<Simulator::Now().GetSeconds()<<"s######################"<<std::endl;
+          <<Simulator::Now().GetSeconds()<<"s ######################"<<std::endl;
       if (sum >= (2 * NODE_NUMBER / 3.0 + 1))
         {
           state = 2;
@@ -1326,10 +1326,10 @@ GossipApp::HandleRead (Ptr<Socket> socket)
                 if (map_node_PREPARE[x] == 0)
                   {
                     map_node_PREPARE[x] = 1;
-                    if(m_epoch>=WINDOW_SIZE+2)
-                      if(m_node_id==2)
-                        std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" "<<packet->GetSize()
-                          <<" bytes from node "<<from_node<<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
+                    // if(m_epoch>=WINDOW_SIZE+2)
+                    //   if(m_node_id==2)
+                    //     std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" "<<packet->GetSize()
+                    //       <<" bytes from node "<<from_node<<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
                     for (int i = 0; i < OUT_GOSSIP_ROUND; i++)
                     {
                       srand (Simulator::Now ().GetSeconds ());
