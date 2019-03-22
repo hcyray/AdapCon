@@ -365,13 +365,32 @@ GossipApp::StartApplication (void)
   block_received.height = 0;
   consensed_this_epoch=false;
 
-  Silence_Attacker = 0;
+  
   if(m_node_id == 3 or m_node_id == 9)
   {
     Silence_Attacker = 1;
     std::cout<<"node "<<(int)m_node_id<<" is a silence attacker"<<std::endl;
   }
+  else
+  {
+    Silence_Attacker = 0;
+  }
+  
+  // int ss[4] = {2, 7, 14, 15};
+  // std::vector<int> v1(ss, ss+4);
+  // std::vector<int>::iterator iE1 = find(v1.begin(), v1.end(), (int)m_node_id);
+  // if(iE1==v1.end())
+  // {
+  //   Bias_Attacker = 0;
+  // }
+  // else
+  // {
+  //   Bias_Attacker = 1;
+  //   std::cout<<"node "<<(int)m_node_id<<" is a bias attacker"<<std::endl;
+  // }
   Bias_Attacker = 0;
+  bias_attacker_induced = false;
+  bias_attacker_prevented = false;
 
   Simulator::Schedule (Seconds (10.), &GossipApp::ConsensProcess, this);
 }
@@ -564,6 +583,7 @@ GossipApp::SendCommit (int dest, Block b)
 void
 GossipApp::SendTimeMessage (int dest, int t)
 {
+
   std::string str1 = "";
   str1.append (std::to_string (t));
   str1.append ("+");
@@ -576,9 +596,27 @@ GossipApp::SendTimeMessage (int dest, int t)
   str1.append ("+");
   str1.append (std::to_string (get_committed_or_not));
   str1.append ("+");
-  str1.append (std::to_string (get_block_time));
-  str1.append ("+");
-  str1.append (std::to_string (get_committed_time));
+  if_bias_attack_induction_timing();
+  if_bias_attack_prevent_timing();
+  if(Bias_Attacker==1 && bias_attacker_induced)
+  {
+    str1.append (std::to_string (get_block_time/2));
+    str1.append ("+");
+    str1.append (std::to_string (get_committed_time/2));
+  }
+  else if(Bias_Attacker==1 && bias_attacker_prevented)
+  {
+    str1.append (std::to_string (len_phase1 ));
+    str1.append ("+");
+    str1.append (std::to_string (len_phase2));
+  }
+  else
+  {
+    str1.append (std::to_string (get_block_time));
+    str1.append ("+");
+    str1.append (std::to_string (get_committed_time));
+  }
+  
   const uint8_t *str3 = reinterpret_cast<const uint8_t *> (str1.c_str ());
   Packet pack1 (str3, 120);
   Ptr<Packet> p = &pack1;
@@ -871,6 +909,25 @@ float GossipApp::AvgByCR(int node, std::vector<float> vec_CR, std::map<int, floa
   return res/PATCH;
 }
 
+void GossipApp::if_bias_attack_induction_timing()
+{
+  int x = m_epoch;
+  if(map_epoch_consensed[x-1]==1 && map_epoch_consensed[x-2]==1 && map_epoch_consensed[x-3]==1)
+  {
+    bias_attacker_induced = true;
+  }
+}
+
+void GossipApp::if_bias_attack_prevent_timing()
+{
+  int x = m_epoch;
+  if(map_epoch_consensed[x-2]==0 && map_epoch_consensed[x-1]==1 && bias_attacker_induced)
+  {
+    bias_attacker_induced = false;
+    bias_attacker_prevented = true;
+  }
+  
+}
 
 std::pair<float, float> GossipApp::NewLen()
 {

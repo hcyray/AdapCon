@@ -88,7 +88,8 @@ public:
   void UpdateBR();
   float DistanceOfPermu(int i, std::vector<float> v1, std::vector<float> v2);
   float AvgByCR(int node, std::vector<float> vec_CR, std::map<int, float> map_node_time);
-
+  void if_bias_attack_induction_timing();
+  void if_bias_attack_prevent_timing();
 
   Block BlockPropose();
   void LeaderGossipBlockOut(Block b);
@@ -105,8 +106,6 @@ public:
   void RecoverHistory(std::vector<uint32_t> b, std::vector<int> b_epo, int dest);
   void SolicitConsensusMessageFromOthers();
 
-  void SilenceAttack();
-  void InductionAttack();
 
   std::string MessagetypeToString(int x);
   std::vector<std::string> SplitMessage(const std::string& str, const char pattern);
@@ -210,6 +209,8 @@ private:
   
   int Silence_Attacker;
   int Bias_Attacker;
+  bool bias_attacker_induced;
+  bool bias_attacker_prevented;
 
   /// Callbacks for tracing the packet Rx events
   // TracedCallback<Ptr<const Packet> > m_rxTrace;
