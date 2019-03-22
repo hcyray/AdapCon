@@ -22,7 +22,7 @@
 #include "ns3/nstime.h"
 #include "ns3/inet-socket-address.h"
 #include "ns3/socket.h"
-#include "ns3/udp-socket.h"
+#include "ns3/tcp-socket.h"
 #include "ns3/simulator.h"
 #include "ns3/socket-factory.h"
 #include "ns3/packet.h"
@@ -76,7 +76,6 @@ GossipApp::GossipApp ()
   m_epoch_beginning = 0.;
   len_phase1 = 30.0;
   len_phase2 = 10.;
-  waitting_time = len_phase1 * 2 / 4.;
 
   m_local_ledger.push_back (0xFFFFFFFF);
   m_ledger_built_epoch.push_back (0);
@@ -132,6 +131,7 @@ GossipApp::GossipApp ()
 GossipApp::~GossipApp ()
 {
   NS_LOG_FUNCTION (this);
+  
   m_socket_receive = 0;
 }
 
@@ -142,20 +142,20 @@ GossipApp::ConsensProcess ()
   m_epoch++;
   m_epoch_beginning = Simulator::Now ().GetSeconds ();
   map_epoch_start_time[m_epoch] = m_epoch_beginning;
-  // UpdateCRGain();
-  // if(m_epoch==WINDOW_SIZE+2)
-  // {
-  //   for(int i=0; i<NODE_NUMBER; i++)
-  //   {
-  //     map_node_BR[i] = 1;
-  //   }
-  //   UpdateCR();
-  // }
-  // if(m_epoch>WINDOW_SIZE+2)
-  // {
-  //   UpdateCR();
-  //   // UpdateBR();
-  // }
+  UpdateCRGain();
+  if(m_epoch==WINDOW_SIZE+2)
+  {
+    for(int i=0; i<NODE_NUMBER; i++)
+    {
+      map_node_BR[i] = 1;
+    }
+    UpdateCR();
+  }
+  if(m_epoch>WINDOW_SIZE+2)
+  {
+    UpdateCR();
+    UpdateBR();
+  }
 
 
   std::pair<float, float> p = InitializeEpoch ();
@@ -329,28 +329,32 @@ GossipApp::StartApplication (void)
 
   if (m_socket_receive == 0)
     {
-      TypeId tid = TypeId::LookupByName ("ns3::UdpSocketFactory");
+      TypeId tid = TypeId::LookupByName ("ns3::TcpSocketFactory");
       m_socket_receive = Socket::CreateSocket (GetNode (), tid);
       InetSocketAddress local = InetSocketAddress (Ipv4Address::GetAny (), m_port);
       if (m_socket_receive->Bind (local) == -1)
-        {
-          NS_FATAL_ERROR ("Failed to bind socket");
-        }
+      {
+        NS_FATAL_ERROR ("Failed to bind socket");
+      }
+      if(m_socket_receive->Listen()!=0)
+        std::cout<<"listen failed"<<std::endl;
+      m_socket_receive->ShutdownSend();
     }
-  m_socket_receive->SetRecvCallback (MakeCallback (&GossipApp::HandleRead, this));
+  m_socket_receive->SetAcceptCallback(MakeNullCallback<bool, Ptr<Socket>, const Address &> (), 
+    MakeCallback (&GossipApp::HandleAccept, this));
+  // m_socket_receive->SetRecvCallback (MakeCallback (&GossipApp::HandleRead, this));
 
   GetNeighbor (OUT_GOSSIP_ROUND, out_neighbor_choosed);
   GetNeighbor (IN_GOSSIP_ROUND, in_neighbor_choosed);
   for (int i = 0; i < NODE_NUMBER; i++)
-    {
-      TypeId tid = TypeId::LookupByName ("ns3::UdpSocketFactory");
-      Ptr<Socket> socket_send = Socket::CreateSocket (GetNode (), tid);
-      m_socket_send.push_back (socket_send);
-      // std::cout<<"sending socket created!"<<std::endl;
-      if (m_socket_send[i]->Connect (
-              InetSocketAddress (Ipv4Address::ConvertFrom (map_node_addr[i]), 17)) == -1)
-        NS_FATAL_ERROR ("Failer to connect socket");
-    }
+  {
+    TypeId tid = TypeId::LookupByName ("ns3::TcpSocketFactory");
+    Ptr<Socket> socket_send = Socket::CreateSocket (GetNode (), tid);
+    m_socket_send.push_back (socket_send);
+    // std::cout<<"sending socket created!"<<std::endl;
+    if (m_socket_send[i]->Connect (InetSocketAddress (Ipv4Address::ConvertFrom (map_node_addr[i]), 17)) == -1)
+      NS_FATAL_ERROR ("Fail to connect socket");
+  }
 
   view = 1;
   quad.B_root = GENESIS_BLOCK;
@@ -362,14 +366,14 @@ GossipApp::StartApplication (void)
   consensed_this_epoch=false;
 
   Silence_Attacker = 0;
-  if(m_node_id == 3 or m_node_id == 5)
+  if(m_node_id == 3 or m_node_id == 9)
   {
     Silence_Attacker = 1;
     std::cout<<"node "<<(int)m_node_id<<" is a silence attacker"<<std::endl;
   }
   Bias_Attacker = 0;
 
-  Simulator::Schedule (Seconds (0.), &GossipApp::ConsensProcess, this);
+  Simulator::Schedule (Seconds (10.), &GossipApp::ConsensProcess, this);
 }
 
 void
@@ -432,7 +436,7 @@ GossipApp::SendBlock (int dest, Block b)
   {
     srand (Simulator::Now ().GetSeconds ());
     float x = rand () % 100;
-    x = x / 100;
+    x = x / 100 + 1;
     Simulator::Schedule (Seconds (x), &GossipApp::SendBlockPiece, this, dest, piece, b);
   }
   // std::cout << "node " << (int) GetNodeId () << " send a block to node " << dest << " at "
@@ -500,7 +504,14 @@ GossipApp::SendBlockAckPiece (int dest, int piece, Block b)
   Packet pack1 (str3, 1024 * 2);
   Ptr<Packet> p = &pack1;
   if (m_socket_send[dest]->Send (p) == -1)
-    std::cout << "Failed to send ack packet" << std::endl;
+  {
+    float x = rand () % 200;
+    x = x / 200 + 0.2;
+    std::cout << "Failed to send ack packet, will retransmit in "<<x<<"s" << std::endl;
+    Simulator::Schedule (Seconds (x), &GossipApp::SendBlockPiece, this, dest, piece, b);
+  }
+    
+    
 }
 
 void
@@ -669,7 +680,7 @@ GossipApp::InitializeEpoch ()
   block_got = false;
   map_epoch_consensed[m_epoch] = 0;
 
-/*
+
   m_len = NewLen();
   if(consensed_this_epoch==false && m_epoch>1)
   {
@@ -707,7 +718,7 @@ GossipApp::InitializeEpoch ()
   get_committed_or_not = 0;
   get_block_time = -1;
   get_committed_time = -1;
-*/
+
 
   std::pair<float, float> p;
   p.first = len_phase1;
@@ -1215,20 +1226,20 @@ void GossipApp::RecoverHistory(std::vector<uint32_t> b, std::vector<int> b_epo, 
   // Simulator::Cancel(id2);
   Simulator::Cancel(id3);
   Simulator::Cancel(id4);
-  // if(map_epoch_viewchange_happen[m_epoch-1]==1)
-  // {
-  //   len_phase1 /= 2;
-  //   len_phase2 /= 2;
-  //   std::cout<<"node "<<(int)m_node_id<<" recoverd his local ledger by halving at "<<Simulator::Now().GetSeconds()<<
-  //   "s and set his epoch length to block propagation: "<<len_phase1<<", voting: "<<len_phase2<<std::endl;
-  // }
-  // else
-  // {
-  //   len_phase1 = m_len.first;
-  //   len_phase2 = m_len.second;
-  //   std::cout<<"node "<<(int)m_node_id<<" recoverd his local ledger by computation at "<<Simulator::Now().GetSeconds()<<
-  //   "s and set his epoch length to block propagation: "<<len_phase1<<", voting: "<<len_phase2<<std::endl;
-  // }
+  if(map_epoch_viewchange_happen[m_epoch-1]==1)
+  {
+    len_phase1 /= 2;
+    len_phase2 /= 2;
+    std::cout<<"node "<<(int)m_node_id<<" recoverd his local ledger by halving at "<<Simulator::Now().GetSeconds()<<
+    "s and set his epoch length to block propagation: "<<len_phase1<<", voting: "<<len_phase2<<std::endl;
+  }
+  else
+  {
+    len_phase1 = m_len.first;
+    len_phase2 = m_len.second;
+    std::cout<<"node "<<(int)m_node_id<<" recoverd his local ledger by computation at "<<Simulator::Now().GetSeconds()<<
+    "s and set his epoch length to block propagation: "<<len_phase1<<", voting: "<<len_phase2<<std::endl;
+  }
   
   
   map_epoch_len_phase1[m_epoch] = len_phase1;
@@ -1252,6 +1263,12 @@ void GossipApp::RecoverHistory(std::vector<uint32_t> b, std::vector<int> b_epo, 
   // }
   // std::cout<<std::endl;
   SolicitBlock(dest);
+}
+
+void GossipApp::HandleAccept(Ptr<Socket> s, const Address& from)
+{
+  // std::cout<<"node "<<(int)m_node_id<<" handles accept at: "<<Simulator::Now().GetSeconds()<<"s"<<std::endl;
+  s->SetRecvCallback (MakeCallback (&GossipApp::HandleRead, this));
 }
 
 void

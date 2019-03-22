@@ -41,8 +41,8 @@ const int TOTAL_EPOCH_FOR_SIMULATION = 12;
 
 const int AP_NUMBER = 5;
 const int NODE_NUMBER = 16;
-const int OUT_GOSSIP_ROUND = 6;
-const int BLOCK_PIECE_NUMBER = 256;
+const int OUT_GOSSIP_ROUND = 5;
+const int BLOCK_PIECE_NUMBER = 32;
 const int IN_GOSSIP_ROUND = 3;
 const int SOLICIT_ROUND = 1;
 const int SOLICIT_INTERVAL = 10;
@@ -130,6 +130,7 @@ private:
   void SendViewplusplus(int dest);
   void SolicitHistory(int dest, int h);
   void SolicitBlock(int dest);
+  void HandleAccept(Ptr<Socket> s, const Address& from);
   void HandleRead (Ptr<Socket> socket);
 
 
@@ -171,14 +172,13 @@ private:
   std::map<float, float> map_node_PREPARE_time;
   std::map<float, float> map_node_COMMIT_time;
 
-  // int neighborsforpush[OUT_GOSSIP_ROUND];
-  // int neighborsforpull[SOLICIT_ROUND]; 
+
   Ptr<Socket> m_socket_receive;
   std::vector<Ptr<Socket>> m_socket_send;
   int out_neighbor_choosed[OUT_GOSSIP_ROUND];
   int in_neighbor_choosed[IN_GOSSIP_ROUND];
 
-  Time m_interval = Seconds(2.0); 
+
   float m_epoch_beginning;
   std::pair<float, float> m_len;
   // EventId m_sendEvent;
