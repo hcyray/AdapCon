@@ -74,8 +74,8 @@ GossipApp::GossipApp ()
   NS_LOG_FUNCTION (this);
   m_epoch = 0;
   m_epoch_beginning = 0.;
-  len_phase1 = 10.0;
-  len_phase2 = 5;
+  len_phase1 = 30.0;
+  len_phase2 = 10.;
   waitting_time = len_phase1 * 2 / 4.;
 
   m_local_ledger.push_back (0xFFFFFFFF);
@@ -123,6 +123,9 @@ GossipApp::GossipApp ()
         }
     }
   infile2.close ();
+
+  
+  
   // std::cout<<"read ip address"<<std::endl;
 }
 
@@ -139,27 +142,23 @@ GossipApp::ConsensProcess ()
   m_epoch++;
   m_epoch_beginning = Simulator::Now ().GetSeconds ();
   map_epoch_start_time[m_epoch] = m_epoch_beginning;
-  UpdateCRGain();
-  if(m_epoch==WINDOW_SIZE+2)
-  {
-    // initialize BR
-    for(int i=0; i<NODE_NUMBER; i++)
-    {
-      map_node_BR[i] = 1;
-    }
-    UpdateCR();
-  }
-  if(m_epoch>WINDOW_SIZE+2)
-  {
-    UpdateCR();
-    // UpdateBR();
-  }
+  // UpdateCRGain();
+  // if(m_epoch==WINDOW_SIZE+2)
+  // {
+  //   for(int i=0; i<NODE_NUMBER; i++)
+  //   {
+  //     map_node_BR[i] = 1;
+  //   }
+  //   UpdateCR();
+  // }
+  // if(m_epoch>WINDOW_SIZE+2)
+  // {
+  //   UpdateCR();
+  //   // UpdateBR();
+  // }
 
 
-  // Simulator::Schedule(Seconds(0.), &GossipApp::InitializeEpoch, this);
   std::pair<float, float> p = InitializeEpoch ();
-  // InitializeState ();
-  // InitializeTimeMessage ();
   if_leader ();
   if (m_leader)
   {
@@ -172,20 +171,24 @@ GossipApp::ConsensProcess ()
     std::cout << "time now: " << m_epoch_beginning << "s" << std::endl;
     Block b = BlockPropose ();
     block_received = b;
-    LeaderGossipBlockOut (b);
+
+    if(Silence_Attacker==0)
+    {
+      LeaderGossipBlockOut (b);
+    }
+    else
+    {
+      std::cout << "node " << (int) GetNodeId () << " launches a silence attack! "<< std::endl;
+    }
+    
+    
   }
   // else
   // {
   //   Simulator::Schedule(Seconds(waitting_time), &GossipApp::SolicitBlockFromOthers, this);
   // }
   srand(Simulator::Now().GetSeconds()+m_node_id+m_epoch);
-  // float x1;
-  // x1 = rand() % 100;
-  // x1 /= 100;
   id1 = Simulator::Schedule (Seconds (p.first), &GossipApp::GossipPrepareOut, this);
-  // x1 = rand() % 100;
-  // x1 /= 100;
-  // id2 = Simulator::Schedule (Seconds (p.first), &GossipApp::GossipCommitOut, this);
   id3 = Simulator::Schedule (Seconds (p.first + p.second - 0.1), &GossipApp::EndSummary, this);
   if (m_epoch < TOTAL_EPOCH_FOR_SIMULATION)
   {  
@@ -209,7 +212,7 @@ GossipApp::if_leader (void)
     }
     else
     {
-      if(consensed_this_epoch==true)
+      if(map_epoch_consensed[m_epoch-1]==true)
       {
         m_leader = true;
         block_got = true;
@@ -357,6 +360,15 @@ GossipApp::StartApplication (void)
   block_received.name = 0;
   block_received.height = 0;
   consensed_this_epoch=false;
+
+  Silence_Attacker = 0;
+  if(m_node_id == 3 or m_node_id == 5)
+  {
+    Silence_Attacker = 1;
+    std::cout<<"node "<<(int)m_node_id<<" is a silence attacker"<<std::endl;
+  }
+  Bias_Attacker = 0;
+
   Simulator::Schedule (Seconds (0.), &GossipApp::ConsensProcess, this);
 }
 
@@ -447,7 +459,7 @@ GossipApp::SendBlockPiece (int dest, int piece, Block b)
   str1.append ("+");
   str1.append (std::to_string ((int) piece));
   const uint8_t *str3 = reinterpret_cast<const uint8_t *> (str1.c_str ());
-  Packet pack1 (str3, 1024 * 32);
+  Packet pack1 (str3, 1024 * 2);
   Ptr<Packet> p = &pack1;
   if (m_socket_send[dest]->Send (p) == -1)
     std::cout << "Failed to send packet" << std::endl;
@@ -574,8 +586,8 @@ void GossipApp::SendViewplusplus(int dest)
   Ptr<Packet> p = &pack1;
   if(m_socket_send[dest]->Send (p)==-1)
     std::cout<<"send view++ failed"<<std::endl;
-  std::cout << "node " << (int) GetNodeId () << " send a view change msg to node " << dest << " at "
-            << Simulator::Now ().GetSeconds () << "s" << std::endl;
+  // std::cout << "node " << (int) GetNodeId () << " send a view change msg to node " << dest << " at "
+  //           << Simulator::Now ().GetSeconds () << "s" << std::endl;
 
 }
 
@@ -651,11 +663,13 @@ GossipApp::InitializeEpoch ()
     map_node_COMMIT[i] = 0;
   }
   receive_viewplusplus_time = 0;
+  query_time = 0;
   map_epoch_viewchange_happen[m_epoch] = 0;
   receive_history = 0;
   block_got = false;
   map_epoch_consensed[m_epoch] = 0;
 
+/*
   m_len = NewLen();
   if(consensed_this_epoch==false && m_epoch>1)
   {
@@ -693,6 +707,7 @@ GossipApp::InitializeEpoch ()
   get_committed_or_not = 0;
   get_block_time = -1;
   get_committed_time = -1;
+*/
 
   std::pair<float, float> p;
   p.first = len_phase1;
@@ -1015,9 +1030,9 @@ void GossipApp::GossipCommitOut () // send commit msg out
         {
           sum += map_node_PREPARE[i];
         }
-      if(m_node_id==2)
-        std::cout<<"######################node "<<2<<" has "<<sum<<" prepare msg at "
-          <<Simulator::Now().GetSeconds()<<"s ######################"<<std::endl;
+      // if(m_node_id==2)
+      //   std::cout<<"######################node "<<2<<" has "<<sum<<" prepare msg at "
+      //     <<Simulator::Now().GetSeconds()<<"s ######################"<<std::endl;
       if (sum >= (2 * NODE_NUMBER / 3.0 + 1))
         {
           state = 2;
@@ -1107,13 +1122,6 @@ GossipApp::DetermineConsens ()
 // }
 // TODO to ask other about last epoch consensus or not
 
-void
-GossipApp::SilenceAttack ()
-{
-  m_leader = false;
-
-  // TODO
-}
 
 // void Gossip::InductionAttack()
 // {
@@ -1131,7 +1139,7 @@ void GossipApp::SolicitBlock(int dest)
   std::string str2 = "SOLICITBLOCK";
   str1.append(str2);
   const uint8_t *str3 = reinterpret_cast<const uint8_t *> (str1.c_str ());
-  Packet pack1 (str3, 80);
+  Packet pack1 (str3, 120);
   Ptr<Packet> p = &pack1;
   if (m_socket_send[dest]->Send (p) == -1)
     std::cout << "Failed to send packet" << std::endl;
@@ -1149,7 +1157,7 @@ void GossipApp::SolicitHistory(int dest, int h)
   str1.append("+");
   str1.append(std::to_string(h));
   const uint8_t *str3 = reinterpret_cast<const uint8_t *> (str1.c_str ());
-  Packet pack1 (str3, 200);
+  Packet pack1 (str3, 120);
   Ptr<Packet> p = &pack1;
   if (m_socket_send[dest]->Send (p) == -1)
     std::cout << "Failed to send packet" << std::endl;
@@ -1178,7 +1186,7 @@ void GossipApp::ReplyHistorySolicit(int dest, int h)
   str1.append("+");
   str1.append(str2);
   const uint8_t *str3 = reinterpret_cast<const uint8_t *> (str1.c_str ());
-  Packet pack1 (str3, 100);
+  Packet pack1 (str3, 120);
   Ptr<Packet> p = &pack1;
   if (m_socket_send[dest]->Send (p) == -1)
     std::cout << "Failed to send packet" << std::endl;
@@ -1207,20 +1215,20 @@ void GossipApp::RecoverHistory(std::vector<uint32_t> b, std::vector<int> b_epo, 
   // Simulator::Cancel(id2);
   Simulator::Cancel(id3);
   Simulator::Cancel(id4);
-  if(map_epoch_viewchange_happen[m_epoch-1]==1)
-  {
-    len_phase1 /= 2;
-    len_phase2 /= 2;
-    std::cout<<"node "<<(int)m_node_id<<" recoverd his local ledger by halving at "<<Simulator::Now().GetSeconds()<<
-    "s and set his epoch length to block propagation: "<<len_phase1<<", voting: "<<len_phase2<<std::endl;
-  }
-  else
-  {
-    len_phase1 = m_len.first;
-    len_phase2 = m_len.second;
-    std::cout<<"node "<<(int)m_node_id<<" recoverd his local ledger by computation at "<<Simulator::Now().GetSeconds()<<
-    "s and set his epoch length to block propagation: "<<len_phase1<<", voting: "<<len_phase2<<std::endl;
-  }
+  // if(map_epoch_viewchange_happen[m_epoch-1]==1)
+  // {
+  //   len_phase1 /= 2;
+  //   len_phase2 /= 2;
+  //   std::cout<<"node "<<(int)m_node_id<<" recoverd his local ledger by halving at "<<Simulator::Now().GetSeconds()<<
+  //   "s and set his epoch length to block propagation: "<<len_phase1<<", voting: "<<len_phase2<<std::endl;
+  // }
+  // else
+  // {
+  //   len_phase1 = m_len.first;
+  //   len_phase2 = m_len.second;
+  //   std::cout<<"node "<<(int)m_node_id<<" recoverd his local ledger by computation at "<<Simulator::Now().GetSeconds()<<
+  //   "s and set his epoch length to block propagation: "<<len_phase1<<", voting: "<<len_phase2<<std::endl;
+  // }
   
   
   map_epoch_len_phase1[m_epoch] = len_phase1;
@@ -1307,9 +1315,17 @@ GossipApp::HandleRead (Ptr<Socket> socket)
           if(received_block_height>((int)m_local_ledger.size()+1))
           {
             int local_ledger_height = (int) (m_local_ledger.size());
-            int piece = (atoi) (res[6].c_str());
-            if(piece==0)
-              SolicitHistory(from_node, local_ledger_height);
+            // int piece = (atoi) (res[6].c_str());
+            // if(piece==0)
+            //   SolicitHistory(from_node, local_ledger_height);
+
+            if(Simulator::Now().GetSeconds()<m_epoch_beginning+len_phase1)
+              if(query_time==0)
+              {
+                SolicitHistory(from_node, local_ledger_height);
+                query_time++;
+              }
+              
           }
           // TODO query the node who give me this block
         }
@@ -1430,7 +1446,13 @@ GossipApp::HandleRead (Ptr<Socket> socket)
             std::cout << "time now: " << m_epoch_beginning << "s" << std::endl;
             Block b = BlockPropose ();
             block_received = b;
-            LeaderGossipBlockOut (b);
+            if(Silence_Attacker==0)
+              LeaderGossipBlockOut (b);
+            else
+            {
+              std::cout<<"node "<<(int)m_node_id<<" launches a silence attack"<<std::endl;
+            }
+            
           }
           for (int i = 0; i < OUT_GOSSIP_ROUND; i++)
           {

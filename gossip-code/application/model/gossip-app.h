@@ -41,8 +41,8 @@ const int TOTAL_EPOCH_FOR_SIMULATION = 12;
 
 const int AP_NUMBER = 5;
 const int NODE_NUMBER = 16;
-const int OUT_GOSSIP_ROUND = 5;
-const int BLOCK_PIECE_NUMBER = 24;
+const int OUT_GOSSIP_ROUND = 6;
+const int BLOCK_PIECE_NUMBER = 256;
 const int IN_GOSSIP_ROUND = 3;
 const int SOLICIT_ROUND = 1;
 const int SOLICIT_INTERVAL = 10;
@@ -155,6 +155,7 @@ private:
   bool consensed_this_epoch;
   int view;
   int receive_viewplusplus_time;
+  int query_time;
   int receive_history;
   int state;  //  state = 0,1,2,3, means Init, Ped, Ced, Tced
   State_Quad quad;
@@ -190,14 +191,7 @@ private:
   int get_committed_or_not;
   float get_block_time;
   float get_prepared_time;
-  float get_committed_time;
-  
-  std::map<int, int> map_node_getblockornot;
-  std::map<int, int> map_node_getcommitedornot;
-  std::map<int, float> map_node_getblocktime;
-  std::map<int, float> map_node_getpreparedtime;
-  std::map<int, float> map_node_getcommittedtime;
-  
+  float get_committed_time;  
   
   std::map<int, std::map<int, int> > map_epoch_node_getblockornot;
   std::map<int, std::map<int, int> > map_epoch_node_getcommitedornot;
@@ -213,7 +207,8 @@ private:
   std::map<int, std::map<int, float> > map_epoch_node_CR;
   std::map<int, float> map_node_BR;
   
-  
+  int Silence_Attacker;
+  int Bias_Attacker;
 
   /// Callbacks for tracing the packet Rx events
   // TracedCallback<Ptr<const Packet> > m_rxTrace;
