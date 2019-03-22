@@ -1,0 +1,356 @@
+****epoch 1 receiving time information****
+epoch 1: starts at 10s
+epoch 1: block propagation time: 30, voting time: 10
+node 0 got block at 2.966s
+node 1 got block at 0s
+node 2 got block at 5.175s
+node 3 got block at 2.99s
+node 4 got block at 5.172s
+node 5 got block at 2.943s
+node 6 got block at 5.231s
+node 7 got block at 5.15s
+node 8 got block at 7.764s
+node 9 got block at 5.857s
+node 10 got block at 5.176s
+node 11 got block at 5.172s
+node 12 got block at 7.514s
+node 13 got block at 2.968s
+node 14 got block at 5.305s
+node 15 got block at 5.844s
+node 0 got committed at 31.5s
+node 1 got committed at 31.8s
+node 2 got committed at 31.8s
+node 3 got committed at 31.8s
+node 4 got committed at 31.5s
+node 5 got committed at 31.8s
+node 6 got committed at 31.5s
+node 7 got committed at 31.5s
+node 8 got committed at 31.8s
+node 9 got committed at 31.8s
+node 10 got committed at 31.8s
+node 11 got committed at 31.8s
+node 12 got committed at 31.8s
+node 13 got committed at 31.8s
+node 14 got committed at 31.8s
+node 15 got committed at 31.8s
+****epoch 2 receiving time information****
+epoch 2: starts at 50s
+epoch 2: block propagation time: 30, voting time: 10
+node 0 got block at 2.002s
+node 1 got block at 0s
+node 2 got block at 4.25s
+node 3 got block at 2.043s
+node 4 got block at 4.573s
+node 5 got block at 2.037s
+node 6 got block at 4.285s
+node 7 got block at 2.073s
+node 8 got block at 4.31s
+node 9 got block at 4.769s
+node 10 got block at 4.731s
+node 11 got block at 4.56s
+node 12 got block at 4.234s
+node 13 got block at 2.108s
+node 14 got block at 4.265s
+node 15 got block at 4.728s
+node 0 got committed at 31.2s
+node 1 got committed at 31.2s
+node 2 got committed at 31.2s
+node 3 got committed at 31.2s
+node 4 got committed at 31.2s
+node 5 got committed at 31.2s
+node 6 got committed at 31.2s
+node 7 got committed at 31.2s
+node 8 got committed at 31.2s
+node 9 got committed at 31.2s
+node 10 got committed at 31.2s
+node 11 got committed at 31.2s
+node 12 got committed at 31.2s
+node 13 got committed at 31.2s
+node 14 got committed at 31.2s
+node 15 got committed at 31.2s
+****epoch 3 receiving time information****
+epoch 3: starts at 90s
+epoch 3: block propagation time: 30, voting time: 10
+node 0 got block at 1.802s
+node 1 got block at 0s
+node 2 got block at 3.096s
+node 3 got block at 1.86s
+node 4 got block at 3.434s
+node 5 got block at 1.837s
+node 6 got block at 3.146s
+node 7 got block at 1.891s
+node 8 got block at 3.64s
+node 9 got block at 3.423s
+node 10 got block at 3.543s
+node 11 got block at 3.842s
+node 12 got block at 3.588s
+node 13 got block at 1.947s
+node 14 got block at 3.114s
+node 15 got block at 3.371s
+node 0 got committed at 31.5s
+node 1 got committed at 31.5s
+node 2 got committed at 31.5s
+node 3 got committed at 31.5s
+node 4 got committed at 31.5s
+node 5 got committed at 31.5s
+node 6 got committed at 31.5s
+node 7 got committed at 31.5s
+node 8 got committed at 31.5s
+node 9 got committed at 31.5s
+node 10 got committed at 31.5s
+node 11 got committed at 31.5s
+node 12 got committed at 31.5s
+node 13 got committed at 31.5s
+node 14 got committed at 31.5s
+node 15 got committed at 31.5s
+****epoch 4 receiving time information****
+epoch 4: starts at 130s
+epoch 4: block propagation time: 7.002, voting time: 4.2
+node 0 got block at 2.167s
+node 1 got block at 0s
+node 2 got block at 4.33s
+node 3 got block at 2.221s
+node 4 got block at 4.728s
+node 5 got block at 2.208s
+node 6 got block at 4.558s
+node 7 got block at 2.263s
+node 8 got block at 4.63s
+node 9 got block at 4.721s
+node 10 got block at 4.937s
+node 11 got block at 4.939s
+node 12 got block at 4.479s
+node 13 got block at 2.318s
+node 14 got block at 4.385s
+node 15 got block at 4.667s
+node 0 got committed at 8.202s
+node 1 got committed at 8.202s
+node 2 got committed at 8.202s
+node 3 got committed at 8.202s
+node 4 got committed at 8.202s
+node 5 got committed at 8.202s
+node 6 got committed at 8.202s
+node 7 got committed at 8.202s
+node 8 got committed at 8.502s
+node 9 got committed at 8.202s
+node 10 got committed at 8.202s
+node 11 got committed at 8.502s
+node 12 got committed at 8.502s
+node 13 got committed at 8.202s
+node 14 got committed at 8.202s
+node 15 got committed at 8.502s
+****epoch 5 receiving time information****
+epoch 5: starts at 141.202s
+epoch 5: block propagation time: 6.802, voting time: 4.5
+node 0 got block at 2.289s
+node 1 got block at 0s
+node 2 got block at 3.499s
+node 3 got block at 2.357s
+node 4 got block at 3.725s
+node 5 got block at 2.324s
+node 6 got block at 3.551s
+node 7 got block at 2.387s
+node 8 got block at 4.054s
+node 9 got block at 4.007s
+node 10 got block at 3.833s
+node 11 got block at 4.265s
+node 12 got block at 4.016s
+node 13 got block at 2.442s
+node 14 got block at 3.517s
+node 15 got block at 3.953s
+node 0 got committed at 8.002s
+node 1 got committed at 8.302s
+node 2 got committed at 8.302s
+node 3 got committed at 8.002s
+node 4 got committed at 8.002s
+node 5 got committed at 8.002s
+node 6 got committed at 8.002s
+node 7 got committed at 8.002s
+node 8 got committed at 8.602s
+node 9 got committed at 8.602s
+node 10 got committed at 8.302s
+node 11 got committed at 8.602s
+node 12 got committed at 8.602s
+node 13 got committed at 8.602s
+node 14 got committed at 8.302s
+node 15 got committed at 8.602s
+****epoch 6 receiving time information****
+epoch 6: starts at 152.504s
+epoch 6: block propagation time: 7.167, voting time: 4.2
+node 0 got block at 1.905s
+node 1 got block at 0s
+node 2 got block at 3.068s
+node 3 got block at 1.961s
+node 4 got block at 4.869s
+node 5 got block at 1.944s
+node 6 got block at 4.616s
+node 7 got block at 2.001s
+node 8 got block at 4.828s
+node 9 got block at 3.278s
+node 10 got block at 5.204s
+node 11 got block at 4.867s
+node 12 got block at 4.77s
+node 13 got block at 2.056s
+node 14 got block at 4.588s
+node 15 got block at 3.224s
+node 0 got committed at 9.567s
+node 1 got committed at 9.867s
+node 2 got committed at 9.867s
+node 3 got committed at 9.867s
+node 4 got committed at 9.867s
+node 5 got committed at 9.867s
+node 6 got committed at 9.867s
+node 7 got committed at 9.567s
+node 8 got committed at 9.867s
+node 9 got committed at 9.867s
+node 10 got committed at 9.867s
+node 11 got committed at 10.167s
+node 12 got committed at 9.867s
+node 13 got committed at 9.867s
+node 14 got committed at 9.867s
+node 15 got committed at 9.867s
+****epoch 7 receiving time information****
+epoch 7: starts at 163.871s
+epoch 7: block propagation time: 7.289, voting time: 4.2
+node 0 got block at 2.471s
+node 1 got block at 0s
+node 2 got block at 3.645s
+node 3 got block at 2.519s
+node 4 got block at 3.929s
+node 5 got block at 2.5s
+node 6 got block at 3.871s
+node 7 got block at 2.562s
+node 8 got block at 3.89s
+node 9 got block at 3.849s
+node 10 got block at 5.265s
+node 11 got block at 4.067s
+node 12 got block at 3.85s
+node 13 got block at 2.617s
+node 14 got block at 4.304s
+node 15 got block at 3.796s
+node 0 got committed at 9.688s
+node 1 got committed at 9.688s
+node 2 got committed at 9.688s
+node 3 got committed at 9.688s
+node 4 got committed at 9.688s
+node 5 got committed at 9.688s
+node 6 got committed at 9.988s
+node 7 got committed at 9.688s
+node 8 got committed at 9.988s
+node 9 got committed at 9.688s
+node 10 got committed at 9.688s
+node 11 got committed at 9.988s
+node 12 got committed at 9.988s
+node 13 got committed at 9.688s
+node 14 got committed at 9.688s
+node 15 got committed at 9.688s
+****epoch 8 receiving time information****
+epoch 8: starts at 175.36s
+epoch 8: block propagation time: 6.905, voting time: 5.4
+node 0 got block at 1.697s
+node 1 got block at 0s
+node 2 got block at 3.654s
+node 3 got block at 1.756s
+node 4 got block at 3.896s
+node 5 got block at 1.732s
+node 6 got block at 3.7s
+node 7 got block at 1.789s
+node 8 got block at 3.858s
+node 9 got block at 4.223s
+node 10 got block at 4.038s
+node 11 got block at 4.441s
+node 12 got block at 3.811s
+node 13 got block at 1.845s
+node 14 got block at 3.672s
+node 15 got block at 4.17s
+node 0 got committed at 8.105s
+node 1 got committed at 8.705s
+node 2 got committed at 8.705s
+node 3 got committed at 8.105s
+node 4 got committed at 8.705s
+node 5 got committed at 8.705s
+node 6 got committed at 8.105s
+node 7 got committed at 8.105s
+node 8 got committed at 8.705s
+node 9 got committed at 8.705s
+node 10 got committed at 9.005s
+node 11 got committed at 9.005s
+node 12 got committed at 8.705s
+node 13 got committed at 8.705s
+node 14 got committed at 8.705s
+node 15 got committed at 9.005s
+****epoch 9 receiving time information****
+epoch 9: starts at 187.665s
+epoch 9: block propagation time: 7.471, voting time: 5.399
+node 0 got block at 1.403s
+node 1 got block at 0s
+node 2 got block at 3.741s
+node 3 got block at 1.494s
+node 4 got block at 3.839s
+node 5 got block at 1.39s
+node 6 got block at 4.326s
+node 7 got block at 1.499s
+node 8 got block at 4.324s
+node 9 got block at 4.095s
+node 10 got block at 3.948s
+node 11 got block at 3.877s
+node 12 got block at 4.219s
+node 13 got block at 1.555s
+node 14 got block at 4.273s
+node 15 got block at 4.041s
+node 0 got committed at 9.871s
+node 1 got committed at 9.871s
+node 2 got committed at 9.871s
+node 3 got committed at 9.571s
+node 4 got committed at 9.871s
+node 5 got committed at 9.571s
+node 6 got committed at 9.871s
+node 7 got committed at 9.571s
+node 8 got committed at 9.871s
+node 9 got committed at 9.871s
+node 10 got committed at 9.871s
+node 11 got committed at 10.171s
+node 12 got committed at 9.871s
+node 13 got committed at 9.871s
+node 14 got committed at 9.871s
+node 15 got committed at 9.871s
+****epoch 10 receiving time information****
+epoch 10: starts at 200.535s
+epoch 10: block propagation time: 6.697, voting time: 4.2
+node 0 got block at -1s
+node 1 got block at -1s
+node 2 got block at -1s
+node 3 got block at -1s
+node 4 got block at -1s
+node 5 got block at -1s
+node 6 got block at -1s
+node 7 got block at -1s
+node 8 got block at -1s
+node 9 got block at -1s
+node 10 got block at -1s
+node 11 got block at -1s
+node 12 got block at -1s
+node 13 got block at -1s
+node 14 got block at -1s
+node 15 got block at -1s
+node 0 got committed at -1s
+node 1 got committed at -1s
+node 2 got committed at -1s
+node 3 got committed at -1s
+node 4 got committed at -1s
+node 5 got committed at -1s
+node 6 got committed at -1s
+node 7 got committed at -1s
+node 8 got committed at -1s
+node 9 got committed at -1s
+node 10 got committed at -1s
+node 11 got committed at -1s
+node 12 got committed at -1s
+node 13 got committed at -1s
+node 14 got committed at -1s
+node 15 got committed at -1s
+BR in epoch 3: 1
+BR in epoch 4: 1
+BR in epoch 5: 1
+BR in epoch 6: 1
+BR in epoch 7: 1
+BR in epoch 8: 1

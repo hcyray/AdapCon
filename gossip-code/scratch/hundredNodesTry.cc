@@ -124,6 +124,7 @@ int main()
 	LogComponentEnable("GossipAppApplication", LOG_LEVEL_INFO);
 	LogComponentEnable ("UdpEchoClientApplication", LOG_LEVEL_INFO);
 	LogComponentEnable ("UdpEchoServerApplication", LOG_LEVEL_INFO);
+	Config::SetDefault("ns3::TcpSocket::SegmentSize", StringValue("2048"));
 	// **************************************************read topology from txt file
 	std::map<int, int> map_AP_devicenumber;
     std::vector<std::pair<int, int> > vecotr_edge;
@@ -170,16 +171,17 @@ int main()
 	{
 		subnetap2rlist[i].Add(Router.Get(i));
 		subnetap2rlist[i].Add(AP.Get(i));
-		int x = rand() % 4;
+		// int x = rand() % 4;
+		int x = i % 4;
 		std::cout<<"Ap "<<i<<" class: "<<x<<std::endl;
 		if(x==0)
-			p2phelper.SetDeviceAttribute("DataRate", StringValue("100Mbps"));
+			p2phelper.SetDeviceAttribute("DataRate", StringValue("10Mbps"));
 		else if(x==1)
-			p2phelper.SetDeviceAttribute("DataRate", StringValue("300Mbps"));
+			p2phelper.SetDeviceAttribute("DataRate", StringValue("30Mbps"));
 		else if(x==2)
-			p2phelper.SetDeviceAttribute("DataRate", StringValue("500Mbps"));
+			p2phelper.SetDeviceAttribute("DataRate", StringValue("50Mbps"));
 		else
-			p2phelper.SetDeviceAttribute("DataRate", StringValue("1000Mbps"));
+			p2phelper.SetDeviceAttribute("DataRate", StringValue("100Mbps"));
 		p2phelper.SetChannelAttribute("Delay", StringValue("0ms"));
 		p2pdevicelist1[i] = p2phelper.Install(subnetap2rlist[i]);
 
@@ -198,7 +200,7 @@ int main()
 		subnetr2rlist[i].Add(Router.Get(vecotr_edge[i].first));
 		subnetr2rlist[i].Add(Router.Get(vecotr_edge[i].second));
 
-		p2phelper.SetDeviceAttribute("DataRate", StringValue("10MBps"));
+		p2phelper.SetDeviceAttribute("DataRate", StringValue("1GBps"));
 		p2phelper.SetChannelAttribute("Delay", StringValue("0ms"));
 		p2pdevicelist2[i] = p2phelper.Install(subnetr2rlist[i]);
 	}
@@ -332,8 +334,7 @@ int main()
 		gossipApplist[i] = gossipApp1.Install(IotNode[p.first].Get(p.second));
 		// float x = 0.2*i;
 		gossipApplist[i].Start(Seconds(0.));
-		gossipApplist[i].Stop(Seconds(30.));
-		
+		gossipApplist[i].Stop(Seconds(800.));
 	}
 	
 	// ApplicationContainer serverTrafficlist[ApNumber];
@@ -343,12 +344,12 @@ int main()
 	// 	ServerTrafficHelper ServerTraffic(109);
 	// 	serverTrafficlist[i] = ServerTraffic.Install(Router.Get(i));
 	// 	serverTrafficlist[i].Start(Seconds(0.0));
-	// 	serverTrafficlist[i].Stop(Seconds(31.0));
+	// 	serverTrafficlist[i].Stop(Seconds(600.0));
 
 	// 	UserTrafficHelper UserTraffic(ap2rInterface[i].GetAddress(0), 109);
 	// 	userTrafficlist[i] = UserTraffic.Install(UserNode.Get(i));
 	// 	userTrafficlist[i].Start(Seconds(0.0));
-	// 	userTrafficlist[i].Stop(Seconds(31.0));
+	// 	userTrafficlist[i].Stop(Seconds(600.0));
 	// }
 
 	// int client_;
@@ -385,7 +386,7 @@ int main()
 	
 // **************************************************  run simulation
 
-	Simulator::Stop (Seconds (33.0));
+	Simulator::Stop (Seconds (1020.0));
     Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
 	Simulator::Run ();
     Simulator::Destroy ();
