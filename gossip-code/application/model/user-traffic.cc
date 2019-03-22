@@ -128,7 +128,7 @@ UserTraffic::StartApplication (void)
         std::cout<<"user socket connection failed!"<<std::endl;
     }
   m_socket->SetRecvCallback(MakeCallback(&UserTraffic::HandleTraffic, this));
-  count=1;
+
   Simulator::Schedule(Seconds(2.), &UserTraffic::ScheduleTransmit, this);
 }
 
@@ -148,17 +148,18 @@ UserTraffic::StopApplication ()
 
 void UserTraffic::ScheduleTransmit()
 {
-  double time = Simulator::Now().GetSeconds();
+  float time = Simulator::Now().GetSeconds();
   if(time<600)
   {
-    double traffic = TrafficData(time);
+    float traffic = TrafficData(time);
     SendTraffic(traffic);
   }
   Simulator::Schedule(Seconds(2.), &UserTraffic::ScheduleTransmit, this);
 }
 
-double UserTraffic::TrafficData(double time)
+float UserTraffic::TrafficData(float time)
 {
+  // TODO a formula
   return 1024*2;
 }
 
@@ -167,19 +168,18 @@ void UserTraffic::HandleAccept(Ptr<Socket> socket)
   socket->SetRecvCallback (MakeCallback (&UserTraffic::HandleTraffic, this));
 }
 
-void UserTraffic::SendTraffic(double traffic)
+void UserTraffic::SendTraffic(float traffic)
 {
   Ptr<Packet> p;
-  double x = 1024*2;
-  // double loop_number = traffic/x;
-  std::string str1 = "Hello world+";
-  str1.append(std::to_string(count));
-  count++;
+  std::string str1 = "QUERY+";
+  str1.append(std::to_string(traffic));
   const uint8_t *buffer = reinterpret_cast<const uint8_t *> (str1.c_str ());
-  p = Create<Packet> (buffer, x);
+  p = Create<Packet> (buffer, 2048);
   if(m_socket->Send(p)==-1)
     std::cout<<"User fail to send a packet to server at "<<Simulator::Now().GetSeconds()<<"s"<<std::endl;
-  std::cout<<"user send "<<buffer<<" to server at "<<Simulator::Now().GetSeconds()<<"s"<<std::endl;
+
+
+  // std::cout<<"user send "<<buffer<<" to server at "<<Simulator::Now().GetSeconds()<<"s"<<std::endl;
   // for(int i=0; i<loop_number; i++)
   // {
   //   if(m_socket->Send(p)==-1)
@@ -201,16 +201,17 @@ UserTraffic::HandleTraffic (Ptr<Socket> socket)
     {
       uint8_t content_[120];
       packet->CopyData(content_, 120);
+      std::string str_of_content (content_, content_ + 120);
+      std::vector<std::string> res = SplitMessage (str_of_content, '+');
+      const char *type_of_received_message = res[0].c_str ();
+      if(strcmp (type_of_received_message, "MOBILE_DOWNLOAD_TRAFFIC") == 0)
+        total_traffic += packet->GetSize();
       // Ipv4Address from_addr = InetSocketAddress::ConvertFrom (from).GetIpv4 ();
       // int from_node = (int)map_addr_node[from_addr];
       // std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" "<<packet->GetSize()
       //   <<" bytes from node "<<from_node<<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
-      std::cout<<"user received "<<packet->GetSize()<<" bytes "<<content_<<" from "<<InetSocketAddress::ConvertFrom (from).GetIpv4 ()
-        <<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
-      total_traffic += packet->GetSize();
-      // std::string str_of_content(content_, content_+20);
-      // std::vector<std::string> res = SplitMessage(str_of_content, '+');
-      // const char* time_of_recived_message = res[0].c_str();
+      // std::cout<<"user received "<<packet->GetSize()<<" bytes "<<content_<<" from "<<InetSocketAddress::ConvertFrom (from).GetIpv4 ()
+      //   <<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
     }
 }
 

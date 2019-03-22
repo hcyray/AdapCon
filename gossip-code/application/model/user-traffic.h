@@ -55,12 +55,12 @@ private:
   virtual void StartApplication (void);
   virtual void StopApplication (void);
 
-  void SendTraffic(double traffic);
+  void SendTraffic(float traffic);
   void QueryTraffic();
   void HandleTraffic(Ptr<Socket> socket);
   void HandleAccept(Ptr<Socket> socket);
   void ScheduleTransmit();
-  double TrafficData(double time);
+  float TrafficData(float time);
 
   Ptr<Socket> m_socket;
   uint16_t m_peerPort;

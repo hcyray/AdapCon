@@ -74,7 +74,6 @@ ServerTraffic::ServerTraffic ()
 {
   NS_LOG_FUNCTION (this);
   m_socket = 0;
-  total_traffic = 0;
 }
 
 
@@ -90,7 +89,7 @@ ServerTraffic::~ServerTraffic()
 std::vector<std::string> ServerTraffic::SplitMessage(const std::string& str, const char pattern)
 {
     std::vector<std::string> res;
-    std::stringstream input(str);   
+    std::stringstream input(str);
     std::string temp;
     while(getline(input, temp, pattern))
     {
@@ -141,15 +140,15 @@ ServerTraffic::StopApplication ()
       m_socket->SetRecvCallback (MakeNullCallback<void, Ptr<Socket> > ());
     }
   // float sum = total_traffic / (1024*1024);
-  float sum = total_traffic;
-  std::cout<<"total traffic received in server: "<<sum<< "Byte server stops at "<<Simulator::Now().GetSeconds()<<"s" << std::endl;
+  // float sum = total_traffic;
+  // std::cout<<"total traffic received in server: "<<sum<< "Byte server stops at "<<Simulator::Now().GetSeconds()<<"s" << std::endl;
 }
 
 
 
 void ServerTraffic::HandleAccept(Ptr<Socket> s, const Address& from)
 {
-  std::cout<<"Server handles accept at: "<<Simulator::Now().GetSeconds()<<"s"<<std::endl;
+  // std::cout<<"Server handles accept at: "<<Simulator::Now().GetSeconds()<<"s"<<std::endl;
   s->SetRecvCallback (MakeCallback (&ServerTraffic::HandleTraffic, this));
 }
 
@@ -166,19 +165,29 @@ ServerTraffic::HandleTraffic (Ptr<Socket> socket)
   // NS_LOG_FUNCTION (this << socket);
   Ptr<Packet> packet;
   Address from;
-  
   while ((packet = socket->RecvFrom (from)))
     {
-      // uint8_t content_[20];
-      // packet->CopyData(content_, 20);
-      uint8_t content_[200];
-      packet->CopyData (content_, 200);
-      std::cout<<"Server received "<<packet->GetSize()<<" bytes "<<content_<<" from "<<InetSocketAddress::ConvertFrom (from).GetIpv4 ()<<
-        " at "<<Simulator::Now().GetSeconds() <<"s"<<std::endl;
-      total_traffic += packet->GetSize();
+      uint8_t content_[30];
+      packet->CopyData(content_, 30);
+      std::string str_of_content (content_, content_ + 30);
+      std::vector<std::string> res = SplitMessage (str_of_content, '+');
+      float traffic_queried = (atoi) (res[1].c_str ());
+      // std::cout<<"Server received "<<packet->GetSize()<<" bytes "<<content_<<" from "<<InetSocketAddress::ConvertFrom (from).GetIpv4 ()<<
+      //   " at "<<Simulator::Now().GetSeconds() <<"s"<<std::endl;
+      // total_traffic += packet->GetSize();
       // std::cout<<"Echoing packet"<<std::endl;
       // socket->SendTo (packet, 0, from);
-      socket->Send(packet);
+      int loop_number = traffic_queried / (2048);
+      for(int l=0; l<loop_number; l++)
+      {
+        Ptr<Packet> p;
+        std::string str1 = "MOBILE_DOWNLOAD_TRAFFIC+";
+        str1.append(std::to_string(l));
+        const uint8_t *buffer = reinterpret_cast<const uint8_t *> (str1.c_str ());
+        p = Create<Packet> (buffer, 2048);
+        socket->Send(p);
+      }
+      
       // std::string str_of_content(content_, content_+20);
       // std::vector<std::string> res = SplitMessage(str_of_content, '+');
       // const char* time_of_recived_message = res[0].c_str();
