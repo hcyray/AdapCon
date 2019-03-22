@@ -58,14 +58,15 @@ private:
   void SendTraffic(double traffic);
   void QueryTraffic();
   void HandleTraffic(Ptr<Socket> socket);
+  void HandleAccept(Ptr<Socket> socket);
   void ScheduleTransmit();
   double TrafficData(double time);
 
   Ptr<Socket> m_socket;
   uint16_t m_peerPort;
   Address m_peerAddress;
-
-
+  float total_traffic;
+  int count;
 
   
 

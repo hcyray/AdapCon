@@ -22,7 +22,7 @@
 #include "ns3/nstime.h"
 #include "ns3/inet-socket-address.h"
 #include "ns3/socket.h"
-#include "ns3/udp-socket.h"
+#include "ns3/tcp-socket.h"
 #include "ns3/simulator.h"
 #include "ns3/socket-factory.h"
 #include "ns3/packet.h"
@@ -113,17 +113,19 @@ ServerTraffic::StartApplication (void)
   // std::cout<<"Server starts"<<std::endl;
   if (m_socket == 0)
     {
-      TypeId tid = TypeId::LookupByName ("ns3::UdpSocketFactory");
+      TypeId tid = TypeId::LookupByName ("ns3::TcpSocketFactory");
       m_socket = Socket::CreateSocket (GetNode (), tid);
       InetSocketAddress local = InetSocketAddress (Ipv4Address::GetAny (), m_port);
       if (m_socket->Bind (local) == -1)
       {
         NS_FATAL_ERROR ("Failed to bind socket");
       }
-      // if(m_socket->Listen()==0)
-      //   std::cout<<"Server is listening!"<<std::endl;
+      if(m_socket->Listen()==0)
+        std::cout<<"Server is listening!"<<std::endl;
       // m_socket->ShutdownSend();
     }
+  m_socket->SetAcceptCallback(MakeNullCallback<bool, Ptr<Socket>, const Address &> (), 
+    MakeCallback(&ServerTraffic::HandleAccept, this));
   m_socket->SetRecvCallback (MakeCallback (&ServerTraffic::HandleTraffic, this));
 
 }
@@ -138,19 +140,25 @@ ServerTraffic::StopApplication ()
       m_socket->Close ();
       m_socket->SetRecvCallback (MakeNullCallback<void, Ptr<Socket> > ());
     }
-  float sum = total_traffic / (1024*1024);
-  std::cout<<"total traffic received: "<<sum<< "MB" << std::endl;
+  // float sum = total_traffic / (1024*1024);
+  float sum = total_traffic;
+  std::cout<<"total traffic received in server: "<<sum<< "Byte server stops at "<<Simulator::Now().GetSeconds()<<"s" << std::endl;
 }
 
 
 
-// void ServerTraffic::HandleAccept(Ptr<Socket> s, const Address& from)
+void ServerTraffic::HandleAccept(Ptr<Socket> s, const Address& from)
+{
+  std::cout<<"Server handles accept at: "<<Simulator::Now().GetSeconds()<<"s"<<std::endl;
+  s->SetRecvCallback (MakeCallback (&ServerTraffic::HandleTraffic, this));
+}
+
+
+// void
+// ServerTraffic::HandleAccept(Ptr<Socket> socket)
 // {
-//   std::cout<<"Server handles accept at: "<<Simulator::Now().GetSeconds()<<"s"<<std::endl;
-//   s->SetRecvCallback (MakeCallback (&ServerTraffic::HandleTraffic, this));
+//   socket->SetRecvCallback(MakeCallback(&ServerTraffic::HandleTraffic, this));
 // }
-
-
 
 void 
 ServerTraffic::HandleTraffic (Ptr<Socket> socket)
@@ -158,21 +166,19 @@ ServerTraffic::HandleTraffic (Ptr<Socket> socket)
   // NS_LOG_FUNCTION (this << socket);
   Ptr<Packet> packet;
   Address from;
+  
   while ((packet = socket->RecvFrom (from)))
     {
       // uint8_t content_[20];
       // packet->CopyData(content_, 20);
-      // Ipv4Address from_addr = InetSocketAddress::ConvertFrom (from).GetIpv4 ();
-      // int from_node = (int)map_addr_node[from_addr];
-      // std::cout<<"Server received a "<<content_<<" "<<packet->GetSize()
-      //   <<" bytes at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
-      // std::cout<<"Server received "<<packet->GetSize()<<" bytes from "<<InetSocketAddress::ConvertFrom (from).GetIpv4 ()<<
-      //   " at "<<Simulator::Now().GetSeconds() <<"s"<<std::endl;
-      // packet->RemoveAllPacketTags ();
-      // packet->RemoveAllByteTags ();
+      uint8_t content_[200];
+      packet->CopyData (content_, 200);
+      std::cout<<"Server received "<<packet->GetSize()<<" bytes "<<content_<<" from "<<InetSocketAddress::ConvertFrom (from).GetIpv4 ()<<
+        " at "<<Simulator::Now().GetSeconds() <<"s"<<std::endl;
       total_traffic += packet->GetSize();
       // std::cout<<"Echoing packet"<<std::endl;
-      socket->SendTo (packet, 0, from);
+      // socket->SendTo (packet, 0, from);
+      socket->Send(packet);
       // std::string str_of_content(content_, content_+20);
       // std::vector<std::string> res = SplitMessage(str_of_content, '+');
       // const char* time_of_recived_message = res[0].c_str();
