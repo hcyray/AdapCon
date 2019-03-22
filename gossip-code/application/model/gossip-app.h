@@ -37,7 +37,7 @@ namespace ns3 {
 class Socket;
 class Packet;
 
-const int TOTAL_EPOCH_FOR_SIMULATION = 12;
+const int TOTAL_EPOCH_FOR_SIMULATION = 10;
 
 const int AP_NUMBER = 5;
 const int NODE_NUMBER = 16;
@@ -205,6 +205,7 @@ private:
 
   std::map<int, std::map<int, float> > map_epoch_node_CR_gain;
   std::map<int, std::map<int, float> > map_epoch_node_CR;
+  std::map<int, std::map<int, float> > map_epoch_node_BR;
   std::map<int, float> map_node_BR;
   
   int Silence_Attacker;
