@@ -142,8 +142,8 @@ UserTraffic::StopApplication ()
       m_socket->Close ();
       m_socket->SetRecvCallback (MakeNullCallback<void, Ptr<Socket> > ());
     }
-  float sum = total_traffic;
-  std::cout<<"total traffic received in user: "<<sum<< "Byte, user stops at "<<Simulator::Now().GetSeconds()<<"s" << std::endl;
+  float sum = total_traffic / (1024*1024);
+  std::cout<<"total traffic received in user: "<<sum<< "MB, user stops at "<<Simulator::Now().GetSeconds()<<"s" << std::endl;
 }
 
 void UserTraffic::ScheduleTransmit()
@@ -154,13 +154,14 @@ void UserTraffic::ScheduleTransmit()
     float traffic = TrafficData(time);
     SendTraffic(traffic);
   }
-  Simulator::Schedule(Seconds(2.), &UserTraffic::ScheduleTransmit, this);
+  if(Simulator::Now().GetSeconds()<18)
+    Simulator::Schedule(Seconds(2.), &UserTraffic::ScheduleTransmit, this);
 }
 
 float UserTraffic::TrafficData(float time)
 {
   // TODO a formula
-  return 1024*2;
+  return 1024*128;
 }
 
 void UserTraffic::HandleAccept(Ptr<Socket> socket)
@@ -206,6 +207,8 @@ UserTraffic::HandleTraffic (Ptr<Socket> socket)
       const char *type_of_received_message = res[0].c_str ();
       if(strcmp (type_of_received_message, "MOBILE_DOWNLOAD_TRAFFIC") == 0)
         total_traffic += packet->GetSize();
+      // if(total_traffic > (1024*512))
+      //   std::cout<<"$$$$$$$$$$$$$ 0.5MB is got at "<<Simulator::Now().GetSeconds() <<"s"<<std::endl;
       // Ipv4Address from_addr = InetSocketAddress::ConvertFrom (from).GetIpv4 ();
       // int from_node = (int)map_addr_node[from_addr];
       // std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" "<<packet->GetSize()

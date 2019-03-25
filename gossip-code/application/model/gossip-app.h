@@ -37,12 +37,12 @@ namespace ns3 {
 class Socket;
 class Packet;
 
-const int TOTAL_EPOCH_FOR_SIMULATION = 10;
+const int TOTAL_EPOCH_FOR_SIMULATION = 20;
 
 const int AP_NUMBER = 5;
 const int NODE_NUMBER = 16;
 const int OUT_GOSSIP_ROUND = 5;
-const int BLOCK_PIECE_NUMBER = 32;
+const int BLOCK_PIECE_NUMBER = 64;
 const int IN_GOSSIP_ROUND = 3;
 const int SOLICIT_ROUND = 1;
 const int SOLICIT_INTERVAL = 10;

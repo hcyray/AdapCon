@@ -139,16 +139,16 @@ ServerTraffic::StopApplication ()
       m_socket->Close ();
       m_socket->SetRecvCallback (MakeNullCallback<void, Ptr<Socket> > ());
     }
-  // float sum = total_traffic / (1024*1024);
+  float sum = total_traffic / (1024*1024);
   // float sum = total_traffic;
-  // std::cout<<"total traffic received in server: "<<sum<< "Byte server stops at "<<Simulator::Now().GetSeconds()<<"s" << std::endl;
+  std::cout<<"total traffic received in server: "<<sum<< "MB server stops at "<<Simulator::Now().GetSeconds()<<"s" << std::endl;
 }
 
 
 
 void ServerTraffic::HandleAccept(Ptr<Socket> s, const Address& from)
 {
-  // std::cout<<"Server handles accept at: "<<Simulator::Now().GetSeconds()<<"s"<<std::endl;
+  std::cout<<"Server handles accept at: "<<Simulator::Now().GetSeconds()<<"s"<<std::endl;
   s->SetRecvCallback (MakeCallback (&ServerTraffic::HandleTraffic, this));
 }
 
@@ -174,11 +174,16 @@ ServerTraffic::HandleTraffic (Ptr<Socket> socket)
       float traffic_queried = (atoi) (res[1].c_str ());
       // std::cout<<"Server received "<<packet->GetSize()<<" bytes "<<content_<<" from "<<InetSocketAddress::ConvertFrom (from).GetIpv4 ()<<
       //   " at "<<Simulator::Now().GetSeconds() <<"s"<<std::endl;
+      std::cout<<"Server received "<<content_<<" from "<<InetSocketAddress::ConvertFrom (from).GetIpv4 ()<<
+        " at "<<Simulator::Now().GetSeconds() <<"s"<<std::endl;
       // total_traffic += packet->GetSize();
       // std::cout<<"Echoing packet"<<std::endl;
       // socket->SendTo (packet, 0, from);
-      int loop_number = traffic_queried / (2048);
-      for(int l=0; l<loop_number; l++)
+      int loop_number = traffic_queried / 2048;
+      std::cout<<"Server reply "<<InetSocketAddress::ConvertFrom (from).GetIpv4 ()<<" "<<loop_number<<
+        " 2K packet at "<<Simulator::Now().GetSeconds() <<"s"<<std::endl;
+      int l;
+      for(l=0; l<loop_number; l++)
       {
         Ptr<Packet> p;
         std::string str1 = "MOBILE_DOWNLOAD_TRAFFIC+";
@@ -187,6 +192,8 @@ ServerTraffic::HandleTraffic (Ptr<Socket> socket)
         p = Create<Packet> (buffer, 2048);
         socket->Send(p);
       }
+      if(l==loop_number)
+        std::cout<<"the " <<l<<" packets all sent at "<<Simulator::Now().GetSeconds() <<"s"<<std::endl;
       
       // std::string str_of_content(content_, content_+20);
       // std::vector<std::string> res = SplitMessage(str_of_content, '+');
