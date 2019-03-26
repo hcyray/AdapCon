@@ -62,6 +62,7 @@ private:
   Ptr<Socket> m_socket;
   uint16_t m_port;
   float total_traffic;
+  float xx;
 
   /// Callbacks for tracing the packet Rx events
   // TracedCallback<Ptr<const Packet> > m_rxTrace;

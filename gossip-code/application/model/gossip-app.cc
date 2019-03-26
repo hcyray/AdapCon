@@ -1364,8 +1364,7 @@ GossipApp::HandleRead (Ptr<Socket> socket)
               block_received.name = tmp1;
               block_received.height = tmp2;
               std::cout << "node " << (int) GetNodeId () << " received a " << content_
-                        << " for the first time " << packet->GetSize ()
-                        << " bytes from node " << from_node << " at "
+                        << " for the first time from node " << from_node << " at "
                         << Simulator::Now ().GetSeconds () << " s" << std::endl;
               get_block_time = Simulator::Now ().GetSeconds () - m_epoch_beginning;
               get_block_time = ((int) (get_block_time * 1000)) / 1000.;

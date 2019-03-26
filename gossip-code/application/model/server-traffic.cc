@@ -74,6 +74,8 @@ ServerTraffic::ServerTraffic ()
 {
   NS_LOG_FUNCTION (this);
   m_socket = 0;
+  xx = 0;
+  total_traffic = 0;
 }
 
 
@@ -114,6 +116,7 @@ ServerTraffic::StartApplication (void)
     {
       TypeId tid = TypeId::LookupByName ("ns3::TcpSocketFactory");
       m_socket = Socket::CreateSocket (GetNode (), tid);
+      // m_socket->SetSndBufSize(262144);
       InetSocketAddress local = InetSocketAddress (Ipv4Address::GetAny (), m_port);
       if (m_socket->Bind (local) == -1)
       {
@@ -175,14 +178,15 @@ ServerTraffic::HandleTraffic (Ptr<Socket> socket)
       // std::cout<<"Server received "<<packet->GetSize()<<" bytes "<<content_<<" from "<<InetSocketAddress::ConvertFrom (from).GetIpv4 ()<<
       //   " at "<<Simulator::Now().GetSeconds() <<"s"<<std::endl;
       std::cout<<"Server received "<<content_<<" from "<<InetSocketAddress::ConvertFrom (from).GetIpv4 ()<<
-        " at "<<Simulator::Now().GetSeconds() <<"s"<<std::endl;
-      // total_traffic += packet->GetSize();
+        " at "<<Simulator::Now().GetSeconds() <<"s, available tx buffer: "<<socket->GetTxAvailable() <<std::endl;
+      total_traffic += packet->GetSize();
       // std::cout<<"Echoing packet"<<std::endl;
       // socket->SendTo (packet, 0, from);
       int loop_number = traffic_queried / 2048;
       std::cout<<"Server reply "<<InetSocketAddress::ConvertFrom (from).GetIpv4 ()<<" "<<loop_number<<
         " 2K packet at "<<Simulator::Now().GetSeconds() <<"s"<<std::endl;
       int l;
+      float total_sent = 0;
       for(l=0; l<loop_number; l++)
       {
         Ptr<Packet> p;
@@ -190,10 +194,22 @@ ServerTraffic::HandleTraffic (Ptr<Socket> socket)
         str1.append(std::to_string(l));
         const uint8_t *buffer = reinterpret_cast<const uint8_t *> (str1.c_str ());
         p = Create<Packet> (buffer, 2048);
-        socket->Send(p);
+        int u= socket->Send(p);
+        if(u<0)
+        {
+          std::cout<<"server fail to send at "<<l<<"th packet"<<std::endl;
+        }
+        else
+        {
+          total_sent += u;
+        }
       }
       if(l==loop_number)
-        std::cout<<"the " <<l<<" packets all sent at "<<Simulator::Now().GetSeconds() <<"s"<<std::endl;
+      {
+        std::cout<<total_sent/1024 <<" KB all sent at "<<Simulator::Now().GetSeconds() <<"s, available tx buffer: "
+          <<socket->GetTxAvailable()<<std::endl;
+      }
+      
       
       // std::string str_of_content(content_, content_+20);
       // std::vector<std::string> res = SplitMessage(str_of_content, '+');

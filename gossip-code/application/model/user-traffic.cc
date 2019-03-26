@@ -80,6 +80,7 @@ UserTraffic::UserTraffic ()
   NS_LOG_FUNCTION (this);
   m_socket = 0;
   total_traffic = 0;
+  xx = 0;
 }
 
 
@@ -152,16 +153,18 @@ void UserTraffic::ScheduleTransmit()
   if(time<600)
   {
     float traffic = TrafficData(time);
-    SendTraffic(traffic);
+    int query_time = traffic / query_unit;
+    for(int i=0; i<query_time; i++)
+      SendTraffic(query_unit);
   }
-  if(Simulator::Now().GetSeconds()<18)
-    Simulator::Schedule(Seconds(2.), &UserTraffic::ScheduleTransmit, this);
+  if(Simulator::Now().GetSeconds()<=19)
+    Simulator::Schedule(Seconds(0.5), &UserTraffic::ScheduleTransmit, this);
 }
 
 float UserTraffic::TrafficData(float time)
 {
   // TODO a formula
-  return 1024*128;
+  return 1024*1024;
 }
 
 void UserTraffic::HandleAccept(Ptr<Socket> socket)
@@ -207,8 +210,12 @@ UserTraffic::HandleTraffic (Ptr<Socket> socket)
       const char *type_of_received_message = res[0].c_str ();
       if(strcmp (type_of_received_message, "MOBILE_DOWNLOAD_TRAFFIC") == 0)
         total_traffic += packet->GetSize();
-      // if(total_traffic > (1024*512))
-      //   std::cout<<"$$$$$$$$$$$$$ 0.5MB is got at "<<Simulator::Now().GetSeconds() <<"s"<<std::endl;
+
+      if(total_traffic == 1024*1024)
+      {
+        std::cout<<"User received 1MB at "<<Simulator::Now().GetSeconds() <<"s"<<std::endl;
+        
+      }
       // Ipv4Address from_addr = InetSocketAddress::ConvertFrom (from).GetIpv4 ();
       // int from_node = (int)map_addr_node[from_addr];
       // std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" "<<packet->GetSize()

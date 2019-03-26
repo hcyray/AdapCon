@@ -65,8 +65,10 @@ private:
   Ptr<Socket> m_socket;
   uint16_t m_peerPort;
   Address m_peerAddress;
+  float query_unit = 128*1024;
   float total_traffic;
   int count;
+  int xx;
 
   
 
