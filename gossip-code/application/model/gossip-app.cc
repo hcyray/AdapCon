@@ -175,6 +175,7 @@ GossipApp::ConsensProcess ()
     if(Silence_Attacker==0)
     {
       LeaderGossipBlockOut (b);
+      
     }
     else
     {
@@ -487,10 +488,10 @@ GossipApp::SendBlockPiece (int dest, int piece, Block b)
   str1.append ("+");
   str1.append (std::to_string ((int) piece));
   const uint8_t *str3 = reinterpret_cast<const uint8_t *> (str1.c_str ());
-  Packet pack1 (str3, 1024 * 2);
+  Packet pack1 (str3, 1024 * 4);
   Ptr<Packet> p = &pack1;
   if (m_socket_send[dest]->Send (p) == -1)
-    std::cout << "Failed to send packet" << std::endl;
+    std::cout << "Failed to send block piece "<<piece << std::endl;
 }
 
 void
@@ -525,13 +526,13 @@ GossipApp::SendBlockAckPiece (int dest, int piece, Block b)
   str1.append ("+");
   str1.append (std::to_string ((int) piece));
   const uint8_t *str3 = reinterpret_cast<const uint8_t *> (str1.c_str ());
-  Packet pack1 (str3, 1024 * 2);
+  Packet pack1 (str3, 1024 * 4);
   Ptr<Packet> p = &pack1;
   if (m_socket_send[dest]->Send (p) == -1)
   {
     float x = rand () % 200;
     x = x / 200 + 0.2;
-    std::cout << "Failed to send ack packet, will retransmit in "<<x<<"s" << std::endl;
+    std::cout << "Failed to send ack block piece, will retransmit in "<<x<<"s" << std::endl;
     Simulator::Schedule (Seconds (x), &GossipApp::SendBlockPiece, this, dest, piece, b);
   }
     
@@ -556,7 +557,7 @@ GossipApp::SendPrepare (int dest, Block b)
   Packet pack1 (str3, 120);
   Ptr<Packet> p = &pack1;
   if(m_socket_send[dest]->Send (p)==-1)
-    std::cout<<"send prepare failed!"<<std::endl;
+    std::cout<<(int)m_node_id<<" send prepare failed, tx buffer: "<<m_socket_send[dest]->GetTxAvailable()<<std::endl;
 }
 
 void
@@ -577,7 +578,7 @@ GossipApp::SendCommit (int dest, Block b)
   Packet pack1 (str3, 120);
   Ptr<Packet> p = &pack1;
   if(m_socket_send[dest]->Send (p)==-1)
-    std::cout<<"send commit failed"<<std::endl;
+    std::cout<<(int)m_node_id<<" send commit failed, tx buffer: "<<m_socket_send[dest]->GetTxAvailable()<<std::endl;
 }
 
 void
@@ -621,7 +622,7 @@ GossipApp::SendTimeMessage (int dest, int t)
   Packet pack1 (str3, 120);
   Ptr<Packet> p = &pack1;
   if (m_socket_send[dest]->Send (p) == -1)
-    std::cout << "fatal error" << std::endl;
+    std::cout <<(int)m_node_id<< " fail to send time msg, tx available:"<<m_socket_send[dest]->GetTxAvailable() << std::endl;
   // std::cout<<"node "<<(int)m_node_id<<" send "<<str1<<" to node "<<dest<<" at "<<
   //   Simulator::Now().GetSeconds()<<"s"<<std::endl;
 }
@@ -639,30 +640,31 @@ void GossipApp::SendViewplusplus(int dest)
   Packet pack1 (str3, 120);
   Ptr<Packet> p = &pack1;
   if(m_socket_send[dest]->Send (p)==-1)
-    std::cout<<"send view++ failed"<<std::endl;
-  // std::cout << "node " << (int) GetNodeId () << " send a view change msg to node " << dest << " at "
-  //           << Simulator::Now ().GetSeconds () << "s" << std::endl;
+    std::cout <<(int)m_node_id<< " send view++ failed, tx available:"<<m_socket_send[dest]->GetTxAvailable() << std::endl;
+    
+  std::cout << "node " << (int) GetNodeId () << " send a view change msg to node " << dest << " at "
+            << Simulator::Now ().GetSeconds () << "s, tx buffer available: "<< m_socket_send[dest]->GetTxAvailable() << std::endl;
 
 }
 
 void GossipApp::RelayViewpluplusMessage(int dest, Ptr<Packet> p)
 {
   if(m_socket_send[dest]->Send(p)==-1)
-    std::cout<<"error relay"<<std::endl;
+    std::cout<<(int)m_node_id<<"error view change msg relay, tx available:"<<m_socket_send[dest]->GetTxAvailable()<<std::endl;
 }
 
 void
 GossipApp::RelayVotingMessage (int dest, Ptr<Packet> p)
 {
   if(m_socket_send[dest]->Send(p)==-1)
-    std::cout<<"error relay"<<std::endl;
+    std::cout<<(int)m_node_id<<"error voting msg relay, tx available:"<<m_socket_send[dest]->GetTxAvailable()<<std::endl;
 }
 
 void
 GossipApp::RelayTimeMessage (int dest, Ptr<Packet> p)
 {
   if(m_socket_send[dest]->Send(p)==-1)
-    std::cout<<"error relay"<<std::endl;
+    std::cout<<(int)m_node_id<<"error time msg relay, tx available:"<<m_socket_send[dest]->GetTxAvailable()<<std::endl;
 }
 
 // void
@@ -755,8 +757,8 @@ GossipApp::InitializeEpoch ()
       map_epoch_node_getblocktime[m_epoch][i] = -1;
       map_epoch_node_getcommittedtime[m_epoch][i] = -1;
     }
-  if (m_epoch > 1)
-    GossipTimeMessage (m_epoch - 1);
+  // if (m_epoch > 1)
+  //   GossipTimeMessage (m_epoch - 1);
   get_block_or_not = 0;
   get_committed_or_not = 0;
   get_block_time = -1;
@@ -1204,7 +1206,8 @@ void GossipApp::SolicitBlock(int dest)
   Packet pack1 (str3, 120);
   Ptr<Packet> p = &pack1;
   if (m_socket_send[dest]->Send (p) == -1)
-    std::cout << "Failed to send packet" << std::endl;
+    std::cout<<(int)m_node_id<<" Failed to solicit blokc, tx available:"<<m_socket_send[dest]->GetTxAvailable()<<std::endl;
+    
 }
 
 void GossipApp::SolicitHistory(int dest, int h)
@@ -1222,7 +1225,7 @@ void GossipApp::SolicitHistory(int dest, int h)
   Packet pack1 (str3, 120);
   Ptr<Packet> p = &pack1;
   if (m_socket_send[dest]->Send (p) == -1)
-    std::cout << "Failed to send packet" << std::endl;
+    std::cout<<(int)m_node_id<<" Failed to solicit history, tx available:"<<m_socket_send[dest]->GetTxAvailable()<<std::endl;
   std::cout<<"node "<<(int)m_node_id<<" query node "<<dest<<" for block history at "
     <<Simulator::Now().GetSeconds()<<"s"<<std::endl;
 
@@ -1251,7 +1254,7 @@ void GossipApp::ReplyHistorySolicit(int dest, int h)
   Packet pack1 (str3, 120);
   Ptr<Packet> p = &pack1;
   if (m_socket_send[dest]->Send (p) == -1)
-    std::cout << "Failed to send packet" << std::endl;
+    std::cout<<(int)m_node_id<<" Failed to reply history solicit , tx available:"<<m_socket_send[dest]->GetTxAvailable()<<std::endl;
   std::cout<<"node "<<(int)m_node_id<<" reply node "<<dest<<" for query at "
     <<Simulator::Now().GetSeconds()<<"s and send him "<<str1<<std::endl;
 }
@@ -1338,10 +1341,8 @@ GossipApp::HandleRead (Ptr<Socket> socket)
     std::vector<std::string> res = SplitMessage (str_of_content, '+');
     const char *time_of_recived_message = res[0].c_str ();
 
-    // std::cout<<"node "<<(int)GetNodeId()<<" received a "<<content_<<" "<<packet->GetSize()
+    // std::cout<<"node "<<std::setw(2)<<(int)GetNodeId()<<" received a "<<content_<<" "<<packet->GetSize()
     //   <<" bytes from node "<<from_node<<" at "<<Simulator::Now().GetSeconds()<<" s"<<std::endl;
-
-    
 
     if (strcmp (time_of_recived_message, (std::to_string (m_epoch)).c_str ()) == 0)
     {
@@ -1369,10 +1370,11 @@ GossipApp::HandleRead (Ptr<Socket> socket)
               get_block_time = Simulator::Now ().GetSeconds () - m_epoch_beginning;
               get_block_time = ((int) (get_block_time * 1000)) / 1000.;
               get_block_or_not = 1;
-              // std::cout << "node " << (int) GetNodeId () << " received a " << content_
-              //           << " for the first time from node " << from_node << " at "
-              //           << get_block_time << "s" << std::endl;
-              GossipBlockAfterReceive (from_node, block_received);
+              // // std::cout << "node " << (int) GetNodeId () << " received a " << content_
+              // //           << " for the first time from node " << from_node << " at "
+              // //           << get_block_time << "s" << std::endl;
+              if(Simulator::Now().GetSeconds()-m_epoch_beginning < map_epoch_len_phase1[m_epoch])
+                GossipBlockAfterReceive (from_node, block_received);
             }
           }
         }
@@ -1382,10 +1384,6 @@ GossipApp::HandleRead (Ptr<Socket> socket)
           if(received_block_height>((int)m_local_ledger.size()+1))
           {
             int local_ledger_height = (int) (m_local_ledger.size());
-            // int piece = (atoi) (res[6].c_str());
-            // if(piece==0)
-            //   SolicitHistory(from_node, local_ledger_height);
-
             if(Simulator::Now().GetSeconds()<m_epoch_beginning+len_phase1)
               if(query_time==0)
               {
@@ -1394,7 +1392,6 @@ GossipApp::HandleRead (Ptr<Socket> socket)
               }
               
           }
-          // TODO query the node who give me this block
         }
         
       }
@@ -1527,8 +1524,10 @@ GossipApp::HandleRead (Ptr<Socket> socket)
             float x = rand () % 1000;
             x = x / 1000;
             int dest = out_neighbor_choosed[i];
-            Simulator::Schedule (Seconds (x), &GossipApp::RelayVotingMessage,
+            Simulator::Schedule (Seconds (x), &GossipApp::RelayViewpluplusMessage,
                                   this, dest, packet);
+            std::cout<<"node "<<(int)m_node_id<<" relay view change msg to node "<<dest<<" at "<<Simulator::Now().GetSeconds()
+              <<"s"<<std::endl;
           }
         }
       }

@@ -80,7 +80,7 @@ UserTraffic::UserTraffic ()
   NS_LOG_FUNCTION (this);
   m_socket = 0;
   total_traffic = 0;
-  xx = 0;
+  reply_traffic = 0;
 }
 
 
@@ -155,10 +155,10 @@ void UserTraffic::ScheduleTransmit()
     float traffic = TrafficData(time);
     int query_time = traffic / query_unit;
     for(int i=0; i<query_time; i++)
-      SendTraffic(query_unit);
+      SendTraffic(query_unit, i);
   }
-  if(Simulator::Now().GetSeconds()<=19)
-    Simulator::Schedule(Seconds(0.5), &UserTraffic::ScheduleTransmit, this);
+  if(Simulator::Now().GetSeconds()<=18)
+    Simulator::Schedule(Seconds(2), &UserTraffic::ScheduleTransmit, this);
 }
 
 float UserTraffic::TrafficData(float time)
@@ -172,16 +172,22 @@ void UserTraffic::HandleAccept(Ptr<Socket> socket)
   socket->SetRecvCallback (MakeCallback (&UserTraffic::HandleTraffic, this));
 }
 
-void UserTraffic::SendTraffic(float traffic)
+void UserTraffic::SendTraffic(float traffic, int n)
 {
   Ptr<Packet> p;
   std::string str1 = "QUERY+";
   str1.append(std::to_string(traffic));
+  str1.append("+");
+  str1.append(std::to_string(n));
   const uint8_t *buffer = reinterpret_cast<const uint8_t *> (str1.c_str ());
   p = Create<Packet> (buffer, 2048);
   if(m_socket->Send(p)==-1)
     std::cout<<"User fail to send a packet to server at "<<Simulator::Now().GetSeconds()<<"s"<<std::endl;
-
+  else
+  {
+    std::cout<<"User send "<<str1<<" to server at "<<Simulator::Now().GetSeconds()<<"s"<<std::endl;
+  }
+  
 
   // std::cout<<"user send "<<buffer<<" to server at "<<Simulator::Now().GetSeconds()<<"s"<<std::endl;
   // for(int i=0; i<loop_number; i++)
@@ -209,12 +215,15 @@ UserTraffic::HandleTraffic (Ptr<Socket> socket)
       std::vector<std::string> res = SplitMessage (str_of_content, '+');
       const char *type_of_received_message = res[0].c_str ();
       if(strcmp (type_of_received_message, "MOBILE_DOWNLOAD_TRAFFIC") == 0)
-        total_traffic += packet->GetSize();
-
-      if(total_traffic == 1024*1024)
       {
-        std::cout<<"User received 1MB at "<<Simulator::Now().GetSeconds() <<"s"<<std::endl;
-        
+        total_traffic += packet->GetSize();
+        reply_traffic += packet->GetSize();
+      }
+      
+      if(reply_traffic == 1024*512)
+      {
+        reply_traffic = 0;
+        std::cout<<"user received another 512 KB at "<<Simulator::Now().GetSeconds()<<"s"<<std::endl;
       }
       // Ipv4Address from_addr = InetSocketAddress::ConvertFrom (from).GetIpv4 ();
       // int from_node = (int)map_addr_node[from_addr];

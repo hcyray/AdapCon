@@ -41,8 +41,8 @@ const int TOTAL_EPOCH_FOR_SIMULATION = 20;
 
 const int AP_NUMBER = 5;
 const int NODE_NUMBER = 16;
-const int OUT_GOSSIP_ROUND = 5;
-const int BLOCK_PIECE_NUMBER = 510;
+const int OUT_GOSSIP_ROUND = 4;
+const int BLOCK_PIECE_NUMBER = 240;
 const int IN_GOSSIP_ROUND = 3;
 const int SOLICIT_ROUND = 1;
 const int SOLICIT_INTERVAL = 10;
@@ -51,8 +51,8 @@ const float DETERMINECONSENS_INTERVAL = 0.3;
 
 
 const int WINDOW_SIZE = 2;
-const float EPSILON1 = 5.0;
-const float EPSILON2 = 3.0;
+const float EPSILON1 = 10.0;
+const float EPSILON2 = 10.0;
 const int PATCH = 3;
 
 

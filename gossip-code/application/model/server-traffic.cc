@@ -182,9 +182,9 @@ ServerTraffic::HandleTraffic (Ptr<Socket> socket)
       total_traffic += packet->GetSize();
       // std::cout<<"Echoing packet"<<std::endl;
       // socket->SendTo (packet, 0, from);
-      int loop_number = traffic_queried / 2048;
-      std::cout<<"Server reply "<<InetSocketAddress::ConvertFrom (from).GetIpv4 ()<<" "<<loop_number<<
-        " 2K packet at "<<Simulator::Now().GetSeconds() <<"s"<<std::endl;
+      int loop_number = traffic_queried / 4096;
+      // std::cout<<"Server reply "<<InetSocketAddress::ConvertFrom (from).GetIpv4 ()<<" "<<loop_number<<
+      //   " 4K packet at "<<Simulator::Now().GetSeconds() <<"s"<<std::endl;
       int l;
       float total_sent = 0;
       for(l=0; l<loop_number; l++)
@@ -193,7 +193,7 @@ ServerTraffic::HandleTraffic (Ptr<Socket> socket)
         std::string str1 = "MOBILE_DOWNLOAD_TRAFFIC+";
         str1.append(std::to_string(l));
         const uint8_t *buffer = reinterpret_cast<const uint8_t *> (str1.c_str ());
-        p = Create<Packet> (buffer, 2048);
+        p = Create<Packet> (buffer, 4096);
         int u= socket->Send(p);
         if(u<0)
         {

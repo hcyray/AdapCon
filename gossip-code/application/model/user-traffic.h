@@ -55,7 +55,7 @@ private:
   virtual void StartApplication (void);
   virtual void StopApplication (void);
 
-  void SendTraffic(float traffic);
+  void SendTraffic(float traffic, int n);
   void QueryTraffic();
   void HandleTraffic(Ptr<Socket> socket);
   void HandleAccept(Ptr<Socket> socket);
@@ -65,10 +65,10 @@ private:
   Ptr<Socket> m_socket;
   uint16_t m_peerPort;
   Address m_peerAddress;
-  float query_unit = 128*1024;
+  float query_unit = 512*1024;
   float total_traffic;
+  float reply_traffic;
   int count;
-  int xx;
 
   
 
