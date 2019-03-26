@@ -166,7 +166,7 @@ void UserTraffic::ScheduleTransmit()
 float UserTraffic::TrafficData(float time)
 {
   // TODO a formula
-  return 1024*1024;
+  return 1024*512;
 }
 
 void UserTraffic::HandleAccept(Ptr<Socket> socket)

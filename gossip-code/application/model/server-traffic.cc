@@ -128,7 +128,7 @@ ServerTraffic::StartApplication (void)
     }
   m_socket->SetAcceptCallback(MakeNullCallback<bool, Ptr<Socket>, const Address &> (), 
     MakeCallback(&ServerTraffic::HandleAccept, this));
-  m_socket->SetRecvCallback (MakeCallback (&ServerTraffic::HandleTraffic, this));
+  // m_socket->SetRecvCallback (MakeCallback (&ServerTraffic::HandleTraffic, this));
 
 }
 
