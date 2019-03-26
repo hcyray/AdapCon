@@ -197,7 +197,7 @@ ServerTraffic::HandleTraffic (Ptr<Socket> socket)
         int u= socket->Send(p);
         if(u<0)
         {
-          std::cout<<"server fail to send at "<<l<<"th packet"<<std::endl;
+          std::cout<<"server fail to send at "<<l<<"th packet at "<<Simulator::Now().GetSeconds()<<"s"<<std::endl;
         }
         else
         {

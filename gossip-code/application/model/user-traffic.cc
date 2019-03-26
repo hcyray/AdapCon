@@ -155,7 +155,9 @@ void UserTraffic::ScheduleTransmit()
     float traffic = TrafficData(time);
     int query_time = traffic / query_unit;
     for(int i=0; i<query_time; i++)
-      SendTraffic(query_unit, i);
+    {
+      Simulator::Schedule(Seconds(0.2*i), &UserTraffic::SendTraffic, this, query_unit, i);
+    }
   }
   if(Simulator::Now().GetSeconds()<=18)
     Simulator::Schedule(Seconds(2), &UserTraffic::ScheduleTransmit, this);
