@@ -175,14 +175,11 @@ GossipApp::ConsensProcess ()
     if(Silence_Attacker==0)
     {
       LeaderGossipBlockOut (b);
-      
     }
     else
     {
       std::cout << "node " << (int) GetNodeId () << " launches a silence attack! "<< std::endl;
     }
-    
-    
   }
   // else
   // {
@@ -190,7 +187,7 @@ GossipApp::ConsensProcess ()
   // }
   srand(Simulator::Now().GetSeconds()+m_node_id+m_epoch);
   id1 = Simulator::Schedule (Seconds (p.first), &GossipApp::GossipPrepareOut, this);
-  id3 = Simulator::Schedule (Seconds (p.first + p.second - 0.1), &GossipApp::EndSummary, this);
+  id3 = Simulator::Schedule (Seconds (p.first + p.second - 0.2), &GossipApp::EndSummary, this);
   if (m_epoch < TOTAL_EPOCH_FOR_SIMULATION)
   {  
     id4 = Simulator::Schedule (Seconds (p.first + p.second), &GossipApp::ConsensProcess, this);
@@ -327,6 +324,9 @@ GossipApp::StartApplication (void)
 {
   NS_LOG_FUNCTION (this);
   // std::cout<<"node "<<(int)GetNodeId()<<" starts!"<<std::endl;
+  GetNeighbor (OUT_GOSSIP_ROUND, out_neighbor_choosed);
+  GetNeighbor (IN_GOSSIP_ROUND, in_neighbor_choosed);
+
 
   if (m_socket_receive == 0)
     {
@@ -345,8 +345,6 @@ GossipApp::StartApplication (void)
     MakeCallback (&GossipApp::HandleAccept, this));
   // m_socket_receive->SetRecvCallback (MakeCallback (&GossipApp::HandleRead, this));
 
-  GetNeighbor (OUT_GOSSIP_ROUND, out_neighbor_choosed);
-  GetNeighbor (IN_GOSSIP_ROUND, in_neighbor_choosed);
   for (int i = 0; i < NODE_NUMBER; i++)
   {
     TypeId tid = TypeId::LookupByName ("ns3::TcpSocketFactory");
@@ -355,6 +353,7 @@ GossipApp::StartApplication (void)
     // std::cout<<"sending socket created!"<<std::endl;
     if (m_socket_send[i]->Connect (InetSocketAddress (Ipv4Address::ConvertFrom (map_node_addr[i]), 17)) == -1)
       NS_FATAL_ERROR ("Fail to connect socket");
+    m_socket_send[i]->ShutdownRecv();
   }
 
   view = 1;
@@ -367,7 +366,7 @@ GossipApp::StartApplication (void)
   consensed_this_epoch=false;
 
   
-  if(m_node_id == 3 or m_node_id == 9)
+  if(m_node_id == 3 or m_node_id == 1)
   {
     Silence_Attacker = 1;
     std::cout<<"node "<<(int)m_node_id<<" is a silence attacker"<<std::endl;
@@ -403,8 +402,13 @@ GossipApp::StopApplication ()
   if (m_socket_receive != 0)
     {
       m_socket_receive->Close ();
-      m_socket_receive->SetRecvCallback (MakeNullCallback<void, Ptr<Socket> > ());
+      // m_socket_receive->SetRecvCallback (MakeNullCallback<void, Ptr<Socket> > ());
     }
+  for(int i = 0; i < NODE_NUMBER; i++)
+  {
+    if(m_socket_send[i]!=0)
+      m_socket_send[i]->Close();
+  }
   int sum = m_local_ledger.size ();
   std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~"<<(int)m_node_id<<" information~~~~~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
   std::cout << "node " << (int) m_node_id << " got " << sum << " consensed block" << std::endl; 
@@ -464,8 +468,9 @@ GossipApp::SendBlock (int dest, Block b)
     x = x / 100 + 1;
     Simulator::Schedule (Seconds (x), &GossipApp::SendBlockPiece, this, dest, piece, b);
   }
-  // std::cout << "node " << (int) GetNodeId () << " send a block to node " << dest << " at "
-  //           << Simulator::Now ().GetSeconds () << "s" << std::endl;
+  if((int)m_node_id==view)
+    std::cout << "node " << (int) GetNodeId () << " send a block to node " << dest << " at "
+              << Simulator::Now ().GetSeconds () << "s" << std::endl;
 }
 
 void
@@ -488,7 +493,7 @@ GossipApp::SendBlockPiece (int dest, int piece, Block b)
   str1.append ("+");
   str1.append (std::to_string ((int) piece));
   const uint8_t *str3 = reinterpret_cast<const uint8_t *> (str1.c_str ());
-  Packet pack1 (str3, 1024 * 4);
+  Packet pack1 (str3, 1024 * 8);
   Ptr<Packet> p = &pack1;
   if (m_socket_send[dest]->Send (p) == -1)
     std::cout << "Failed to send block piece "<<piece << std::endl;
@@ -526,7 +531,7 @@ GossipApp::SendBlockAckPiece (int dest, int piece, Block b)
   str1.append ("+");
   str1.append (std::to_string ((int) piece));
   const uint8_t *str3 = reinterpret_cast<const uint8_t *> (str1.c_str ());
-  Packet pack1 (str3, 1024 * 4);
+  Packet pack1 (str3, 1024 * 8);
   Ptr<Packet> p = &pack1;
   if (m_socket_send[dest]->Send (p) == -1)
   {
@@ -642,7 +647,7 @@ void GossipApp::SendViewplusplus(int dest)
   if(m_socket_send[dest]->Send (p)==-1)
     std::cout <<(int)m_node_id<< " send view++ failed, tx available:"<<m_socket_send[dest]->GetTxAvailable() << std::endl;
     
-  std::cout << "node " << (int) GetNodeId () << " send a view change msg to node " << dest << " at "
+  std::cout << "node " << (int) GetNodeId () << " send "<<str1<<" to node " << dest << " at "
             << Simulator::Now ().GetSeconds () << "s, tx buffer available: "<< m_socket_send[dest]->GetTxAvailable() << std::endl;
 
 }
@@ -778,18 +783,34 @@ GossipApp::EndSummary ()
   //   std::cout<<"###########################End summary event triggered in epoch "<<m_epoch
   //     <<" at "<<Simulator::Now().GetSeconds()<<"s"<<"###########################"<<std::endl;
   for (int i = 0; i < NODE_NUMBER; i++)
-    {
-      if (map_epoch_node_getblockornot[m_epoch - 1][i] == -1)
-        map_epoch_node_getblockornot[m_epoch - 1][i] = 0;
-      if (map_epoch_node_getcommitedornot[m_epoch - 1][i] == -1)
-        map_epoch_node_getcommitedornot[m_epoch - 1][i] = 0;
-      if (map_epoch_node_getblocktime[m_epoch - 1][i] == -1 or 
-        map_epoch_node_getblocktime[m_epoch - 1][i]>map_epoch_len_phase1[m_epoch-1])
-        map_epoch_node_getblocktime[m_epoch - 1][i] = map_epoch_len_phase1[m_epoch-1];
-      if (map_epoch_node_getcommittedtime[m_epoch - 1][i] == -1 or
-        map_epoch_node_getcommittedtime[m_epoch - 1][i]>map_epoch_len_phase1[m_epoch-1] + map_epoch_len_phase2[m_epoch-1])
-        map_epoch_node_getcommittedtime[m_epoch - 1][i] = map_epoch_len_phase1[m_epoch-1] + map_epoch_len_phase2[m_epoch-1];
-    }
+  {
+    if (map_epoch_node_getblockornot[m_epoch - 1][i] == -1)
+      map_epoch_node_getblockornot[m_epoch - 1][i] = 0;
+    if (map_epoch_node_getcommitedornot[m_epoch - 1][i] == -1)
+      map_epoch_node_getcommitedornot[m_epoch - 1][i] = 0;
+    if (map_epoch_node_getblocktime[m_epoch - 1][i] == -1 or 
+      map_epoch_node_getblocktime[m_epoch - 1][i]>map_epoch_len_phase1[m_epoch-1])
+      map_epoch_node_getblocktime[m_epoch - 1][i] = map_epoch_len_phase1[m_epoch-1];
+    if (map_epoch_node_getcommittedtime[m_epoch - 1][i] == -1 or
+      map_epoch_node_getcommittedtime[m_epoch - 1][i]>map_epoch_len_phase1[m_epoch-1] + map_epoch_len_phase2[m_epoch-1])
+      map_epoch_node_getcommittedtime[m_epoch - 1][i] = map_epoch_len_phase1[m_epoch-1] + map_epoch_len_phase2[m_epoch-1];
+  }
+  // for (int i = 0; i < NODE_NUMBER; i++)
+  // {
+  //   m_socket_send[i]->Close();
+  // }
+  // m_socket_send.clear();
+  // if(m_node_id==2)
+  //   std::cout<<"~~~~~~~~~"<<m_socket_send.size()<<std::endl;
+  // for (int i = 0; i < NODE_NUMBER; i++)
+  // {
+  //   TypeId tid = TypeId::LookupByName ("ns3::TcpSocketFactory");
+  //   Ptr<Socket> socket_send = Socket::CreateSocket (GetNode (), tid);
+  //   m_socket_send.push_back (socket_send);
+  //   // std::cout<<"sending socket created!"<<std::endl;
+  //   if (m_socket_send[i]->Connect (InetSocketAddress (Ipv4Address::ConvertFrom (map_node_addr[i]), 17)) == -1)
+  //     std::cout<<"Fail to connect to remote socket";
+  // }
 }
 
 void GossipApp::UpdateCRGain()
@@ -1488,6 +1509,7 @@ GossipApp::HandleRead (Ptr<Socket> socket)
       }
       else if(strcmp (type_of_received_message, "VIEWPLUSPLUS") == 0)
       {
+        // std::cout<<"node "<<(int)m_node_id<<" receive a view change msg at "<<Simulator::Now().GetSeconds()<<"s"<<std::endl;
         if(receive_viewplusplus_time==0)
         {
           view++;
@@ -1526,8 +1548,8 @@ GossipApp::HandleRead (Ptr<Socket> socket)
             int dest = out_neighbor_choosed[i];
             Simulator::Schedule (Seconds (x), &GossipApp::RelayViewpluplusMessage,
                                   this, dest, packet);
-            std::cout<<"node "<<(int)m_node_id<<" relay view change msg to node "<<dest<<" at "<<Simulator::Now().GetSeconds()
-              <<"s"<<std::endl;
+            // std::cout<<"node "<<(int)m_node_id<<" relay view change msg to node "<<dest<<" at "<<Simulator::Now().GetSeconds()
+            //   <<"s"<<std::endl;
           }
         }
       }

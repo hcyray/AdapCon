@@ -33,6 +33,8 @@ int main(){
 	Ipv4InterfaceContainer interface;
 	interface = address.Assign(p2pdevice);
 
+	
+
 	// UdpEchoServerHelper echoServer (19);
 	// ApplicationContainer serverApps = echoServer.Install (Nodes.Get(0));
 	// serverApps.Start (Seconds (1.0));

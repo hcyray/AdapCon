@@ -136,8 +136,9 @@ int main()
 	LogComponentEnable("GossipAppApplication", LOG_LEVEL_INFO);
 	LogComponentEnable ("UdpEchoClientApplication", LOG_LEVEL_INFO);
 	LogComponentEnable ("UdpEchoServerApplication", LOG_LEVEL_INFO);
-	Config::SetDefault("ns3::TcpSocket::SegmentSize", StringValue("4096"));
-	Config::SetDefault("ns3::TcpSocket::SndBufSize", StringValue("1048576"));
+	Config::SetDefault("ns3::TcpSocket::SegmentSize", StringValue("8192"));
+	Config::SetDefault("ns3::TcpSocket::SndBufSize", StringValue("51428800"));
+	Config::SetDefault("ns3::TcpSocket::RcvBufSize", StringValue("2097152"));
 	// **************************************************read topology from txt file
 	std::map<int, int> map_AP_devicenumber;
     std::vector<std::pair<int, int> > vecotr_edge;
@@ -188,13 +189,13 @@ int main()
 		int x = i % 4;
 		std::cout<<"Ap "<<i<<" class: "<<x<<std::endl;
 		if(x==0)
-			p2phelper.SetDeviceAttribute("DataRate", StringValue("1MBps"));
-		else if(x==1)
-			p2phelper.SetDeviceAttribute("DataRate", StringValue("30Mbps"));
-		else if(x==2)
-			p2phelper.SetDeviceAttribute("DataRate", StringValue("50Mbps"));
-		else
 			p2phelper.SetDeviceAttribute("DataRate", StringValue("100Mbps"));
+		else if(x==1)
+			p2phelper.SetDeviceAttribute("DataRate", StringValue("300Mbps"));
+		else if(x==2)
+			p2phelper.SetDeviceAttribute("DataRate", StringValue("500Mbps"));
+		else
+			p2phelper.SetDeviceAttribute("DataRate", StringValue("1000Mbps"));
 		p2phelper.SetChannelAttribute("Delay", StringValue("0ms"));
 		p2pdevicelist1[i] = p2phelper.Install(subnetap2rlist[i]);
 
@@ -339,37 +340,37 @@ int main()
 	outfile2.close();
 
 // **************************************************　install app
-	// ApplicationContainer gossipApplist[IotNodeNumber];
-	// for(int i=0; i<IotNodeNumber; i++)
-	// {
-	// 	GossipAppHelper gossipApp1(i, 17);
-	// 	std::pair<int, int> p = map_NodeNumberToApNodeNumber[i];
-	// 	gossipApplist[i] = gossipApp1.Install(IotNode[p.first].Get(p.second));
-	// 	// float x = 0.2*i;
-	// 	gossipApplist[i].Start(Seconds(0.));
-	// 	gossipApplist[i].Stop(Seconds(800.));
-	// }
-	
-	ApplicationContainer serverTrafficlist[ApNumber];
-	ApplicationContainer userTrafficlist[ApNumber];
-	for(int i=0; i<ApNumber; i++)
+	ApplicationContainer gossipApplist[IotNodeNumber];
+	for(int i=0; i<IotNodeNumber; i++)
 	{
-		if(i==0)
-		{
-		ServerTrafficHelper ServerTraffic(109);
-		serverTrafficlist[i] = ServerTraffic.Install(Router.Get(i));
-		serverTrafficlist[i].Start(Seconds(0.0));
-		serverTrafficlist[i].Stop(Seconds(35.0));
-
-		UserTrafficHelper UserTraffic(ap2rInterface[i].GetAddress(0), 109);
-		userTrafficlist[i] = UserTraffic.Install(UserNode.Get(i));
-
-		// UserTrafficHelper UserTraffic(ap2rInterface[i].GetAddress(0), 109);
-		// userTrafficlist[i] = UserTraffic.Install(AP.Get(i));
-		userTrafficlist[i].Start(Seconds(2.0));
-		userTrafficlist[i].Stop(Seconds(35.0));
-		}
+		GossipAppHelper gossipApp1(i, 17);
+		std::pair<int, int> p = map_NodeNumberToApNodeNumber[i];
+		gossipApplist[i] = gossipApp1.Install(IotNode[p.first].Get(p.second));
+		// float x = 0.2*i;
+		gossipApplist[i].Start(Seconds(0.));
+		gossipApplist[i].Stop(Seconds(800.));
 	}
+	
+	// ApplicationContainer serverTrafficlist[ApNumber];
+	// ApplicationContainer userTrafficlist[ApNumber];
+	// for(int i=0; i<ApNumber; i++)
+	// {
+	// 	if(i==0)
+	// 	{
+	// 	ServerTrafficHelper ServerTraffic(109);
+	// 	serverTrafficlist[i] = ServerTraffic.Install(Router.Get(i));
+	// 	serverTrafficlist[i].Start(Seconds(0.0));
+	// 	serverTrafficlist[i].Stop(Seconds(35.0));
+
+	// 	UserTrafficHelper UserTraffic(ap2rInterface[i].GetAddress(0), 109);
+	// 	userTrafficlist[i] = UserTraffic.Install(UserNode.Get(i));
+
+	// 	// UserTrafficHelper UserTraffic(ap2rInterface[i].GetAddress(0), 109);
+	// 	// userTrafficlist[i] = UserTraffic.Install(AP.Get(i));
+	// 	userTrafficlist[i].Start(Seconds(2.0));
+	// 	userTrafficlist[i].Stop(Seconds(35.0));
+	// 	}
+	// }
 
 	// int client_;
 	// int server_ = 1;
@@ -402,7 +403,7 @@ int main()
 	
 // ************************************************** change bandwidth dynamically
 
-	Simulator::Schedule(Seconds(10.0), &bandwidth_vary);
+	// Simulator::Schedule(Seconds(10.0), &bandwidth_vary);
 	
 // **************************************************  run simulation
 
