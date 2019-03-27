@@ -136,7 +136,7 @@ int main()
 	LogComponentEnable("GossipAppApplication", LOG_LEVEL_INFO);
 	LogComponentEnable ("UdpEchoClientApplication", LOG_LEVEL_INFO);
 	LogComponentEnable ("UdpEchoServerApplication", LOG_LEVEL_INFO);
-	Config::SetDefault("ns3::TcpSocket::SegmentSize", StringValue("8192"));
+	Config::SetDefault("ns3::TcpSocket::SegmentSize", StringValue("16384"));
 	Config::SetDefault("ns3::TcpSocket::SndBufSize", StringValue("51428800"));
 	Config::SetDefault("ns3::TcpSocket::RcvBufSize", StringValue("2097152"));
 	// **************************************************read topology from txt file
