@@ -164,12 +164,10 @@ int main()
 
     NodeContainer AP;
     NodeContainer Router;
-	NodeContainer UserNode;
     NodeContainer IotNode[AP_NUMBER];
 
     AP.Create(AP_NUMBER);
     Router.Create(AP_NUMBER);
-    UserNode.Create(AP_NUMBER);
     for(int i=0; i<AP_NUMBER; i++)
     {
     	IotNode[i].Create(map_AP_devicenumber[i]);
@@ -234,7 +232,6 @@ int main()
 	for(int i=0; i<AP_NUMBER; i++)
 	{
 		subnetwifistalist[i] = IotNode[i];
-		subnetwifistalist[i].Add(UserNode.Get(i));
 
 		std::string wifiname = "AP-";
 		wifiname.append(std::to_string(i));
@@ -272,7 +269,7 @@ int main()
 	stack.Install(Router);
 	for(int i=0; i<AP_NUMBER; i++)
 		stack.Install(IotNode[i]);
-	stack.Install(UserNode);
+
 
 	Ipv4AddressHelper address;
 
@@ -351,26 +348,6 @@ int main()
 		gossipApplist[i].Stop(Seconds(800.));
 	}
 	
-	// ApplicationContainer serverTrafficlist[ApNumber];
-	// ApplicationContainer userTrafficlist[ApNumber];
-	// for(int i=0; i<ApNumber; i++)
-	// {
-	// 	if(i==0)
-	// 	{
-	// 	ServerTrafficHelper ServerTraffic(109);
-	// 	serverTrafficlist[i] = ServerTraffic.Install(Router.Get(i));
-	// 	serverTrafficlist[i].Start(Seconds(0.0));
-	// 	serverTrafficlist[i].Stop(Seconds(35.0));
-
-	// 	UserTrafficHelper UserTraffic(ap2rInterface[i].GetAddress(0), 109);
-	// 	userTrafficlist[i] = UserTraffic.Install(UserNode.Get(i));
-
-	// 	// UserTrafficHelper UserTraffic(ap2rInterface[i].GetAddress(0), 109);
-	// 	// userTrafficlist[i] = UserTraffic.Install(AP.Get(i));
-	// 	userTrafficlist[i].Start(Seconds(2.0));
-	// 	userTrafficlist[i].Stop(Seconds(35.0));
-	// 	}
-	// }
 
 	// int client_;
 	// int server_ = 1;
