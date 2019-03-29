@@ -9,7 +9,8 @@ using namespace std;
 
 bool topology()
 {	
-	bool quality = false;
+	bool quality_of_node = false;
+	bool quality_of_edge = true;
 
 	ofstream outfile;
 	outfile.open("topology.txt");
@@ -31,7 +32,7 @@ bool topology()
 
 	}
 	outfile<<"\n\n";
-	outfile<<"dege between AP\n";
+	outfile<<"edge between AP\n";
 
 	srand((unsigned)time(NULL)+sum);
 	for(int i=0; i<AP_NUMBER; i++)
@@ -39,7 +40,7 @@ bool topology()
 		for(int j=i+1; j<AP_NUMBER; j++)
 		{
 			int x=rand()%1000;
-			if(x<128)
+			if(x<500)
 			{
 				outfile<<i<<" "<<j<<"\n";
 				map_ap_edge[i]++;
@@ -50,26 +51,31 @@ bool topology()
 
 	for(int i=0; i<AP_NUMBER; i++)  //every ap should at least have 2 edges.
 	{
-		if(map_ap_edge[i]>1)
-			quality = true;
-		else
-			quality = false;
+		if(map_ap_edge[i]<2)
+			quality_of_edge = false;
 	}
 	outfile.close();
+	
 
 	float total_device = (MAX_DEVICE_OF_AP + 1.)/2 * AP_NUMBER;
-	if(sum>=total_device*0.9 && sum<=total_device*1.1)  // control device number.
-		quality = true;
+	if(sum>=total_device*0.8 && sum<=total_device*1.2)  // control device number.
+		quality_of_node = true;
 	else 
-		quality = false;
-
-	return quality;
+		quality_of_node = false;
+	if(quality_of_node && quality_of_edge)
+		return true;
+	else
+		return false;
 }
 
 int main()
 {
 	bool res=false;
 	while(res==false)
+	{
 		res = topology();
+		cout<<"tryed once"<<endl;
+	}
+		
 	return 0;
 }

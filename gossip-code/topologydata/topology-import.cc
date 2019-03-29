@@ -31,11 +31,12 @@ void Get_Topology(map<int, int>& map_AP_devicenumber, vector<pair<int, int> >& v
 	infile.open("topology.txt");
 	const int LINE_LENGTH = 100; 
     char str1[LINE_LENGTH];
+	int sum = 0;
     while(infile.getline(str1,LINE_LENGTH))
     {
         if(strcmp(str1, "AP and attached device number")==0)
             continue;
-        if(strcmp(str1, "dege between AP")==0)
+        if(strcmp(str1, "edge between AP")==0)
             break;
         string str2(str1);
         vector<string> res = SplitString(str2, ' ');
@@ -45,11 +46,14 @@ void Get_Topology(map<int, int>& map_AP_devicenumber, vector<pair<int, int> >& v
             int y = (atoi)(res[1].c_str());
             cout<<x<<" "<<y<<endl;
             map_AP_devicenumber[x] = y;
+			sum += y;
+			
         }
         else
             continue;        
     }
-    
+    cout<<"total device: "<< sum<<endl;
+
     while(infile.getline(str1,LINE_LENGTH))
     {
         string str2(str1);
@@ -64,9 +68,9 @@ void Get_Topology(map<int, int>& map_AP_devicenumber, vector<pair<int, int> >& v
         else
             continue;
     }
-    cout<< vecotr_edge.size()<<endl;
+    cout<<"total edge: "<<vecotr_edge.size()<<endl;
 
-    inflie.close();
+    infile.close();
 	
 }
 
@@ -76,12 +80,15 @@ int main()
     vector<pair<int, int> > vecotr_edge;
 
     Get_Topology(map_AP_devicenumber, vecotr_edge);
-    for(int i=0; i<40; i++)
+/*
+    for(int i=0; i<30; i++)
         cout<<map_AP_devicenumber[i]<<"  ";
     cout<<endl;
+
     for(int i=0; i<vecotr_edge.size(); i++)
     {
         cout<<vecotr_edge[i].first<<" "<<vecotr_edge[i].second<<endl;
     }
+*/
     return 0;
 }

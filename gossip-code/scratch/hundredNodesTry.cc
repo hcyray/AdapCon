@@ -108,18 +108,38 @@ std::map<int, std::pair<int, int> > NodeNumberToApNodeNumber(int IotNodeNumber, 
 }
 
 
-void bandwidth_vary()
-{
-	DataRate rate("0.5MBps");
-	
-	for(int i=0; i<AP_NUMBER*2; i++)
+void bandwidth_vary(float ratio)
+{	
+	for(int i=0; i<AP_NUMBER; i++)
 	{
-		std::string str = "/NodeList/";
-		str.append(std::to_string(i));
-		str.append("/DeviceList/0/$ns3::PointToPointNetDevice/DataRate");
-		Config::Set(str, DataRateValue(rate));
+		int n = i % 3;
+		float x;
+		if(n==1)
+		{
+			x = 50 * ratio;
+		}
+		else if(n==2)
+		{
+			x = 100 * ratio;
+		}
+		else
+		{
+			x = 200 * ratio;
+		}
+		std::string str1 = std::to_string(x);
+		str1.append("MBps");
+		DataRate rate(str1);
+		std::string str2 = "/NodeList/";
+		str2.append(std::to_string(i));
+		str2.append("/DeviceList/0/$ns3::PointToPointNetDevice/DataRate");
+		Config::Set(str2, DataRateValue(rate));
+
+		std::string str3 = "/NodeList/";
+		str3.append(std::to_string(i+AP_NUMBER));
+		str3.append("/DeviceList/0/$ns3::PointToPointNetDevice/DataRate");
+		Config::Set(str3, DataRateValue(rate));
 	}
-	std::cout<<"bandwidth changed at "<<Simulator::Now().GetSeconds()<<"s"<<std::endl;
+	std::cout<<"bandwidth changed at "<<Simulator::Now().GetSeconds()<<"s available ratio: "<<ratio<<std::endl;
 }
 
 
@@ -184,16 +204,14 @@ int main()
 		subnetap2rlist[i].Add(Router.Get(i));
 		subnetap2rlist[i].Add(AP.Get(i));
 		// int x = rand() % 4;
-		int x = i % 4;
+		int x = i % 3;
 		std::cout<<"Ap "<<i<<" class: "<<x<<std::endl;
 		if(x==0)
-			p2phelper.SetDeviceAttribute("DataRate", StringValue("100Mbps"));
+			p2phelper.SetDeviceAttribute("DataRate", StringValue("50MBps"));
 		else if(x==1)
-			p2phelper.SetDeviceAttribute("DataRate", StringValue("300Mbps"));
+			p2phelper.SetDeviceAttribute("DataRate", StringValue("100MBps"));
 		else if(x==2)
-			p2phelper.SetDeviceAttribute("DataRate", StringValue("500Mbps"));
-		else
-			p2phelper.SetDeviceAttribute("DataRate", StringValue("1000Mbps"));
+			p2phelper.SetDeviceAttribute("DataRate", StringValue("200MBps"));
 		p2phelper.SetChannelAttribute("Delay", StringValue("0ms"));
 		p2pdevicelist1[i] = p2phelper.Install(subnetap2rlist[i]);
 
@@ -205,6 +223,7 @@ int main()
 // ************************************************** set p2p link between routers according to the topology
 
 	int edgenumber = (int)vecotr_edge.size();
+	std::cout<<"edge number: "<<edgenumber<<std::endl;
     NodeContainer subnetr2rlist[edgenumber];
     NetDeviceContainer p2pdevicelist2[edgenumber];
     for(int i=0; i<edgenumber; i++)
@@ -345,7 +364,7 @@ int main()
 		gossipApplist[i] = gossipApp1.Install(IotNode[p.first].Get(p.second));
 		// float x = 0.2*i;
 		gossipApplist[i].Start(Seconds(0.));
-		gossipApplist[i].Stop(Seconds(800.));
+		gossipApplist[i].Stop(Seconds(17280.));
 	}
 	
 
@@ -379,12 +398,29 @@ int main()
 	// }
 	
 // ************************************************** change bandwidth dynamically
-
+	std::vector<float> remaining_datarate;
+	std::ifstream infile1;
+    infile1.open("scratch/subdir/topologydata/datarate.txt");
+    const int LINE_LENGTH = 100; 
+    char str1[LINE_LENGTH];
+    while(infile1.getline(str1,LINE_LENGTH))
+    {
+        std::string str2(str1);
+		// std::cout<<str2<<std::endl;
+        std::vector<std::string> res = SplitString(str2, '+');
+		float x = (atof)(res[1].c_str());
+		remaining_datarate.push_back(x);
+    }
+	for(int i=0; i<48; i++)
+	{
+		float time1 = 360 * i;
+		Simulator::Schedule(Seconds(time1), &bandwidth_vary, remaining_datarate[i]);
+	}
 	// Simulator::Schedule(Seconds(10.0), &bandwidth_vary);
 	
 // **************************************************  run simulation
 
-	Simulator::Stop (Seconds (1020.0));
+	Simulator::Stop (Seconds (17300.0));
     Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
 	Simulator::Run ();
     Simulator::Destroy ();

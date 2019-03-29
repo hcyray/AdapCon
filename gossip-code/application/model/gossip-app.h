@@ -29,7 +29,8 @@
 #include <string>
 #include <vector>
 #include <queue>
-#include "/root/repos/ns-3-allinone/ns-3-dev/scratch/data-struc.h"
+#include <fstream>
+#include "/home/hqw/repos/ns-3-allinone/ns-3-dev/scratch/data-struc.h"
 
 
 namespace ns3 {
@@ -42,7 +43,7 @@ const int TOTAL_EPOCH_FOR_SIMULATION = 50;
 const int AP_NUMBER = 5;
 const int NODE_NUMBER = 16;
 const int OUT_GOSSIP_ROUND = 4;
-const int BLOCK_PIECE_NUMBER = 60;
+const int BLOCK_PIECE_NUMBER = 2;
 const int IN_GOSSIP_ROUND = 3;
 const int SOLICIT_ROUND = 1;
 const int SOLICIT_INTERVAL = 10;
@@ -50,9 +51,9 @@ const float DETERMINECOMMIT_INTERVAL = 0.3;
 const float DETERMINECONSENS_INTERVAL = 0.3;
 
 
-const int WINDOW_SIZE = 2;
+const int WINDOW_SIZE = 4;
 const float EPSILON1 = 10.0;
-const float EPSILON2 = 10.0;
+const float EPSILON2 = 5.0;
 const int PATCH = 3;
 
 
@@ -172,7 +173,7 @@ private:
   std::map<float, float> map_node_COMMIT_time;
 
 
-  Ptr<Socket> m_socket_receive;
+  std::vector<Ptr<Socket>> m_socket_receive;
   std::vector<Ptr<Socket>> m_socket_send;
   int out_neighbor_choosed[OUT_GOSSIP_ROUND];
   int in_neighbor_choosed[IN_GOSSIP_ROUND];
@@ -217,6 +218,9 @@ private:
 
   /// Callbacks for tracing the packet Rx events, includes source and destination addresses
   // TracedCallback<Ptr<const Packet>, const Address &, const Address &> m_rxTraceWithAddresses;
+
+
+  std::ofstream log_file;
 };
 
 } // namespace ns3

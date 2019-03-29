@@ -31,7 +31,7 @@
 #include "ns3/pointer.h"
 
 #include "gossip-app.h"
-#include "/root/repos/ns-3-allinone/ns-3-dev/scratch/data-struc.h"
+#include "/home/hqw/repos/ns-3-allinone/ns-3-dev/scratch/data-struc.h"
 
 #include <stdlib.h>
 #include <time.h>
@@ -132,7 +132,6 @@ GossipApp::~GossipApp ()
 {
   NS_LOG_FUNCTION (this);
   
-  m_socket_receive = 0;
 }
 
 void
@@ -327,23 +326,42 @@ GossipApp::StartApplication (void)
   GetNeighbor (OUT_GOSSIP_ROUND, out_neighbor_choosed);
   GetNeighbor (IN_GOSSIP_ROUND, in_neighbor_choosed);
 
+  std::string str1 = "scratch/subdir/log_cmjj/node_";
+	str1.append(std::to_string((int)m_node_id));
+	str1.append("_receiving_time_log.txt");
+	log_file.open(str1);
 
-  if (m_socket_receive == 0)
-    {
-      TypeId tid = TypeId::LookupByName ("ns3::TcpSocketFactory");
-      m_socket_receive = Socket::CreateSocket (GetNode (), tid);
-      InetSocketAddress local = InetSocketAddress (Ipv4Address::GetAny (), m_port);
-      if (m_socket_receive->Bind (local) == -1)
-      {
-        NS_FATAL_ERROR ("Failed to bind socket");
-      }
-      if(m_socket_receive->Listen()!=0)
-        std::cout<<"listen failed"<<std::endl;
-      m_socket_receive->ShutdownSend();
-    }
-  m_socket_receive->SetAcceptCallback(MakeNullCallback<bool, Ptr<Socket>, const Address &> (), 
-    MakeCallback (&GossipApp::HandleAccept, this));
+  // if (m_socket_receive == 0)
+  //   {
+  //     TypeId tid = TypeId::LookupByName ("ns3::TcpSocketFactory");
+  //     m_socket_receive = Socket::CreateSocket (GetNode (), tid);
+  //     InetSocketAddress local = InetSocketAddress (Ipv4Address::GetAny (), m_port);
+  //     if (m_socket_receive->Bind (local) == -1)
+  //     {
+  //       NS_FATAL_ERROR ("Failed to bind socket");
+  //     }
+  //     if(m_socket_receive->Listen()!=0)
+  //       std::cout<<"listen failed"<<std::endl;
+  //     m_socket_receive->ShutdownSend();
+  //   }
+  // m_socket_receive->SetAcceptCallback(MakeNullCallback<bool, Ptr<Socket>, const Address &> (), 
+  //   MakeCallback (&GossipApp::HandleAccept, this));
   // m_socket_receive->SetRecvCallback (MakeCallback (&GossipApp::HandleRead, this));
+
+  for (int i = 0; i < NODE_NUMBER; i++)
+  {
+    TypeId tid = TypeId::LookupByName ("ns3::TcpSocketFactory");
+    Ptr<Socket> socket_receive = Socket::CreateSocket (GetNode (), tid);
+    m_socket_receive.push_back(socket_receive);
+    InetSocketAddress local = InetSocketAddress (Ipv4Address::GetAny (), 100+i);
+    if(m_socket_receive[i]->Bind(local) == -1)
+      NS_FATAL_ERROR ("Failed to bind socket");
+    if(m_socket_receive[i]->Listen()!=0)
+        std::cout<<"listen failed"<<std::endl;
+      m_socket_receive[i]->ShutdownSend();
+    m_socket_receive[i]->SetAcceptCallback(MakeNullCallback<bool, Ptr<Socket>, const Address &> (), 
+      MakeCallback (&GossipApp::HandleAccept, this));
+  }
 
   for (int i = 0; i < NODE_NUMBER; i++)
   {
@@ -351,7 +369,7 @@ GossipApp::StartApplication (void)
     Ptr<Socket> socket_send = Socket::CreateSocket (GetNode (), tid);
     m_socket_send.push_back (socket_send);
     // std::cout<<"sending socket created!"<<std::endl;
-    if (m_socket_send[i]->Connect (InetSocketAddress (Ipv4Address::ConvertFrom (map_node_addr[i]), 17)) == -1)
+    if (m_socket_send[i]->Connect (InetSocketAddress (Ipv4Address::ConvertFrom (map_node_addr[i]), 100+(int)m_node_id)) == -1)
       NS_FATAL_ERROR ("Fail to connect socket");
     m_socket_send[i]->ShutdownRecv();
   }
@@ -366,7 +384,7 @@ GossipApp::StartApplication (void)
   consensed_this_epoch=false;
 
   
-  if(m_node_id == 3 or m_node_id == 1)
+  if(m_node_id == 3 or m_node_id == 7)
   {
     Silence_Attacker = 1;
     std::cout<<"node "<<(int)m_node_id<<" is a silence attacker"<<std::endl;
@@ -376,18 +394,18 @@ GossipApp::StartApplication (void)
     Silence_Attacker = 0;
   }
   
-  // int ss[4] = {2, 7, 14, 15};
-  // std::vector<int> v1(ss, ss+4);
-  // std::vector<int>::iterator iE1 = find(v1.begin(), v1.end(), (int)m_node_id);
-  // if(iE1==v1.end())
-  // {
-  //   Bias_Attacker = 0;
-  // }
-  // else
-  // {
-  //   Bias_Attacker = 1;
-  //   std::cout<<"node "<<(int)m_node_id<<" is a bias attacker"<<std::endl;
-  // }
+  int ss[4] = {2, 7, 14, 15};
+  std::vector<int> v1(ss, ss+4);
+  std::vector<int>::iterator iE1 = find(v1.begin(), v1.end(), (int)m_node_id);
+  if(iE1==v1.end())
+  {
+    Bias_Attacker = 0;
+  }
+  else
+  {
+    Bias_Attacker = 1;
+    std::cout<<"node "<<(int)m_node_id<<" is a bias attacker"<<std::endl;
+  }
   Bias_Attacker = 0;
   bias_attacker_induced = false;
   bias_attacker_prevented = false;
@@ -399,13 +417,10 @@ void
 GossipApp::StopApplication ()
 {
   NS_LOG_FUNCTION (this);
-  if (m_socket_receive != 0)
-    {
-      m_socket_receive->Close ();
-      // m_socket_receive->SetRecvCallback (MakeNullCallback<void, Ptr<Socket> > ());
-    }
   for(int i = 0; i < NODE_NUMBER; i++)
   {
+    if(m_socket_receive[i]!=0)
+      m_socket_receive[i]->Close();
     if(m_socket_send[i]!=0)
       m_socket_send[i]->Close();
   }
@@ -413,11 +428,11 @@ GossipApp::StopApplication ()
   std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~"<<(int)m_node_id<<" information~~~~~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
   std::cout << "node " << (int) m_node_id << " got " << sum << " consensed block" << std::endl; 
   
-  std::string str1 = "scratch/subdir/log_cmjj/node_";
-	str1.append(std::to_string((int)m_node_id));
-	str1.append("_receiving_time_log.txt");
-	std::ofstream outfile1;
-	outfile1.open(str1);
+  // std::string str1 = "scratch/subdir/log_cmjj/node_";
+	// str1.append(std::to_string((int)m_node_id));
+	// str1.append("_receiving_time_log.txt");
+	// std::ofstream outfile1;
+	// outfile1.open(str1);
   // for (int j = 1; j <= TOTAL_EPOCH_FOR_SIMULATION; j++)
   // {
   //   outfile1 << "****epoch " << j << " receiving time information****" << std::endl;
@@ -436,19 +451,19 @@ GossipApp::StopApplication ()
   //   }  
   // }
 
-  outfile1 << "**** phase length information****" << std::endl;
-  for(int n=1; n<TOTAL_EPOCH_FOR_SIMULATION; n++)
-  {
-    outfile1<<"epoch "<<n <<": "<<"starts at "<<map_epoch_start_time[n]<<"s"<<std::endl;
-    outfile1<<"epoch "<<n<<": "<<"block propagation time: "<<map_epoch_len_phase1[n]<<", voting time: "
-      <<map_epoch_len_phase2[n]<<std::endl;
-  }
-  for (int j = 1; j <= TOTAL_EPOCH_FOR_SIMULATION-WINDOW_SIZE; j++)
+  // outfile1 << "**** phase length information****" << std::endl;
+  // for(int n=1; n<TOTAL_EPOCH_FOR_SIMULATION; n++)
+  // {
+  //   outfile1<<"epoch "<<n <<": "<<"starts at "<<map_epoch_start_time[n]<<"s"<<std::endl;
+  //   outfile1<<"epoch "<<n<<": "<<"block propagation time: "<<map_epoch_len_phase1[n]<<", voting time: "
+  //     <<map_epoch_len_phase2[n]<<std::endl;
+  // }
+  for (int j = 1; j <= TOTAL_EPOCH_FOR_SIMULATION - WINDOW_SIZE; j++)
   {
     if(j>=3)
-      outfile1 << "BR in epoch "<< j <<": "<< map_epoch_node_BR[j][(int)m_node_id]<<std::endl;
+      log_file << "BR in epoch "<< j <<": "<< map_epoch_node_BR[j][(int)m_node_id]<<std::endl;
   }
-  outfile1.close();
+  log_file.close();
 
   for (int i = 0; i < (int) m_local_ledger.size (); i++)
   {
@@ -812,6 +827,13 @@ GossipApp::EndSummary ()
   //   if (m_socket_send[i]->Connect (InetSocketAddress (Ipv4Address::ConvertFrom (map_node_addr[i]), 17)) == -1)
   //     std::cout<<"Fail to connect to remote socket";
   // }
+
+  int n = m_epoch;
+  log_file<<"epoch "<<n <<": "<<"starts at "<<map_epoch_start_time[n]<<"s"<<std::endl;
+  log_file<<"epoch "<<n<<": "<<"block propagation time: "<<map_epoch_len_phase1[n]<<", voting time: "
+    <<map_epoch_len_phase2[n]<<std::endl;
+
+
 }
 
 void GossipApp::UpdateCRGain()
