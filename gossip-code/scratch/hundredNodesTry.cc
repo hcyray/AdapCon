@@ -13,7 +13,8 @@
 #include <set>
 #include <tuple>
 #include <string>
-#include<time.h>
+#include <time.h>
+#include <math.h>
 
 using namespace ns3;
 
@@ -39,7 +40,7 @@ int Get_Topology(std::map<int, int>& map_AP_devicenumber,
 {	
 	int totalIotdevice = 0;
     std::ifstream infile;
-    infile.open("scratch/subdir/topologydata/topology.txt");
+    infile.open("scratch/subdir/topologydata/topology-80-single.txt");
     const int LINE_LENGTH = 100; 
     char str1[LINE_LENGTH];
     while(infile.getline(str1,LINE_LENGTH))
@@ -303,22 +304,11 @@ int main()
 		ap2rInterface[i] = address.Assign(p2pdevicelist1[i]);
 	}
 
-	Ipv4InterfaceContainer r2rInterface[edgenumber];
-	for(int i=0; i<edgenumber; i++)
-	{
-		std::string ipaddress_string = "10.2.";
-		ipaddress_string.append(std::to_string(i+1));
-		ipaddress_string.append(".0");
-		char* ipaddress = (char*)ipaddress_string.data();
-		address.SetBase(Ipv4Address(ipaddress), "255.255.255.0");
-		r2rInterface[i] = address.Assign(p2pdevicelist2[i]);
-	}
-
 	Ipv4InterfaceContainer wifiapInterface[AP_NUMBER];
 	Ipv4InterfaceContainer wifistaInterface[AP_NUMBER];
 	for(int i=0; i<AP_NUMBER; i++)
 	{
-		std::string ipaddress_string = "10.3.";
+		std::string ipaddress_string = "10.2.";
 		ipaddress_string.append(std::to_string(i+1));
 		ipaddress_string.append(".0");
 		char* ipaddress = (char*)ipaddress_string.data();
@@ -326,6 +316,25 @@ int main()
 		wifistaInterface[i] = address.Assign(stadevices[i]);
 		wifiapInterface[i] = address.Assign(apdevices[i]);
 	}
+
+
+	Ipv4InterfaceContainer r2rInterface[edgenumber];
+	int number_of_r2r_subnet = floor(edgenumber / 200) + 1;
+	for(int i=0; i<edgenumber; i++)
+	{
+		int cc = i / 200 ;
+		int uu = i % 200;
+		std::string ipaddress_string = "10.";
+		ipaddress_string.append(std::to_string(cc+3));
+		ipaddress_string.append(".");
+		ipaddress_string.append(std::to_string(uu+1));
+		ipaddress_string.append(".0");
+		char* ipaddress = (char*)ipaddress_string.data();
+		address.SetBase(Ipv4Address(ipaddress), "255.255.255.0");
+		r2rInterface[i] = address.Assign(p2pdevicelist2[i]);
+	}
+
+	
 
 
 // ************************************************** extract IoT device's ip address and save them
@@ -364,7 +373,7 @@ int main()
 		gossipApplist[i] = gossipApp1.Install(IotNode[p.first].Get(p.second));
 		// float x = 0.2*i;
 		gossipApplist[i].Start(Seconds(0.));
-		gossipApplist[i].Stop(Seconds(17280.));
+		gossipApplist[i].Stop(Seconds(86400.));
 	}
 	
 
@@ -411,16 +420,16 @@ int main()
 		float x = (atof)(res[1].c_str());
 		remaining_datarate.push_back(x);
     }
-	for(int i=0; i<48; i++)
+	for(int i=0; i<288; i++)
 	{
-		float time1 = 360 * i;
+		float time1 = 60 * i;
 		Simulator::Schedule(Seconds(time1), &bandwidth_vary, remaining_datarate[i]);
 	}
 	// Simulator::Schedule(Seconds(10.0), &bandwidth_vary);
 	
 // **************************************************  run simulation
 
-	Simulator::Stop (Seconds (17300.0));
+	Simulator::Stop (Seconds (86500.0));
     Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
 	Simulator::Run ();
     Simulator::Destroy ();

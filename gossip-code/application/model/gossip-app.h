@@ -30,7 +30,7 @@
 #include <vector>
 #include <queue>
 #include <fstream>
-#include "/home/hqw/repos/ns-3-allinone/ns-3-dev/scratch/data-struc.h"
+#include "/root/repos/ns-3-allinone/ns-3-dev/scratch/data-struc.h"
 
 
 namespace ns3 {
@@ -38,24 +38,24 @@ namespace ns3 {
 class Socket;
 class Packet;
 
-const int TOTAL_EPOCH_FOR_SIMULATION = 50;
+const int TOTAL_EPOCH_FOR_SIMULATION = 60;
 
-const int AP_NUMBER = 5;
-const int NODE_NUMBER = 16;
+const int AP_NUMBER = 80;
+const int NODE_NUMBER = 80;
 const int OUT_GOSSIP_ROUND = 4;
-const int BLOCK_PIECE_NUMBER = 2;
+const int BLOCK_PIECE_NUMBER = 32;
 const int IN_GOSSIP_ROUND = 3;
 const int SOLICIT_ROUND = 1;
 const int SOLICIT_INTERVAL = 10;
-const float DETERMINECOMMIT_INTERVAL = 0.3;
-const float DETERMINECONSENS_INTERVAL = 0.3;
+const float DETERMINECOMMIT_INTERVAL = 0.1;
+const float DETERMINECONSENS_INTERVAL = 0.1;
 
 
 const int WINDOW_SIZE = 4;
-const float EPSILON1 = 10.0;
-const float EPSILON2 = 5.0;
+const float EPSILON1 = 4.5;
+const float EPSILON2 = 2.0;
 const int PATCH = 3;
-
+const int LEADERSHIPWINDOW = 6;
 
 
 enum MESSAGE_TYPE {BLOCK, SOLICIT, ACK, PREPARE, COMMIT, REPUTATION};

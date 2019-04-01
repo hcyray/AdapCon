@@ -31,7 +31,7 @@
 #include "ns3/pointer.h"
 
 #include "gossip-app.h"
-#include "/home/hqw/repos/ns-3-allinone/ns-3-dev/scratch/data-struc.h"
+#include "/root/repos/ns-3-allinone/ns-3-dev/scratch/data-struc.h"
 
 #include <stdlib.h>
 #include <time.h>
