@@ -15,6 +15,7 @@
 #include <string>
 #include <time.h>
 #include <math.h>
+#include <random>
 
 using namespace ns3;
 
@@ -40,7 +41,7 @@ int Get_Topology(std::map<int, int>& map_AP_devicenumber,
 {	
 	int totalIotdevice = 0;
     std::ifstream infile;
-    infile.open("scratch/subdir/topologydata/topology-80-single.txt");
+    infile.open("scratch/subdir/topologydata/topology-21.txt");
     const int LINE_LENGTH = 100; 
     char str1[LINE_LENGTH];
     while(infile.getline(str1,LINE_LENGTH))
@@ -115,20 +116,20 @@ void bandwidth_vary(float ratio)
 	{
 		int n = i % 3;
 		float x;
-		if(n==1)
+		if(n==0)
 		{
-			x = 50 * ratio;
+			x = 2 * ratio;
 		}
-		else if(n==2)
+		else if(n==1)
 		{
-			x = 100 * ratio;
+			x = 5 * ratio;
 		}
 		else
 		{
-			x = 200 * ratio;
+			x = 10 * ratio;
 		}
 		std::string str1 = std::to_string(x);
-		str1.append("MBps");
+		str1.append("Mbps");
 		DataRate rate(str1);
 		std::string str2 = "/NodeList/";
 		str2.append(std::to_string(i));
@@ -155,8 +156,6 @@ int main()
 
 	Time::SetResolution(Time::NS);
 	LogComponentEnable("GossipAppApplication", LOG_LEVEL_INFO);
-	LogComponentEnable ("UdpEchoClientApplication", LOG_LEVEL_INFO);
-	LogComponentEnable ("UdpEchoServerApplication", LOG_LEVEL_INFO);
 	Config::SetDefault("ns3::TcpSocket::SegmentSize", StringValue("16384"));
 	Config::SetDefault("ns3::TcpSocket::SndBufSize", StringValue("51428800"));
 	Config::SetDefault("ns3::TcpSocket::RcvBufSize", StringValue("2097152"));
@@ -169,6 +168,8 @@ int main()
 	std::cout<<"total Aps are: "<<ApNumber<<std::endl;
     std::cout<<"total IoT devices are: "<<IotNodeNumber<<std::endl;
 	std::map<int, std::pair<int, int> > map_NodeNumberToApNodeNumber = NodeNumberToApNodeNumber(IotNodeNumber, map_AP_devicenumber);
+    int edgenumber = (int)vecotr_edge.size();
+	std::cout<<"edge number: "<<edgenumber<<std::endl;
     // for(int i=0; i<IotNodeNumber; i++)
 	// {
 	// 	std::pair<int, int> p = map_NodeNumberToApNodeNumber[i];
@@ -196,24 +197,40 @@ int main()
 
 
 // ************************************************** set p2p link between router and AP
+// 
+// 
+    std::default_random_engine generator;
+	std::exponential_distribution<float> distribution(10./3);
+	std::vector<std::string> delay_data;
+	for(int i=0; i<edgenumber+AP_NUMBER; i++)
+	{
+		float de = distribution(generator);
+		de = de * 1000;
+		std::string str4 = "";
+		str4.append(std::to_string(de));
+		str4.append("ms");
+		delay_data.push_back(str4);
+	}
+
     NodeContainer subnetap2rlist[AP_NUMBER];
     PointToPointHelper p2phelper;
     NetDeviceContainer p2pdevicelist1[AP_NUMBER];
 	srand(time(NULL));
+	int cc = 0;
     for(int i=0; i<AP_NUMBER; i++)
 	{
 		subnetap2rlist[i].Add(Router.Get(i));
 		subnetap2rlist[i].Add(AP.Get(i));
 		// int x = rand() % 4;
 		int x = i % 3;
-		std::cout<<"Ap "<<i<<" class: "<<x<<std::endl;
+		// std::cout<<"Ap "<<i<<" class: "<<x<<std::endl;
 		if(x==0)
-			p2phelper.SetDeviceAttribute("DataRate", StringValue("50MBps"));
+			p2phelper.SetDeviceAttribute("DataRate", StringValue("2Mbps"));
 		else if(x==1)
-			p2phelper.SetDeviceAttribute("DataRate", StringValue("100MBps"));
+			p2phelper.SetDeviceAttribute("DataRate", StringValue("5Mbps"));
 		else if(x==2)
-			p2phelper.SetDeviceAttribute("DataRate", StringValue("200MBps"));
-		p2phelper.SetChannelAttribute("Delay", StringValue("0ms"));
+			p2phelper.SetDeviceAttribute("DataRate", StringValue("10Mbps"));
+		p2phelper.SetChannelAttribute("Delay", StringValue("5ms"));
 		p2pdevicelist1[i] = p2phelper.Install(subnetap2rlist[i]);
 
 	}
@@ -223,8 +240,7 @@ int main()
 
 // ************************************************** set p2p link between routers according to the topology
 
-	int edgenumber = (int)vecotr_edge.size();
-	std::cout<<"edge number: "<<edgenumber<<std::endl;
+	
     NodeContainer subnetr2rlist[edgenumber];
     NetDeviceContainer p2pdevicelist2[edgenumber];
     for(int i=0; i<edgenumber; i++)
@@ -232,8 +248,10 @@ int main()
 		subnetr2rlist[i].Add(Router.Get(vecotr_edge[i].first));
 		subnetr2rlist[i].Add(Router.Get(vecotr_edge[i].second));
 
-		p2phelper.SetDeviceAttribute("DataRate", StringValue("1GBps"));
-		p2phelper.SetChannelAttribute("Delay", StringValue("0ms"));
+		p2phelper.SetDeviceAttribute("DataRate", StringValue("10GBps"));
+		// p2phelper.SetChannelAttribute("Delay", StringValue(delay_data[cc]));
+		p2phelper.SetChannelAttribute("Delay", StringValue("5ms"));
+		cc++;
 		p2pdevicelist2[i] = p2phelper.Install(subnetr2rlist[i]);
 	}
 
@@ -422,7 +440,7 @@ int main()
     }
 	for(int i=0; i<288; i++)
 	{
-		float time1 = 60 * i;
+		float time1 = 600 * i;
 		Simulator::Schedule(Seconds(time1), &bandwidth_vary, remaining_datarate[i]);
 	}
 	// Simulator::Schedule(Seconds(10.0), &bandwidth_vary);
