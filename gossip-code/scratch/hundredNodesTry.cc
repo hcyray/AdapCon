@@ -2,9 +2,6 @@
 #include "ns3/network-module.h"
 #include "ns3/internet-module.h"
 #include "ns3/point-to-point-module.h"
-#include "ns3/yans-wifi-helper.h"
-#include "ns3/ssid.h"
-#include "ns3/mobility-module.h"
 #include "ns3/applications-module.h"
 #include "ns3/global-route-manager.h"
 #include "ns3/pointer.h"
@@ -170,18 +167,6 @@ int main()
 	std::map<int, std::pair<int, int> > map_NodeNumberToApNodeNumber = NodeNumberToApNodeNumber(IotNodeNumber, map_AP_devicenumber);
     int edgenumber = (int)vecotr_edge.size();
 	std::cout<<"edge number: "<<edgenumber<<std::endl;
-    // for(int i=0; i<IotNodeNumber; i++)
-	// {
-	// 	std::pair<int, int> p = map_NodeNumberToApNodeNumber[i];
-	// 	std::cout<<i<<"<----"<<p.first<<" "<<p.second<<std::endl;
-	// }
-	// for(int i=0; i<40; i++)
-    //     std::cout<<map_AP_devicenumber[i]<<"  ";
-    // std::cout<<std::endl;
-    // for(int i=0; i<(int)vecotr_edge.size(); i++)
-    // {
-    //     std::cout<<vecotr_edge[i].first<<" "<<vecotr_edge[i].second<<std::endl;
-    // }
 // ************************************************** create nodes
 
     NodeContainer AP;
@@ -196,7 +181,7 @@ int main()
     }
 
 
-// ************************************************** set p2p link between router and AP
+// ************************************************** set delay of links
 // 
 // 
     std::default_random_engine generator;
@@ -212,6 +197,8 @@ int main()
 		delay_data.push_back(str4);
 	}
 
+
+// ************************************************** set p2p link between router and AP
     NodeContainer subnetap2rlist[AP_NUMBER];
     PointToPointHelper p2phelper;
     NetDeviceContainer p2pdevicelist1[AP_NUMBER];
@@ -221,9 +208,7 @@ int main()
 	{
 		subnetap2rlist[i].Add(Router.Get(i));
 		subnetap2rlist[i].Add(AP.Get(i));
-		// int x = rand() % 4;
 		int x = i % 3;
-		// std::cout<<"Ap "<<i<<" class: "<<x<<std::endl;
 		if(x==0)
 			p2phelper.SetDeviceAttribute("DataRate", StringValue("2Mbps"));
 		else if(x==1)
@@ -256,48 +241,18 @@ int main()
 	}
 
 // ************************************************** set p2p link between AP and attatched Iotdevices
-	// NodeContainer subnetap2dlist[AP_NUMBER];
-	// NetDeviceContainer p2pdevicelist3[AP_NUMBER];
-	// do not want to change to this at present
-
-
-// ************************************************** set wifi link between AP and attatched Iotdevices
-
-
-	NodeContainer subnetwifistalist[AP_NUMBER];
-	NetDeviceContainer stadevices[AP_NUMBER];
-	NetDeviceContainer apdevices[AP_NUMBER];
-	for(int i=0; i<AP_NUMBER; i++)
+	NodeContainer subnetd2aplist[IotNodeNumber];
+	NetDeviceContainer p2pdevicelist3[IotNodeNumber];
+	for(int i=0; i<IotNodeNumber; i++)
 	{
-		subnetwifistalist[i] = IotNode[i];
+		std::pair<int, int> p = map_NodeNumberToApNodeNumber[i];
+		subnetd2aplist[i].Add(IotNode[p.first].Get(p.second));
+		subnetd2aplist[i].Add(AP.Get(p.first));
 
-		std::string wifiname = "AP-";
-		wifiname.append(std::to_string(i));
-		wifiname.append("-ssid");
-
-		Ssid ssid = Ssid(wifiname);
-		WifiHelper wifi;
-		wifi.SetRemoteStationManager("ns3::AarfWifiManager");
-
-		YansWifiPhyHelper phy = YansWifiPhyHelper::Default ();
-		YansWifiChannelHelper channel = YansWifiChannelHelper::Default ();
-		phy.SetChannel (channel.Create ());
-
-		WifiMacHelper mac;
-		mac.SetType("ns3::StaWifiMac", "Ssid", SsidValue(ssid),
-			"ActiveProbing", BooleanValue(false));;
-		stadevices[i] = wifi.Install(phy, mac, subnetwifistalist[i]);
-		mac.SetType("ns3::ApWifiMac", "Ssid", SsidValue(ssid));
-		apdevices[i] = wifi.Install(phy, mac, AP.Get(i));
-
-		MobilityHelper mobility;
-		mobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
-		mobility.Install(subnetwifistalist[i]);
-		mobility.Install(AP.Get(i));
-
+		p2phelper.SetDeviceAttribute("DataRate", StringValue("20Mbps"));
+		p2phelper.SetChannelAttribute("Delay", StringValue("5ms"));
+		p2pdevicelist3[i] = p2phelper.Install(subnetd2aplist[i]);
 	}
-
-
 
 
 
@@ -322,22 +277,19 @@ int main()
 		ap2rInterface[i] = address.Assign(p2pdevicelist1[i]);
 	}
 
-	Ipv4InterfaceContainer wifiapInterface[AP_NUMBER];
-	Ipv4InterfaceContainer wifistaInterface[AP_NUMBER];
-	for(int i=0; i<AP_NUMBER; i++)
+	Ipv4InterfaceContainer dev2apInterface[IotNodeNumber];
+	for(int i=0; i<IotNodeNumber; i++)
 	{
 		std::string ipaddress_string = "10.2.";
 		ipaddress_string.append(std::to_string(i+1));
 		ipaddress_string.append(".0");
 		char* ipaddress = (char*)ipaddress_string.data();
 		address.SetBase(Ipv4Address(ipaddress), "255.255.255.0");
-		wifistaInterface[i] = address.Assign(stadevices[i]);
-		wifiapInterface[i] = address.Assign(apdevices[i]);
+		dev2apInterface[i] = address.Assign(p2pdevicelist3[i]);
 	}
 
 
 	Ipv4InterfaceContainer r2rInterface[edgenumber];
-	int number_of_r2r_subnet = floor(edgenumber / 200) + 1;
 	for(int i=0; i<edgenumber; i++)
 	{
 		int cc = i / 200 ;
@@ -359,8 +311,7 @@ int main()
 	std::map<uint8_t, Ipv4Address> map_node_addr;
 	for(int i=0; i<IotNodeNumber; i++)
 	{
-		std::pair<int, int> p = map_NodeNumberToApNodeNumber[i];
-		map_node_addr[i] = wifistaInterface[p.first].GetAddress(p.second);
+		map_node_addr[i] = dev2apInterface[i].GetAddress(0);
 	}
 
 	std::ofstream outfile1;
@@ -433,7 +384,6 @@ int main()
     while(infile1.getline(str1,LINE_LENGTH))
     {
         std::string str2(str1);
-		// std::cout<<str2<<std::endl;
         std::vector<std::string> res = SplitString(str2, '+');
 		float x = (atof)(res[1].c_str());
 		remaining_datarate.push_back(x);

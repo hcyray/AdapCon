@@ -74,8 +74,9 @@ GossipApp::GossipApp ()
   NS_LOG_FUNCTION (this);
   m_epoch = 0;
   m_epoch_beginning = 0.;
-  len_phase1 = 30.0;
-  len_phase2 = 10.;
+  len_phase1 = 100.0;
+  len_phase2 = 40.;
+  leadership_count = 0;
 
   m_local_ledger.push_back (0xFFFFFFFF);
   m_ledger_built_epoch.push_back (0);
@@ -174,6 +175,7 @@ GossipApp::ConsensProcess ()
     if(Silence_Attacker==0)
     {
       LeaderGossipBlockOut (b);
+      leadership_count++;
     }
     else
     {
@@ -209,7 +211,7 @@ GossipApp::if_leader (void)
     }
     else
     {
-      if(map_epoch_consensed[m_epoch-1]==true)
+      if(map_epoch_consensed[m_epoch-1]==true && leadership_count<LEADERSHIPWINDOW)
       {
         m_leader = true;
         block_got = true;
@@ -221,6 +223,7 @@ GossipApp::if_leader (void)
         m_leader = false;
         view++;
         GossipViewplusplusMsg();
+        leadership_count = 0;
         std::cout<<"the previous leader "<<(int) m_node_id<< " launched a view change!"<<std::endl;
       }
     }
@@ -321,15 +324,20 @@ GossipApp::DoDispose (void)
 void
 GossipApp::StartApplication (void)
 {
-  NS_LOG_FUNCTION (this);
-  // std::cout<<"node "<<(int)GetNodeId()<<" starts!"<<std::endl;
-  GetNeighbor (OUT_GOSSIP_ROUND, out_neighbor_choosed);
-  GetNeighbor (IN_GOSSIP_ROUND, in_neighbor_choosed);
+	NS_LOG_FUNCTION (this);
+	GetNeighbor (OUT_GOSSIP_ROUND, out_neighbor_choosed);
+	GetNeighbor (IN_GOSSIP_ROUND, in_neighbor_choosed);
 
-  std::string str1 = "scratch/subdir/log_cmjj/node_";
+  	std::string str1 = "scratch/subdir/log_cmjj/node_";
 	str1.append(std::to_string((int)m_node_id));
 	str1.append("_receiving_time_log.txt");
-	log_file.open(str1);
+	log_time_file.open(str1);
+
+	std::string str2 = "scratch/subdir/log_cmjj/node_";
+	str2.append(std::to_string((int)m_node_id));
+	str2.append("_rep_log.txt");
+	log_rep_file.open(str2);
+
 
   // if (m_socket_receive == 0)
   //   {
@@ -394,7 +402,7 @@ GossipApp::StartApplication (void)
     Silence_Attacker = 0;
   }
   
-  int ss[4] = {2, 7, 14, 15};
+  int ss[4] = {32, 37, 314, 315};
   std::vector<int> v1(ss, ss+4);
   std::vector<int>::iterator iE1 = find(v1.begin(), v1.end(), (int)m_node_id);
   if(iE1==v1.end())
@@ -410,7 +418,7 @@ GossipApp::StartApplication (void)
   bias_attacker_induced = false;
   bias_attacker_prevented = false;
 
-  Simulator::Schedule (Seconds (10.), &GossipApp::ConsensProcess, this);
+  Simulator::Schedule (Seconds (600.), &GossipApp::ConsensProcess, this);
 }
 
 void
@@ -461,10 +469,10 @@ GossipApp::StopApplication ()
   for (int j = 1; j <= TOTAL_EPOCH_FOR_SIMULATION - WINDOW_SIZE; j++)
   {
     if(j>=3)
-      log_file << "BR in epoch "<< j <<": "<< map_epoch_node_BR[j][(int)m_node_id]<<std::endl;
+      log_time_file << "BR in epoch "<< j <<": "<< map_epoch_node_BR[j][(int)m_node_id]<<std::endl;
   }
-  log_file.close();
-
+  log_time_file.close();
+  log_rep_file.close();
   for (int i = 0; i < (int) m_local_ledger.size (); i++)
   {
     std::cout << "local ledger height " << std::setw (3)<< i << ": " << std::setw (12) << m_local_ledger[i]
@@ -828,10 +836,14 @@ GossipApp::EndSummary ()
   //     std::cout<<"Fail to connect to remote socket";
   // }
 
-  int n = m_epoch;
-  log_file<<"epoch "<<n <<": "<<"starts at "<<map_epoch_start_time[n]<<"s"<<std::endl;
-  log_file<<"epoch "<<n<<": "<<"block propagation time: "<<map_epoch_len_phase1[n]<<", voting time: "
-    <<map_epoch_len_phase2[n]<<std::endl;
+	int n = m_epoch;
+	log_time_file<<"epoch "<<n <<": "<<"starts at "<<map_epoch_start_time[n]<<"s"<<std::endl;
+	log_time_file<<"epoch "<<n <<": "<<"block propagation time: "<<map_epoch_len_phase1[n]<<", voting time: "
+		<<map_epoch_len_phase2[n]<<std::endl;
+	int ind = (int)m_node_id;
+	log_rep_file<<"CR in epoch "<<n <<": "<<map_epoch_node_CR[n-2][ind]<<std::endl;
+	log_rep_file<<"BR in epoch "<<n <<": "<<map_epoch_node_BR[n-2][ind]<<std::endl;
+
 
 
 }
@@ -1053,8 +1065,8 @@ GossipApp::LeaderGossipBlockOut (Block b)
   for (int i = 0; i < OUT_GOSSIP_ROUND; i++)
     {
       srand (Simulator::Now ().GetSeconds () + m_node_id);
-      float x = rand () % 2000;
-      x = x / 2000;
+      float x = rand () % 1000;
+      x = x / 1000 + 0.1 * i;
       Simulator::Schedule (Seconds (x), &GossipApp::SendBlock, this, out_neighbor_choosed[i], b);
       // SendBlock(out_neighbor_choosed[i]);
     }
@@ -1542,6 +1554,7 @@ GossipApp::HandleRead (Ptr<Socket> socket)
           if (m_node_id == x)
           {
             m_leader = true;
+            leadership_count = 0;
             block_got = true;
             get_block_or_not = 1;
             get_block_time = Simulator::Now().GetSeconds();
@@ -1556,7 +1569,10 @@ GossipApp::HandleRead (Ptr<Socket> socket)
             Block b = BlockPropose ();
             block_received = b;
             if(Silence_Attacker==0)
+            {
               LeaderGossipBlockOut (b);
+              leadership_count++;
+            }
             else
             {
               std::cout<<"node "<<(int)m_node_id<<" launches a silence attack"<<std::endl;

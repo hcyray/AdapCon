@@ -38,12 +38,12 @@ namespace ns3 {
 class Socket;
 class Packet;
 
-const int TOTAL_EPOCH_FOR_SIMULATION = 60;
+const int TOTAL_EPOCH_FOR_SIMULATION = 100;
 
-const int AP_NUMBER = 80;
-const int NODE_NUMBER = 80;
+const int AP_NUMBER = 15;
+const int NODE_NUMBER = 21;
 const int OUT_GOSSIP_ROUND = 4;
-const int BLOCK_PIECE_NUMBER = 32;
+const int BLOCK_PIECE_NUMBER = 60;
 const int IN_GOSSIP_ROUND = 3;
 const int SOLICIT_ROUND = 1;
 const int SOLICIT_INTERVAL = 10;
@@ -52,8 +52,8 @@ const float DETERMINECONSENS_INTERVAL = 0.1;
 
 
 const int WINDOW_SIZE = 4;
-const float EPSILON1 = 4.5;
-const float EPSILON2 = 2.0;
+const float EPSILON1 = 15;
+const float EPSILON2 = 5;
 const int PATCH = 3;
 const int LEADERSHIPWINDOW = 6;
 
@@ -212,7 +212,7 @@ private:
   int Bias_Attacker;
   bool bias_attacker_induced;
   bool bias_attacker_prevented;
-
+  int leadership_count;
   /// Callbacks for tracing the packet Rx events
   // TracedCallback<Ptr<const Packet> > m_rxTrace;
 
@@ -220,7 +220,8 @@ private:
   // TracedCallback<Ptr<const Packet>, const Address &, const Address &> m_rxTraceWithAddresses;
 
 
-  std::ofstream log_file;
+  std::ofstream log_time_file;
+  std::ofstream log_rep_file;
 };
 
 } // namespace ns3
