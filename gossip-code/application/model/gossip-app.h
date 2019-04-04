@@ -38,12 +38,12 @@ namespace ns3 {
 class Socket;
 class Packet;
 
-const int TOTAL_EPOCH_FOR_SIMULATION = 100;
+const int TOTAL_EPOCH_FOR_SIMULATION = 2000;
 
-const int AP_NUMBER = 15;
-const int NODE_NUMBER = 21;
+const int AP_NUMBER = 40;
+const int NODE_NUMBER = 40;
 const int OUT_GOSSIP_ROUND = 4;
-const int BLOCK_PIECE_NUMBER = 60;
+const int BLOCK_PIECE_NUMBER = 32;
 const int IN_GOSSIP_ROUND = 3;
 const int SOLICIT_ROUND = 1;
 const int SOLICIT_INTERVAL = 10;
@@ -51,10 +51,10 @@ const float DETERMINECOMMIT_INTERVAL = 0.1;
 const float DETERMINECONSENS_INTERVAL = 0.1;
 
 
-const int WINDOW_SIZE = 4;
+const int WINDOW_SIZE = 3;
 const float EPSILON1 = 15;
 const float EPSILON2 = 5;
-const int PATCH = 3;
+const int PATCH = 4;
 const int LEADERSHIPWINDOW = 6;
 
 

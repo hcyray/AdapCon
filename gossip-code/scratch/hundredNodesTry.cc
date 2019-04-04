@@ -38,7 +38,7 @@ int Get_Topology(std::map<int, int>& map_AP_devicenumber,
 {	
 	int totalIotdevice = 0;
     std::ifstream infile;
-    infile.open("scratch/subdir/topologydata/topology-21.txt");
+    infile.open("scratch/subdir/topologydata/topology-40-single.txt");
     const int LINE_LENGTH = 100; 
     char str1[LINE_LENGTH];
     while(infile.getline(str1,LINE_LENGTH))
@@ -115,9 +115,13 @@ void bandwidth_vary(float ratio)
 		float x;
 		if(n==0)
 		{
-			x = 2 * ratio;
+			x = 1 * ratio;
 		}
 		else if(n==1)
+		{
+			x = 2 * ratio;
+		}
+		else if(n==2)
 		{
 			x = 5 * ratio;
 		}
@@ -208,14 +212,17 @@ int main()
 	{
 		subnetap2rlist[i].Add(Router.Get(i));
 		subnetap2rlist[i].Add(AP.Get(i));
-		int x = i % 3;
+		int x = i % 4;
 		if(x==0)
-			p2phelper.SetDeviceAttribute("DataRate", StringValue("2Mbps"));
+			p2phelper.SetDeviceAttribute("DataRate", StringValue("1Mbps"));
 		else if(x==1)
-			p2phelper.SetDeviceAttribute("DataRate", StringValue("5Mbps"));
+			p2phelper.SetDeviceAttribute("DataRate", StringValue("2Mbps"));
 		else if(x==2)
+			p2phelper.SetDeviceAttribute("DataRate", StringValue("5Mbps"));
+		else if(x==3)
 			p2phelper.SetDeviceAttribute("DataRate", StringValue("10Mbps"));
-		p2phelper.SetChannelAttribute("Delay", StringValue("5ms"));
+		// p2phelper.SetChannelAttribute("Delay", StringValue("5ms"));
+		p2phelper.SetChannelAttribute("Delay", StringValue("25ms"));
 		p2pdevicelist1[i] = p2phelper.Install(subnetap2rlist[i]);
 
 	}
@@ -235,7 +242,8 @@ int main()
 
 		p2phelper.SetDeviceAttribute("DataRate", StringValue("10GBps"));
 		// p2phelper.SetChannelAttribute("Delay", StringValue(delay_data[cc]));
-		p2phelper.SetChannelAttribute("Delay", StringValue("5ms"));
+		// p2phelper.SetChannelAttribute("Delay", StringValue("5ms"));
+		p2phelper.SetChannelAttribute("Delay", StringValue("25ms"));
 		cc++;
 		p2pdevicelist2[i] = p2phelper.Install(subnetr2rlist[i]);
 	}
@@ -342,7 +350,7 @@ int main()
 		gossipApplist[i] = gossipApp1.Install(IotNode[p.first].Get(p.second));
 		// float x = 0.2*i;
 		gossipApplist[i].Start(Seconds(0.));
-		gossipApplist[i].Stop(Seconds(86400.));
+		gossipApplist[i].Stop(Seconds(28816.));
 	}
 	
 
@@ -388,7 +396,7 @@ int main()
 		float x = (atof)(res[1].c_str());
 		remaining_datarate.push_back(x);
     }
-	for(int i=0; i<288; i++)
+	for(int i=0; i<48; i++)
 	{
 		float time1 = 600 * i;
 		Simulator::Schedule(Seconds(time1), &bandwidth_vary, remaining_datarate[i]);
@@ -397,7 +405,7 @@ int main()
 	
 // **************************************************  run simulation
 
-	Simulator::Stop (Seconds (86500.0));
+	Simulator::Stop (Seconds (28880.0));
     Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
 	Simulator::Run ();
     Simulator::Destroy ();
