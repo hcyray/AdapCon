@@ -40,10 +40,10 @@ class Packet;
 
 const int TOTAL_EPOCH_FOR_SIMULATION = 2000;
 
-const int AP_NUMBER = 40;
-const int NODE_NUMBER = 40;
+const int AP_NUMBER = 50;
+const int NODE_NUMBER = 50;
 const int OUT_GOSSIP_ROUND = 4;
-const int BLOCK_PIECE_NUMBER = 32;
+const int BLOCK_PIECE_NUMBER = 8;
 const int IN_GOSSIP_ROUND = 3;
 const int SOLICIT_ROUND = 1;
 const int SOLICIT_INTERVAL = 10;
@@ -55,7 +55,7 @@ const int WINDOW_SIZE = 3;
 const float EPSILON1 = 15;
 const float EPSILON2 = 5;
 const int PATCH = 4;
-const int LEADERSHIPWINDOW = 6;
+
 
 
 enum MESSAGE_TYPE {BLOCK, SOLICIT, ACK, PREPARE, COMMIT, REPUTATION};
@@ -146,14 +146,16 @@ private:
   // uint32_t m_count;
 
   int m_epoch;
+  uint32_t total_traffic;
   float len_phase1;
   float len_phase2;
   float waitting_time;
+  int gracecount;
+  int gracecount_backup;
 
   // bool current_consensus_success;
   bool m_leader;
   bool block_got;
-  bool consensed_this_epoch;
   int view;
   int receive_viewplusplus_time;
   int query_time;
