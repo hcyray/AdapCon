@@ -71,67 +71,63 @@ GossipApp::GetTypeId (void)
 
 GossipApp::GossipApp ()
 {
-  NS_LOG_FUNCTION (this);
-  m_epoch = 166;
-  m_epoch_beginning = 0.;
-  len_phase1 = 44.435;
-  len_phase2 = 9.3;
-  leadership_count = 0;
+	NS_LOG_FUNCTION (this);
+	m_epoch = 0;
+	// restart point
+	m_epoch_beginning = 0.;
+	len_phase1 = 90;
+	len_phase2 = 30;
+	leadership_count = 0;
 
-  m_local_ledger.push_back (0xFFFFFFFF);
-  m_ledger_built_epoch.push_back (0);
-  EMPTY_BLOCK.name = 0;
-  EMPTY_BLOCK.height = 0;
-  GENESIS_BLOCK.name = 0xFFFFFFFF;
-  GENESIS_BLOCK.height = 0;
+	m_local_ledger.push_back (0xFFFFFFFF);
+	m_ledger_built_epoch.push_back (0);
+	EMPTY_BLOCK.name = 0;
+	EMPTY_BLOCK.height = 0;
+	GENESIS_BLOCK.name = 0xFFFFFFFF;
+	GENESIS_BLOCK.height = 0;
 
-  const int LINE_LENGTH = 100;
-  char str1[LINE_LENGTH];
-  std::ifstream infile1;
-  infile1.open ("scratch/subdir/topologydata/node-address.txt");
-  while (infile1.getline (str1, LINE_LENGTH))
-  {
-    if (strcmp (str1, "Node and Ip address") == 0)
-      continue;
-    std::string str2 (str1);
-    std::vector<std::string> res = SplitMessage (str2, ' ');
-    if (res.size () == 2)
+	const int LINE_LENGTH = 100;
+	char str1[LINE_LENGTH];
+	std::ifstream infile1;
+	infile1.open ("scratch/subdir/topologydata/node-address.txt");
+	while (infile1.getline (str1, LINE_LENGTH))
+	{
+		if (strcmp (str1, "Node and Ip address") == 0)
+		  continue;
+		std::string str2 (str1);
+		std::vector<std::string> res = SplitMessage (str2, ' ');
+		if (res.size () == 2)
+		{
+			int x = (atoi) (res[0].c_str ());
+			char *ipaddress = (char *) res[1].data ();
+			Ipv4Address y = Ipv4Address (ipaddress);
+			map_node_addr[x] = y;
+		}
+	}
+	infile1.close ();
+
+	std::ifstream infile2;
+	infile2.open ("scratch/subdir/topologydata/address-node.txt");
+	while (infile2.getline (str1, LINE_LENGTH))
     {
-      int x = (atoi) (res[0].c_str ());
-      char *ipaddress = (char *) res[1].data ();
-      Ipv4Address y = Ipv4Address (ipaddress);
-      map_node_addr[x] = y;
+		if (strcmp (str1, "Node and Ip address") == 0)
+		continue;
+		std::string str2 (str1);
+		std::vector<std::string> res = SplitMessage (str2, ' ');
+		if (res.size () == 2)
+		{
+			int x = (atoi) (res[1].c_str ());
+			char *ipaddress = (char *) res[0].data ();
+			Ipv4Address y = Ipv4Address (ipaddress);
+			map_addr_node[y] = x;
+		}
     }
-  }
-  infile1.close ();
-
-  std::ifstream infile2;
-  infile2.open ("scratch/subdir/topologydata/address-node.txt");
-  while (infile2.getline (str1, LINE_LENGTH))
-    {
-      if (strcmp (str1, "Node and Ip address") == 0)
-        continue;
-      std::string str2 (str1);
-      std::vector<std::string> res = SplitMessage (str2, ' ');
-      if (res.size () == 2)
-        {
-
-          int x = (atoi) (res[1].c_str ());
-          char *ipaddress = (char *) res[0].data ();
-          Ipv4Address y = Ipv4Address (ipaddress);
-          map_addr_node[y] = x;
-        }
-    }
-  infile2.close ();
-
-  
-  
-  // std::cout<<"read ip address"<<std::endl;
+	infile2.close ();
 }
 
 GossipApp::~GossipApp ()
 {
-  NS_LOG_FUNCTION (this);
+	NS_LOG_FUNCTION (this);
   
 }
 
@@ -200,7 +196,7 @@ GossipApp::if_leader (void)
 	// uint8_t x = 1;
 	if (m_node_id == x)
 	{
-		if(m_epoch==167)
+		if(m_epoch==1)
 // restart point
 		{
 			m_leader = true;
@@ -382,7 +378,7 @@ GossipApp::StartApplication (void)
     m_socket_send[i]->ShutdownRecv();
   }
 
-  view = 3;
+  view = 1;
   gracecount = WINDOW_SIZE + 2;
   quad.B_root = GENESIS_BLOCK;
   quad.H_root = 0;
@@ -756,7 +752,7 @@ GossipApp::InitializeEpoch ()
 
 
 	m_len = NewLen();
-	if(m_epoch==167)
+	if(m_epoch==1)
 // restart point
 	{
 		len_phase1 *= 1;
@@ -964,7 +960,7 @@ std::pair<float, float> GossipApp::NewLen()
 
 	// if(m_epoch<WINDOW_SIZE+3)
 // restart point
-	if(m_epoch<172)
+	if(m_epoch<WINDOW_SIZE+30000)
 	{
 		std::pair<float, float> p;
 		p.first = len_phase1;
