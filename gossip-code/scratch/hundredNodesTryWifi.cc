@@ -112,6 +112,7 @@ std::map<int, std::pair<int, int> > NodeNumberToApNodeNumber(int IotNodeNumber, 
 
 void bandwidth_vary(float ratio)
 {	
+
 	for(int i=0; i<AP_NUMBER; i++)
 	{
 		// int n = i % 3;
@@ -159,8 +160,8 @@ int main()
 	Time::SetResolution(Time::NS);
 	LogComponentEnable("GossipAppApplication", LOG_LEVEL_INFO);
 	Config::SetDefault("ns3::TcpSocket::SegmentSize", StringValue("16384"));
-	Config::SetDefault("ns3::TcpSocket::SndBufSize", StringValue("51428800"));
-	Config::SetDefault("ns3::TcpSocket::RcvBufSize", StringValue("2097152"));
+	Config::SetDefault("ns3::TcpSocket::SndBufSize", StringValue("1048576"));
+	Config::SetDefault("ns3::TcpSocket::RcvBufSize", StringValue("1048576"));
 	// **************************************************read topology from txt file
 	std::map<int, int> map_AP_devicenumber;
     std::vector<std::pair<int, int> > vecotr_edge;
@@ -438,12 +439,13 @@ int main()
 		float x = (atof)(res[1].c_str());
 		remaining_datarate.push_back(x);
     }
+    int tmp1 = 44940/600;
+
 	for(int i=0; i<144; i++)
 	{
 		float time1 = 600 * i;
-		Simulator::Schedule(Seconds(time1), &bandwidth_vary, remaining_datarate[i]);
+		Simulator::Schedule(Seconds(time1), &bandwidth_vary, remaining_datarate[i+tmp1]);
 	}
-	// Simulator::Schedule(Seconds(10.0), &bandwidth_vary);
 	
 // **************************************************  run simulation
 

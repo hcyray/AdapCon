@@ -42,7 +42,7 @@ const int TOTAL_EPOCH_FOR_SIMULATION = 2000;
 
 const int AP_NUMBER = 50;
 const int NODE_NUMBER = 50;
-const int OUT_GOSSIP_ROUND = 4;
+const int OUT_GOSSIP_ROUND = 5;
 const int BLOCK_PIECE_NUMBER = 8;
 const int IN_GOSSIP_ROUND = 3;
 const int SOLICIT_ROUND = 1;
@@ -214,7 +214,6 @@ private:
   int Bias_Attacker;
   bool bias_attacker_induced;
   bool bias_attacker_prevented;
-  int leadership_count;
   /// Callbacks for tracing the packet Rx events
   // TracedCallback<Ptr<const Packet> > m_rxTrace;
 
