@@ -52,6 +52,7 @@ const float DETERMINECONSENS_INTERVAL = 0.1;
 
 
 const int WINDOW_SIZE = 3;
+const int LEADERSHIP_LIFE = 50;
 const float EPSILON1 = 15;
 const float EPSILON2 = 5;
 const int PATCH = 4;
@@ -155,6 +156,7 @@ private:
 
   // bool current_consensus_success;
   bool m_leader;
+  int leadership_length;
   bool block_got;
   int view;
   int receive_viewplusplus_time;
@@ -223,6 +225,7 @@ private:
 
   std::ofstream log_time_file;
   std::ofstream log_rep_file;
+  std::ofstream log_link_file;
 };
 
 } // namespace ns3

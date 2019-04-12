@@ -439,12 +439,12 @@ int main()
 		float x = (atof)(res[1].c_str());
 		remaining_datarate.push_back(x);
     }
-    int tmp1 = 44940/600;
+    // int tmp1 = 44940/600;
 
 	for(int i=0; i<144; i++)
 	{
 		float time1 = 600 * i;
-		Simulator::Schedule(Seconds(time1), &bandwidth_vary, remaining_datarate[i+tmp1]);
+		Simulator::Schedule(Seconds(time1), &bandwidth_vary, remaining_datarate[i]);
 	}
 	
 // **************************************************  run simulation
