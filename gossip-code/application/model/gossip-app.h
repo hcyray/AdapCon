@@ -38,7 +38,7 @@ namespace ns3 {
 class Socket;
 class Packet;
 
-const int TOTAL_EPOCH_FOR_SIMULATION = 2000;
+const int TOTAL_EPOCH_FOR_SIMULATION = 60;
 
 const int AP_NUMBER = 50;
 const int NODE_NUMBER = 50;
@@ -53,8 +53,8 @@ const float DETERMINECONSENS_INTERVAL = 0.1;
 
 const int WINDOW_SIZE = 3;
 const int LEADERSHIP_LIFE = 50;
-const float EPSILON1 = 15;
-const float EPSILON2 = 5;
+const float EPSILON1 = 20;
+const float EPSILON2 = 10;
 const int PATCH = 4;
 
 
@@ -98,7 +98,7 @@ public:
   void GossipViewplusplusMsg();
   void GossipPrepareOut();
   void GossipBlockAfterReceive(int from_node, Block b);
-  void GossipTimeMessage(int t);
+  void GossipTimeMessage(int t, int a, int b, int c, int d);
   void RelayVotingMessage(int dest, Ptr<Packet> p);
   void RelayTimeMessage(int dest, Ptr<Packet> p);
   void GossipCommitOut();
@@ -127,7 +127,7 @@ private:
   void SendBlockAckPiece(int dest, int piece, Block b);
   void SendPrepare(int dest, Block b);
   void SendCommit(int dest, Block b);
-  void SendTimeMessage(int dest, int t);
+  void SendTimeMessage (int dest, int t, int a, int b, int c, int d);
   void SendViewplusplus(int dest);
   void SolicitHistory(int dest, int h);
   void SolicitBlock(int dest);
@@ -135,7 +135,7 @@ private:
   void HandleRead (Ptr<Socket> socket);
 
 
-  uint8_t m_node_id;
+  int m_node_id;
   uint16_t m_port; 
   std::map<uint8_t, Ipv4Address> map_node_addr;
   std::map<Ipv4Address, uint8_t> map_addr_node; 
