@@ -49,7 +49,7 @@ GossipApp::GossipApp()
 {
 	NS_LOG_FUNCTION (this);
 	m_epoch = 0;
-	cur_epoch_len = 100.0;
+	cur_epoch_len = 190.0;
 
 	m_local_ledger.push_back (0xFFFFFFFF);
 	m_ledger_built_epoch.push_back (0);
@@ -112,6 +112,13 @@ void GossipApp::ConsensProcess()
 	
 	float curr_epoch_len = InitializeEpoch();
 	if_leader();
+	if(m_node_id == 0)
+	{
+		std::cout << "*****************"
+		          << "epoch " << (int) m_epoch << " starts"
+		          << "**********" << std::endl;
+		std::cout << "time now: " << Simulator::Now().GetSeconds() << "s" << std::endl;
+	}
 	if(m_leader)
 	{
 		Block b = BlockPropose();
@@ -276,7 +283,7 @@ float GossipApp::InitializeEpoch()
 		map_node_vote[i] = 0;
 	}
 	block_got = false;
-	return 100;
+	return 190;
 }
 
 void GossipApp::GossipBlockOut (Block b)
