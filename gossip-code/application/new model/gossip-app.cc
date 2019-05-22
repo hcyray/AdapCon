@@ -190,6 +190,14 @@ void GossipApp::GetNeighbor (int node_number, int out_neighbor_choosed[])
 
 	log_link_file<<"\n";
 	log_link_file.close();
+
+	// for(int i=0; i<NODE_NUMBER; i++)
+	// {
+	// 	if(i<(int)m_node_id)
+	// 		out_neighbor_choosed[i] = i;
+	// 	else if(i>(int)m_node_id)
+	// 		out_neighbor_choosed[i-1] = i;
+	// }
 }
 
 uint8_t
@@ -227,6 +235,16 @@ void GossipApp::StartApplication (void)
 	str1.append(std::to_string((int)m_node_id));
 	str1.append("_receiving_time_log.txt");
 	log_time_file.open(str1);
+
+	std::string str2 = "scratch/subdir/log_cmjj/node_";
+	str2.append(std::to_string((int)m_node_id));
+	str2.append("_rep_log.txt");
+	log_rep_file.open(str2);
+
+	std::string str3 = "scratch/subdir/log_cmjj/node_";
+	str3.append(std::to_string((int)m_node_id));
+	str3.append("_link_log.txt");
+	log_link_file.open(str3);
 
 	for (int i=0; i<NODE_NUMBER; i++)
 	{
@@ -369,7 +387,8 @@ void GossipApp::SendBlockPiece (int dest, int piece, Block b)
 	Packet pack1 (str3, 1024 * 16);
 	Ptr<Packet> p = &pack1;
 	if (m_socket_send[dest]->Send (p) == -1)
-		std::cout << "Failed to send block piece "<<piece << std::endl;
+		std::cout << "node "<< (int)m_node_id << " failed to send block piece "<<piece <<" to node "<< dest <<
+		" , send buffer　: "<< m_socket_receive[dest]->GetTxAvailable()<< std::endl;
 }
 
 void GossipApp::HandleAccept(Ptr<Socket> s, const Address& from)

@@ -110,7 +110,13 @@ void bandwidth_vary(float ratio)
 	for(int i=0; i<AP_NUMBER; i++)
 	{
 		float x;
-		x = ratio - 0.02;
+		float y = 0.5;
+		if(i%3==0)
+			x = ratio * 2 * y - 0.02;
+		else if(i%3==1)
+			x = ratio * 5 * y - 0.02;
+		else
+			x = ratio * 10 * y - 0.02;
 		std::string str1 = std::to_string(x);
 		str1.append("Mbps");
 		DataRate rate(str1);
@@ -154,6 +160,11 @@ int main()
 	std::cout<<"total Aps are: "<<ApNumber<<std::endl;
     std::cout<<"total IoT devices are: "<<IotNodeNumber<<std::endl;
 	std::map<int, std::pair<int, int> > map_NodeNumberToApNodeNumber = NodeNumberToApNodeNumber(IotNodeNumber, map_AP_devicenumber);
+    for(int i=0; i<IotNodeNumber; i++)
+    {
+    	std::pair<int, int> pp = map_NodeNumberToApNodeNumber[i];
+    	std::cout<<"Node "<<i<<" -- "<<pp.first<<" "<<pp.second<<std::endl;
+    }
     int edgenumber = (int)vecotr_edge.size();
 	std::cout<<"edge number: "<<edgenumber<<std::endl;
     // for(int i=0; i<IotNodeNumber; i++)
@@ -191,9 +202,7 @@ int main()
 	{
 		subnetap2rlist[i].Add(Router.Get(i));
 		subnetap2rlist[i].Add(AP.Get(i));
-		// int x = rand() % 4;
 		int x = i % 3;
-		// std::cout<<"Ap "<<i<<" class: "<<x<<std::endl;
 		if(x==0)
 			p2phelper.SetDeviceAttribute("DataRate", StringValue("2Mbps"));
 		else if(x==1)
@@ -221,12 +230,6 @@ int main()
 		p2phelper.SetChannelAttribute("Delay", StringValue("0ms"));
 		p2pdevicelist2[i] = p2phelper.Install(subnetr2rlist[i]);
 	}
-
-// ************************************************** set p2p link between AP and attatched Iotdevices
-	// NodeContainer subnetap2dlist[AP_NUMBER];
-	// NetDeviceContainer p2pdevicelist3[AP_NUMBER];
-	// do not want to change to this at present
-
 
 // ************************************************** set wifi link between AP and attatched Iotdevices
 
@@ -354,35 +357,6 @@ int main()
 		gossipApplist[i].Stop(Seconds(17280.));
 	}
 	
-
-	// int client_;
-	// int server_ = 1;
-	// std::pair<int, int> p_server = map_NodeNumberToApNodeNumber[server_];
-	
-	// UdpEchoServerHelper echoServer (229);
-	// ApplicationContainer serverApps = echoServer.Install (IotNode[p_server.first].Get(p_server.second));
-	// // ApplicationContainer serverApps = echoServer.Install (Router.Get(9));
-	// serverApps.Start (Seconds (1.0));
-	// serverApps.Stop (Seconds (10.0));
-
-	// UdpEchoClientHelper echoClient (map_node_addr[server_], 229);
-	// echoClient.SetAttribute ("MaxPackets", UintegerValue (1));
-	// echoClient.SetAttribute ("Interval", TimeValue (Seconds (1.0)));
-	// echoClient.SetAttribute ("PacketSize", UintegerValue (1024));
-
-	// for(client_ = 0; client_<16; client_++)
-	// {
-	// 	if(client_!=1)
-	// 	{
-	// 		std::pair<int, int> p_client = map_NodeNumberToApNodeNumber[client_];
-	// 		ApplicationContainer clientApps = 
-	// 			echoClient.Install (IotNode[p_client.first].Get(p_client.second));
-	// 		float x = 2+0.01*client_;
-	// 		clientApps.Start (Seconds (x));
-	// 		clientApps.Stop (Seconds (10.0));
-	// 	}
-		
-	// }
 	
 // ************************************************** change bandwidth dynamically
 	std::vector<float> remaining_datarate;
