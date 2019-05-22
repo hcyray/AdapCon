@@ -153,16 +153,30 @@ Block GossipApp::BlockPropose()
 	return blcok_proposed;
 }
 
-void GossipApp::if_get_block(int from_node)
+void GossipApp::record_block(int from_node)
 {
 	int sum = 0;
 	for (int i = 0; i < BLOCK_PIECE_NUMBER; i++)
 		sum += map_node_blockpiece_received[from_node][i];
 	if (sum == BLOCK_PIECE_NUMBER)
+	{
+		map_node_blockrcvcase[from_node] = 1;
 		block_got = true;
-	else
-		block_got = false;
+		float x = Simulator::Now ().GetSeconds ();
+		x = ((int) (x * 1000)) / 1000.;
+		map_node_blockrcvtime[from_node] = x;
+		block_got_time = x;
+	}
 }
+
+// void GossipApp::if_get_block()
+// {
+// 	int sum=0;
+// 	for(int i=0; i<NODE_NUMBER; i++)
+// 		sum += map_node_blockrcvcase[i];
+// 	if(sum>0)
+// 		block_got = true;
+// }
 
 void GossipApp::GetNeighbor (int node_number, int out_neighbor_choosed[])
 {
@@ -245,6 +259,7 @@ void GossipApp::StartApplication (void)
 	str3.append(std::to_string((int)m_node_id));
 	str3.append("_link_log.txt");
 	log_link_file.open(str3);
+	log_link_file<<"The weather is good\n";
 
 	for (int i=0; i<NODE_NUMBER; i++)
 	{
@@ -299,8 +314,12 @@ float GossipApp::InitializeEpoch()
 		for(int j=0; j<BLOCK_PIECE_NUMBER; j++)
 			map_node_blockpiece_received[i][j] = 0;
 		map_node_vote[i] = 0;
+		map_node_blockrcvcase[i] = 0;
+		map_node_blockrcvtime[i] = -1;
 	}
 	block_got = false;
+	gossip_action = false;
+
 	return 190;
 }
 
@@ -314,6 +333,7 @@ void GossipApp::GossipBlockOut (Block b)
     	x = x / 1000 + 0.1 * i;
     	Simulator::Schedule (Seconds (x), &GossipApp::SendBlock, this, out_neighbor_choosed[i], b);
     }
+    gossip_action = true;
 }
 
 void GossipApp::GossipBlockAfterReceive (int from_node, Block b)
@@ -419,25 +439,24 @@ void GossipApp::HandleRead(Ptr<Socket> socket)
 				uint32_t local_former_block = m_local_ledger[m_local_ledger.size()-1];
 				if(received_former_block==local_former_block)
 				{
-					if(block_got==false)
+					
+					int u = (atoi) (res[6].c_str ());
+					map_node_blockpiece_received[from_node][u] = 1;
+					record_block(from_node);
+					if(block_got==true)
 					{
-						int u = (atoi) (res[6].c_str ());
-						map_node_blockpiece_received[from_node][u] = 1;
-						if_get_block(from_node);
-						if(block_got==true)
+						uint32_t tmp1 = atoi (res[3].c_str ());
+						int tmp2 = (atoi) (res[5].c_str ());
+						block_received.name = tmp1;
+						block_received.height = tmp2;
+						if(Simulator::Now().GetSeconds()-m_epoch_beginning<cur_epoch_len && gossip_action==false)
 						{
-							uint32_t tmp1 = atoi (res[3].c_str ());
-							int tmp2 = (atoi) (res[5].c_str ());
-							block_received.name = tmp1;
-							block_received.height = tmp2;
 							std::cout << "node " <<std::setw(2)<< (int) GetNodeId () << " received a " << content_
 							    << " from node " << from_node << " at "
 							    << Simulator::Now ().GetSeconds () << " s, rcv buffer : "
 							    << m_socket_receive[from_node]->GetTxAvailable()<< std::endl;
-							block_got_time = ((int) (block_got_time * 1000)) / 1000.;
-							map_node_recvtime[from_node] = block_got_time;
-							if(Simulator::Now().GetSeconds()-m_epoch_beginning<cur_epoch_len)
-								GossipBlockAfterReceive (from_node, block_received);
+							GossipBlockAfterReceive (from_node, block_received);
+							gossip_action = true;
 						}
 					}
 				}
