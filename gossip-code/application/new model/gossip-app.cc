@@ -130,6 +130,7 @@ void GossipApp::ConsensProcess()
 	id1 = Simulator::Schedule(Seconds(curr_epoch_len+1*FIXED_EPOCH_LEN), &GossipApp::GossipTime, this);
 	id2 = Simulator::Schedule(Seconds(curr_epoch_len+2*FIXED_EPOCH_LEN), &GossipApp::GossipTimeEcho, this);
 	id3 = Simulator::Schedule(Seconds(curr_epoch_len+3*FIXED_EPOCH_LEN), &GossipApp::GossipVote, this);
+	id_end = Simulator::Schedule(Seconds(curr_epoch_len+3*FIXED_EPOCH_LEN-1), &GossipApp::EndSummary, this);
 	if(m_epoch<TOTAL_EPOCH_FOR_SIMULATION)
 		id4 = Simulator::Schedule(Seconds(curr_epoch_len+4*FIXED_EPOCH_LEN), &GossipApp::ConsensProcess, this);
 }
@@ -180,7 +181,7 @@ void GossipApp::record_block(int from_node)
 
 void GossipApp::GetNeighbor (int node_number, int out_neighbor_choosed[])
 {
-	log_link_file<<(int)m_node_id<<":\n";
+	
 
 	srand((unsigned)time(NULL)+m_node_id);
 	int i = 0;
@@ -196,14 +197,12 @@ void GossipApp::GetNeighbor (int node_number, int out_neighbor_choosed[])
 			{
 				out_neighbor_choosed[i] = x;
 				node_added.push_back (x);
-				log_link_file<<x<<" ";
 				i++;
 			}
 		}
 	}
 
-	log_link_file<<"\n";
-	log_link_file.close();
+	
 
 	// for(int i=0; i<NODE_NUMBER; i++)
 	// {
@@ -259,7 +258,7 @@ void GossipApp::StartApplication (void)
 	str3.append(std::to_string((int)m_node_id));
 	str3.append("_link_log.txt");
 	log_link_file.open(str3);
-	log_link_file<<"The weather is good\n";
+	// log_link_file<<"The weather is good\n";
 
 	for (int i=0; i<NODE_NUMBER; i++)
 	{
@@ -304,6 +303,10 @@ GossipApp::StopApplication ()
 		if(m_socket_send[i]!=0)
 			m_socket_send[i]->Close();
 	}
+	RecordNeighbor();
+	log_link_file.close();
+	log_time_file.close();
+	log_rep_file.close();
 
 }
 
@@ -358,6 +361,7 @@ void GossipApp::GossipEcho()
 void GossipApp::GossipTime()
 {
 	// TODO
+	RecordTime();
 }
 
 void GossipApp::GossipTimeEcho()
@@ -368,6 +372,35 @@ void GossipApp::GossipTimeEcho()
 void GossipApp::GossipVote()
 {
 	// TODO 
+}
+
+void GossipApp::EndSummary()
+{
+	// TODO
+}
+
+void GossipApp::RecordNeighbor()
+{
+	log_link_file<<(int)m_node_id<<":\n";
+	for(int i=0; i<OUT_GOSSIP_ROUND; i++)
+		log_link_file<<out_neighbor_choosed[i]<<" ";
+	log_link_file<<"\n";
+}
+
+void GossipApp::RecordTime()
+{
+	log_time_file << "Epoch "<< (int)m_epoch<<" :\n";
+	for(int i=0; i<NODE_NUMBER; i++)
+	{
+		if(i!=(int)m_node_id)
+		{
+			if(map_node_blockrcvcase[i]!=0)
+			{
+				log_time_file<<i<<" "<<map_node_blockrcvtime[i]-m_epoch_beginning<<"\n";
+			}
+		}
+	}
+	log_time_file<<"\n";
 }
 
 void GossipApp::SendBlock (int dest, Block b)

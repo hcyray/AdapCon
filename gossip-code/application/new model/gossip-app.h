@@ -19,12 +19,12 @@ namespace ns3 {
 class Socket;
 class Packet;
 
-const int TOTAL_EPOCH_FOR_SIMULATION = 10;
+const int TOTAL_EPOCH_FOR_SIMULATION = 20;
 
 const int AP_NUMBER = 18;
 const int NODE_NUMBER = 52;
 const int OUT_GOSSIP_ROUND = 5;
-const int BLOCK_PIECE_NUMBER = 2;
+const int BLOCK_PIECE_NUMBER = 8;
 const float FIXED_EPOCH_LEN = 2.5;
 const float DETERMINE_INTERVAL = 0.1;
 
@@ -43,6 +43,10 @@ public:
 	void GossipTime();
 	void GossipTimeEcho();
 	void GossipVote();
+	void EndSummary();
+
+	void RecordNeighbor();
+	void RecordTime();
 
 	void if_leader();
 	void record_block(int from_node);
@@ -98,6 +102,7 @@ private:
 	EventId id2;
 	EventId id3;
 	EventId id4;
+	EventId id_end;
 
 	std::map<uint8_t, Ipv4Address> map_node_addr;
 	std::map<Ipv4Address, uint8_t> map_addr_node; 
