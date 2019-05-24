@@ -107,10 +107,11 @@ std::map<int, std::pair<int, int> > NodeNumberToApNodeNumber(int IotNodeNumber, 
 
 void bandwidth_vary(float ratio)
 {	
+	// ratio = 2.0;
 	for(int i=0; i<AP_NUMBER; i++)
 	{
 		float x;
-		float y = 0.5;
+		float y = 1;
 		if(i%3==0)
 			x = ratio * 2 * y - 0.02;
 		else if(i%3==1)
@@ -354,7 +355,7 @@ int main()
 		gossipApplist[i] = gossipApp1.Install(IotNode[p.first].Get(p.second));
 		// float x = 0.2*i;
 		gossipApplist[i].Start(Seconds(0.));
-		gossipApplist[i].Stop(Seconds(17280.));
+		gossipApplist[i].Stop(Seconds(4900.));
 	}
 	
 	
@@ -381,7 +382,7 @@ int main()
 	
 // **************************************************  run simulation
 
-	Simulator::Stop (Seconds (86500.0));
+	Simulator::Stop (Seconds (5000.0));
     Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
 	Simulator::Run ();
     Simulator::Destroy ();
