@@ -23,10 +23,12 @@ const int TOTAL_EPOCH_FOR_SIMULATION = 20;
 
 const int AP_NUMBER = 18;
 const int NODE_NUMBER = 52;
-const int OUT_GOSSIP_ROUND = 5;
+const int OUT_NEIGHBOR_NUMBER = 3;
+const int MAX_IN_NEIGHBOR_NUMBER = 9;
 const int BLOCK_PIECE_NUMBER = 8;
 const float FIXED_EPOCH_LEN = 2.5;
 const float DETERMINE_INTERVAL = 0.1;
+const float TIMEOUT_FOR_TCP = 2.0;
 
 
 
@@ -55,9 +57,18 @@ public:
 	Block BlockPropose();
 	void GossipBlockOut(Block b);
 	void GossipBlockAfterReceive (int from_node, Block b);
+	void SendBlockInv (int dest);
+	void SendGetdata (int dest);
+	void SendBlockAck (int dest);
 	void SendBlock (int dest, Block b);
 	void SendBlockPiece (int dest, int piece, Block b);
+	void SendEcho(int dest);
+	void SendVote(int dest);
+	void SendTime(int dest);
+	void SendTimeEcho(int dest);
 
+	void Send_data_watchdog(int n);
+	void Receive_data_watchdog(int n);
 
 protected:
 	virtual void DoDispose (void);
@@ -69,8 +80,10 @@ private:
 	virtual void StopApplication (void);
 	void HandleAccept(Ptr<Socket> s, const Address& from);
 	void HandleRead (Ptr<Socket> socket);
+	bool try_tcp_connect(int dest);
 	
-	void GetNeighbor (int node_number, int out_neighbor_choosed[]);
+	int GetOutNeighbor ();
+	int GetAllNeighbor ();
 	uint8_t GetNodeId(void);
 	std::vector<std::string> SplitMessage (const std::string &str, const char pattern);
 
@@ -92,10 +105,30 @@ private:
 	float block_got_time;
 	float cur_epoch_len;
 	float m_epoch_beginning;
+	int in_neighbor_number;
+	bool remote_state;
+
+	float time_inv;
+	float time_getdata;
+	float time_block;
+	float time_ack;
+
+	bool attacker_pretend_lost;
+	bool attacker_do_not_send;
+	int time_query_for_block;
+	float time_start_rcv_block;
+	float time_end_rcv_block;
+
+	std::map<int, float> map_node_getdata_time;
+	std::map<int, float> map_node_ack_time;
+
 
 	std::vector<Ptr<Socket>> m_socket_receive;
 	std::vector<Ptr<Socket>> m_socket_send;
-	int out_neighbor_choosed[OUT_GOSSIP_ROUND];
+	std::vector<int> in_neighbor_choosed;
+	std::vector<int> out_neighbor_choosed;
+	std::vector<int> neighbor_choosed;
+	std::vector<int> vec_nodes_sendme_inv;
 
 	EventId id0;
 	EventId id1;
@@ -107,10 +140,11 @@ private:
 	std::map<uint8_t, Ipv4Address> map_node_addr;
 	std::map<Ipv4Address, uint8_t> map_addr_node; 
 	std::map<int, std::map<int, int> > map_node_blockpiece_received;
-	std::map<int, int> map_node_blockrcvcase;
+	std::map<int, int> map_node_blockrcv_state;
 	std::map<int, float> map_node_blockrcvtime;
 	std::map<int, int> map_node_vote;
 	std::map<int, float> map_node_recvtime;
+	std::map<int, float> map_sourece_node_blockrevtime;
 
 	std::ofstream log_time_file;
 	std::ofstream log_rep_file;
