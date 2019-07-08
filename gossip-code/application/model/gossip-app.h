@@ -1,21 +1,3 @@
-/* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/*
- * Copyright 2007 University of Washington
- * 
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation;
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- */
-
 #ifndef GOSSIP_APP_H
 #define GOSSIP_APP_H
 
@@ -30,206 +12,180 @@
 #include <vector>
 #include <queue>
 #include <fstream>
-#include "/root/repos/ns-3-allinone/ns-3-dev/scratch/data-struc.h"
-
+#include "/home/hqw/repos/ns-3-allinone/ns-3-dev/scratch/data-struct.h"
 
 namespace ns3 {
 
 class Socket;
 class Packet;
 
-const int TOTAL_EPOCH_FOR_SIMULATION = 60;
+const int TOTAL_EPOCH_FOR_SIMULATION = 20;
 
-const int AP_NUMBER = 50;
-const int NODE_NUMBER = 50;
-const int OUT_GOSSIP_ROUND = 5;
-const int BLOCK_PIECE_NUMBER = 8;
-const int IN_GOSSIP_ROUND = 3;
-const int SOLICIT_ROUND = 1;
-const int SOLICIT_INTERVAL = 10;
-const float DETERMINECOMMIT_INTERVAL = 0.1;
-const float DETERMINECONSENS_INTERVAL = 0.1;
-
-
-const int WINDOW_SIZE = 3;
-const int LEADERSHIP_LIFE = 50;
-const float EPSILON1 = 20;
-const float EPSILON2 = 10;
-const int PATCH = 4;
-
-
-
-enum MESSAGE_TYPE {BLOCK, SOLICIT, ACK, PREPARE, COMMIT, REPUTATION};
+const int AP_NUMBER = 18;
+const int NODE_NUMBER = 52;
+const int OUT_NEIGHBOR_NUMBER = 1;
+const int MAX_IN_NEIGHBOR_NUMBER = 2;
+const int BLOCK_PIECE_NUMBER = 64;
+const float FIXED_EPOCH_LEN = 10;
+const float DETERMINE_INTERVAL = 0.1;
+const float TIMEOUT_FOR_TCP = 2.0;
+const float TIMEOUT_FOR_SMALL_MSG = 20;
+const float CONSERVE_LEN = 10.0;
 
 
 
 
-class GossipApp : public Application 
+class GossipApp: public Application
 {
 public:
-  
-  static TypeId GetTypeId (void);
-  GossipApp ();
-  virtual ~GossipApp ();
-  void ConsensProcess();
+	static TypeId GetTypeId(void);
+	GossipApp();
+	virtual ~GossipApp();
+	void ConsensProcess();
 
-  void GetNeighbor(int n, int x[]);
-  uint8_t GetNodeId(void);
-  void if_leader(void);
-  void if_get_block(void);
+	void GossipEcho();
+	void GossipTime();
+	void GossipTimeEcho();
+	void GossipVote();
+	void EndSummary();
+	int Self_Report_to_file();
 
-  void ScheduleTransmit (Time dt, int dest, int type);
-  void InitializeTimeMessage();
-  std::pair<float, float> InitializeEpoch();
-  void InitializeState();
-  void EndSummary();
+	void RecordNeighbor();
 
-  std::pair<float, float> NewLen();
-  void UpdateCRGain();
-  void UpdateCR();
-  void UpdateBR();
-  float DistanceOfPermu(int i, std::vector<float> v1, std::vector<float> v2);
-  float AvgByCR(int node, std::vector<float> vec_CR, std::map<int, float> map_node_time);
-  void if_bias_attack_induction_timing();
-  void if_bias_attack_prevent_timing();
-
-  Block BlockPropose();
-  void LeaderGossipBlockOut(Block b);
-  void GossipViewplusplusMsg();
-  void GossipPrepareOut();
-  void GossipBlockAfterReceive(int from_node, Block b);
-  void GossipTimeMessage(int t, int a, int b, int c, int d);
-  void RelayVotingMessage(int dest, Ptr<Packet> p);
-  void RelayTimeMessage(int dest, Ptr<Packet> p);
-  void GossipCommitOut();
-  void DetermineConsens();
-  void RelayViewpluplusMessage(int dest, Ptr<Packet> p);
-  void ReplyHistorySolicit(int dest, int h);
-  void RecoverHistory(std::vector<uint32_t> b, std::vector<int> b_epo, int dest);
-  void SolicitConsensusMessageFromOthers();
+	void if_leader();
+	void record_block(int from_node);
+	float InitializeEpoch();
 
 
-  std::string MessagetypeToString(int x);
-  std::vector<std::string> SplitMessage(const std::string& str, const char pattern);
+	Block BlockPropose();
+	void GossipBlockOut(Block b);
+	void GossipBlockAfterReceive (int from_node, Block b);
+	void SendBlockInv (int dest, Block b);
+	void SendBlockSYN (int dest, Block b);
+	void SendGetdata (int dest);
+	void SendBlockAck (int dest);
+	void SendBlock (int dest, Block b);
+	void SendBlockPiece (int dest, int piece, Block b);
+	void SendEcho(int dest);
+	void SendVote(int dest);
+	void SendTime(int dest, int size);
+	void SendTimeEcho(int dest);
 
+	// void Send_data_watchdog(int n);
+	void record_block_piece(int from_node);
+	void Receive_data_monitor();
 
 protected:
-  virtual void DoDispose (void);
+	virtual void DoDispose (void);
 
 
 private:
 
-  virtual void StartApplication (void);
-  virtual void StopApplication (void);
-  void SendBlock (int dest, Block b);
-  void SendBlockPiece (int dest, int piece, Block b);
-  void SendBlockAck(int dest, Block b);
-  void SendBlockAckPiece(int dest, int piece, Block b);
-  void SendPrepare(int dest, Block b);
-  void SendCommit(int dest, Block b);
-  void SendTimeMessage (int dest, int t, int a, int b, int c, int d);
-  void SendViewplusplus(int dest);
-  void SolicitHistory(int dest, int h);
-  void SolicitBlock(int dest);
-  void HandleAccept(Ptr<Socket> s, const Address& from);
-  void HandleRead (Ptr<Socket> socket);
+	virtual void StartApplication (void);
+	virtual void StopApplication (void);
+	void HandleAccept(Ptr<Socket> s, const Address& from);
+	void HandleRead (Ptr<Socket> socket);
+	void try_tcp_connect(int dest);
+	void reply_tcp_connect(int dest);
+	
+	void GetOutNeighbor ();
+	void GetAllNeighbor ();
+	uint8_t GetNodeId(void);
+	std::vector<std::string> SplitMessage (const std::string &str, const char pattern);
+
+	int m_node_id;
+	uint16_t m_port;
+	int m_epoch;
+	bool m_leader;
+	Block block_received;
+	Block EMPTY_BLOCK;
+	Block GENESIS_BLOCK;
+	uint32_t block_name;
+	int block_height;
+	std::vector<uint32_t> m_local_ledger;
+	std::vector<int> m_ledger_built_epoch;
+
+	int view;
+	bool block_got;
+	bool gossip_action;
+	float block_got_time;
+	float cur_epoch_len;
+	float m_epoch_beginning;
+	int in_neighbor_number;
+	int neighbor_number;
+	bool remote_state;
+
+	float time_inv;
+	float time_getdata;
+	float time_block;
+	float time_ack;
+
+	float wait_for_SYN;
+	float wait_for_BLOCK;
+	float wait_SYN_start_time;
+	float wait_BLOCK_start_time;
+
+	bool attacker_pretend_lost;
+	bool attacker_do_not_send;
+	int receive_data_monitor_trigger;
+	float watchdog_timeout;
 
 
-  int m_node_id;
-  uint16_t m_port; 
-  std::map<uint8_t, Ipv4Address> map_node_addr;
-  std::map<Ipv4Address, uint8_t> map_addr_node; 
-  std::map<int, int> map_epoch_consensed;
-  std::vector<uint32_t> m_local_ledger;  //block name 
-  std::vector<int> m_ledger_built_epoch;  //in which epoch the block was added
+	Ptr<Socket> socket_receive;
+	std::vector<Ptr<Socket>> m_socket_send;
+	std::vector<int> in_neighbor_choosed;
+	std::vector<int> out_neighbor_choosed;
+	std::vector<int> neighbor_choosed;
+	std::vector<Msg_INV> vec_INV;
+	std::vector<Msg_SYN> vec_SYN;
+	std::vector<Msg_ACK> vec_ACK;
+	std::vector<int> vec_nodes_sendme_inv;
 
-  // uint32_t m_sent;
-  // uint32_t m_count;
-
-  int m_epoch;
-  uint32_t total_traffic;
-  float len_phase1;
-  float len_phase2;
-  float waitting_time;
-  int gracecount;
-  int gracecount_backup;
-
-  // bool current_consensus_success;
-  bool m_leader;
-  int leadership_length;
-  bool block_got;
-  int view;
-  int receive_viewplusplus_time;
-  int query_time;
-  int receive_history;
-  int state;  //  state = 0,1,2,3, means Init, Ped, Ced, Tced
-  State_Quad quad;
-  Block block_received;
-  Block EMPTY_BLOCK;
-  Block GENESIS_BLOCK;
-  uint32_t block_name;
-  int block_height;
-  std::map<int, int> map_blockpiece_received;
-  std::map<int, int> map_node_PREPARE;
-  std::map<int, int> map_node_COMMIT;
-  std::map<float, float> map_node_BLOCK_time;
-  std::map<float, float> map_node_PREPARE_time;
-  std::map<float, float> map_node_COMMIT_time;
+	EventId id0;
+	EventId id1;
+	EventId id2;
+	EventId id3;
+	EventId id4;
+	EventId id_end;
 
 
-  std::vector<Ptr<Socket>> m_socket_receive;
-  std::vector<Ptr<Socket>> m_socket_send;
-  int out_neighbor_choosed[OUT_GOSSIP_ROUND];
-  int in_neighbor_choosed[IN_GOSSIP_ROUND];
+	std::map<uint8_t, Ipv4Address> map_node_addr;
+	std::map<Ipv4Address, uint8_t> map_addr_node; 
+	std::map<int, int> map_node_blockrcv_state;
+	std::map<int, float> map_node_blockrcvtime;
+	std::map<int, std::map<int, int> > map_node_blockpiece_received;
+	std::map<int, float> map_node_block_rcv_time;
+	std::vector<float> vec_block_rcv_time;
+	std::map<int, int> map_node_vote;
+	
+	std::map<int, float> map_node_onehoptime;
+	std::vector<float> vec_one_hop_time;
+	std::map<int, std::vector<float> > map_node_trustval;
+	std::vector<int> formal_res_quorum;
+	std::vector<int> curr_res_quorum;
+	
+	
+	std::ofstream log_link_file;
+	std::ofstream self_report_file;
+
+	float delta;
+	float srtt;
+	float rttvar;
+	float rtt;
+
+	void Read_data();
+	float Set_timeout();
+	float Epoch_len_computation();
+	void Res_quorum_update();
+	void Trust_val_update();
+	float Kickout_malicious();
+	float timeout_probability(float x);
+	float failrcv_probability(int n);
 
 
-  float m_epoch_beginning;
-  std::pair<float, float> m_len;
-  // EventId m_sendEvent;
-  EventId id1;
-  EventId id2;
-  EventId id3;
-  EventId id4;
-  
-  int get_block_or_not;
-  int get_committed_or_not;
-  float get_block_time;
-  float get_prepared_time;
-  float get_committed_time;  
-  
-  std::map<int, std::map<int, int> > map_epoch_node_getblockornot;
-  std::map<int, std::map<int, int> > map_epoch_node_getcommitedornot;
-  std::map<int, std::map<int, float> > map_epoch_node_getblocktime;
-  std::map<int, std::map<int, float> > map_epoch_node_getpreparedtime;
-  std::map<int, std::map<int, float> > map_epoch_node_getcommittedtime;
-  std::map<int, float> map_epoch_len_phase1;
-  std::map<int, float> map_epoch_len_phase2;
-  std::map<int, float> map_epoch_start_time;
-  std::map<int, float> map_epoch_viewchange_happen;
 
-  std::map<int, std::map<int, float> > map_epoch_node_CR_gain;
-  std::map<int, std::map<int, float> > map_epoch_node_CR;
-  std::map<int, std::map<int, float> > map_epoch_node_BR;
-  std::map<int, float> map_node_BR;
-  
-  int Silence_Attacker;
-  int Bias_Attacker;
-  bool bias_attacker_induced;
-  bool bias_attacker_prevented;
-  /// Callbacks for tracing the packet Rx events
-  // TracedCallback<Ptr<const Packet> > m_rxTrace;
-
-  /// Callbacks for tracing the packet Rx events, includes source and destination addresses
-  // TracedCallback<Ptr<const Packet>, const Address &, const Address &> m_rxTraceWithAddresses;
-
-
-  std::ofstream log_time_file;
-  std::ofstream log_rep_file;
-  std::ofstream log_link_file;
 };
 
 } // namespace ns3
 
-#endif /* GOSSIP_APP_H */
-
-
+#endif

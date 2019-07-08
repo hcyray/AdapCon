@@ -23,6 +23,28 @@ public:
     
 };
 
+class Msg_INV{
+public:
+	int node;
+	float create_time;
+	float receive_time;
 
+};
+
+
+class Msg_SYN{
+public:
+	int node;
+	float create_time;
+	float receive_time;
+};
+
+
+class Msg_ACK{
+public:
+	int node;
+	float create_time;
+	float receive_time;
+};
 
 #endif

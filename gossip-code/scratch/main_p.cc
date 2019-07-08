@@ -359,25 +359,25 @@ int main()
 	}
 	
 	
-// ************************************************** change bandwidth dynamically
-	std::vector<float> remaining_datarate;
-	std::ifstream infile1;
-    infile1.open("scratch/subdir/topologydata/datarate-90.txt");
-    const int LINE_LENGTH = 100; 
-    char str1[LINE_LENGTH];
-    while(infile1.getline(str1,LINE_LENGTH))
-    {
-        std::string str2(str1);
-		// std::cout<<str2<<std::endl;
-        std::vector<std::string> res = SplitString(str2, '+');
-		float x = (atof)(res[1].c_str());
-		remaining_datarate.push_back(x);
-    }
-	for(int i=0; i<144; i++)
-	{
-		float time1 = 600 * i;
-		Simulator::Schedule(Seconds(time1), &bandwidth_vary, remaining_datarate[i]);
-	}
+// ************************************************** change bandwidth dynamically, add this later
+	// std::vector<float> remaining_datarate;
+	// std::ifstream infile1;
+ //    infile1.open("scratch/subdir/topologydata/datarate-90.txt");
+ //    const int LINE_LENGTH = 100; 
+ //    char str1[LINE_LENGTH];
+ //    while(infile1.getline(str1,LINE_LENGTH))
+ //    {
+ //        std::string str2(str1);
+	// 	// std::cout<<str2<<std::endl;
+ //        std::vector<std::string> res = SplitString(str2, '+');
+	// 	float x = (atof)(res[1].c_str());
+	// 	remaining_datarate.push_back(x);
+ //    }
+	// for(int i=0; i<144; i++)
+	// {
+	// 	float time1 = 600 * i;
+	// 	Simulator::Schedule(Seconds(time1), &bandwidth_vary, remaining_datarate[i]);
+	// }
 	// Simulator::Schedule(Seconds(10.0), &bandwidth_vary);
 	
 // **************************************************  run simulation
