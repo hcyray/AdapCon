@@ -50,7 +50,7 @@ GossipApp::GossipApp()
 {
 	NS_LOG_FUNCTION (this);
 	m_epoch = 0;
-	cur_epoch_len = 190.0;  //  main target variable
+	cur_epoch_len = 390.0;  //  main target variable
 
 	m_local_ledger.push_back (0xFFFFFFFF);
 	m_ledger_built_epoch.push_back (0);
@@ -64,6 +64,8 @@ GossipApp::GossipApp()
 	srtt = 1;
 	rttvar = 0;
 	rtt = 1;
+
+	watchdog_timeout = 100;
 
 	const int LINE_LENGTH = 100;
 	char str1[LINE_LENGTH];
@@ -119,6 +121,8 @@ void GossipApp::ConsensProcess()
 
 
 	cur_epoch_len = InitializeEpoch();
+	if((int)m_node_id==0)
+		std::cout<<cur_epoch_len<<std::endl;
 	if_leader();
 	if(m_node_id == 0)
 	{
@@ -135,7 +139,7 @@ void GossipApp::ConsensProcess()
 		GossipBlockOut (b);
 	}
 
-	id0 = Simulator::Schedule(Seconds(cur_epoch_len+0*FIXED_EPOCH_LEN), &GossipApp::GossipEcho, this);
+	// id0 = Simulator::Schedule(Seconds(cur_epoch_len+0*FIXED_EPOCH_LEN), &GossipApp::GossipEcho, this);
 	// id1 = Simulator::Schedule(Seconds(cur_epoch_len+1*FIXED_EPOCH_LEN), &GossipApp::GossipVote, this);
 	// id2 = Simulator::Schedule(Seconds(cur_epoch_len+2*FIXED_EPOCH_LEN), &GossipApp::GossipTime, this);
 	// id3 = Simulator::Schedule(Seconds(cur_epoch_len+3*FIXED_EPOCH_LEN), &GossipApp::GossipTimeEcho, this);
@@ -195,18 +199,19 @@ void GossipApp::GetOutNeighbor ()
 		if(it==out_neighbor_choosed.end() && x!=(int)m_node_id)
 		{
 			try_tcp_connect(x);
-			float y = (x+0.1)/(NODE_NUMBER+1.0)+30;
+			// float y = (x+0.1)/(NODE_NUMBER+1.0)+10;
 			std::cout<<"node "<<(int)m_node_id<<" send request to "<<x<<" at "<<Simulator::Now().GetSeconds()<<"s\n";
-			Simulator::Schedule(Seconds (y), &GossipApp::GetOutNeighbor, this);
+			
 		}
+		Simulator::Schedule(Seconds (20.0), &GossipApp::GetOutNeighbor, this);
 	}
-	else
-	{
-		std::cout<<(int)m_node_id<<" out neighbor: ";
-		for(int i=0; i<OUT_NEIGHBOR_NUMBER; i++)
-			std::cout<<out_neighbor_choosed[i]<<" ";
-		std::cout<<"\n";
-	}
+	// else
+	// {
+	// 	std::cout<<(int)m_node_id<<" out neighbor: ";
+	// 	for(int i=0; i<OUT_NEIGHBOR_NUMBER; i++)
+	// 		std::cout<<out_neighbor_choosed[i]<<" ";
+	// 	std::cout<<"\n";
+	// }
 }
 
 
@@ -420,7 +425,7 @@ void GossipApp::GossipBlockAfterReceive (int from_node, Block b)
 			Simulator::Schedule (Seconds (x), &GossipApp::SendBlockInv, this, neighbor_choosed[i], b);
         }
     }
-    std::cout<<(int)m_node_id<<" gossip block after receiving excuted\n";
+    // std::cout<<(int)m_node_id<<" gossip block after receiving excuted\n";
 }
 
 
@@ -639,9 +644,16 @@ void GossipApp::RecordNeighbor()
 	}
 	log_link_file<<"\n";
 	log_link_file.close();
-	std::cout<<(int)m_node_id<<" neighbor: ";
-	for(int i=0; i<(int)neighbor_choosed.size(); i++)
-		std::cout<<neighbor_choosed[i]<<" ";
+
+	std::cout<<(int)m_node_id<<" out neighbor: ";
+	for(int i=0; i<(int)out_neighbor_choosed.size(); i++)
+		std::cout<<out_neighbor_choosed[i]<<" ";
+	std::cout<<"----";
+	std::cout<<"in neighbor: ";
+	for(int i=0; i<(int)in_neighbor_choosed.size(); i++)
+		std::cout<<in_neighbor_choosed[i]<<" ";
+	
+	
 	std::cout<<"\n";
 }
 
@@ -660,8 +672,10 @@ void GossipApp::SendBlockInv(int dest, Block b)
 	str1.append ("+");
 	float t = Simulator::Now().GetSeconds();
 	str1.append (std::to_string(t));
+	str1.append ("+");
+	str1.append ("+");
 	const uint8_t *str3 = reinterpret_cast<const uint8_t *> (str1.c_str ());
-	Packet pack1 (str3, 100);
+	Packet pack1 (str3, 120);
 	Ptr<Packet> p = &pack1;
 	if (m_socket_send[dest]->Send (p) == -1)
 		std::cout << "node "<< (int)m_node_id << " failed to send block inv to node "<< dest <<
@@ -682,8 +696,10 @@ void GossipApp::SendBlockSYN(int dest, Block b)
 	str1.append (std::to_string (b.height));
 	float t = Simulator::Now().GetSeconds();
 	str1.append (std::to_string(t));
+	str1.append ("+");
+	str1.append ("+");
 	const uint8_t *str3 = reinterpret_cast<const uint8_t *> (str1.c_str ());
-	Packet pack1 (str3, 100);
+	Packet pack1 (str3, 120);
 	Ptr<Packet> p = &pack1;
 	if (m_socket_send[dest]->Send (p) == -1)
 		std::cout << "node "<< (int)m_node_id << " failed to send block SYN to node "<< dest <<
@@ -700,8 +716,10 @@ void GossipApp::SendGetdata(int dest)
 	str1.append ("+");
 	std::string str2 = "GETDATA";
 	str1.append (str2);
+	str1.append ("+");
+	str1.append ("+");
 	const uint8_t *str3 = reinterpret_cast<const uint8_t *> (str1.c_str ());
-	Packet pack1 (str3, 100);
+	Packet pack1 (str3, 120);
 	Ptr<Packet> p = &pack1;
 	if (m_socket_send[dest]->Send (p) == -1)
 		std::cout << "node "<< (int)m_node_id << " failed to send getdata request to node "<< dest <<
@@ -718,10 +736,13 @@ void GossipApp::SendBlockAck(int dest)
 	str1.append ("+");
 	std::string str2 = "BLOCKACK";
 	str1.append (str2);
+	str1.append ("+");
 	float t = Simulator::Now().GetSeconds();
 	str1.append (std::to_string(t));
+	str1.append ("+");
+	str1.append ("+");
 	const uint8_t *str3 = reinterpret_cast<const uint8_t *> (str1.c_str ());
-	Packet pack1 (str3, 100);
+	Packet pack1 (str3, 120);
 	Ptr<Packet> p = &pack1;
 	if (m_socket_send[dest]->Send (p) == -1)
 		std::cout << "node "<< (int)m_node_id << " failed to send receive block ack to node "<< dest <<
@@ -762,6 +783,8 @@ void GossipApp::SendBlockPiece (int dest, int piece, Block b)
 	str1.append (std::to_string (b.height));
 	str1.append ("+");
 	str1.append (std::to_string ((int) piece));
+	str1.append ("+");
+	str1.append ("+");
 	const uint8_t *str3 = reinterpret_cast<const uint8_t *> (str1.c_str ());
 	Packet pack1 (str3, 1024 * 16);
 	Ptr<Packet> p = &pack1;
@@ -780,8 +803,10 @@ void GossipApp::SendEcho (int dest)
 	str1.append ("+");
 	std::string str2 = "BLOCKECHO";
 	str1.append (str2);
+	str1.append ("+");
+	str1.append ("+");
 	const uint8_t *str3 = reinterpret_cast<const uint8_t *> (str1.c_str ());
-	Packet pack1 (str3, 100);
+	Packet pack1 (str3, 120);
 	Ptr<Packet> p = &pack1;
 	if (m_socket_send[dest]->Send (p) == -1)
 		std::cout << "node "<< (int)m_node_id << " failed to send block echo to node "<< dest <<
@@ -798,8 +823,10 @@ void GossipApp::SendVote (int dest)
 	str1.append ("+");
 	std::string str2 = "BLOCKVOTE";
 	str1.append (str2);
+	str1.append ("+");
+	str1.append ("+");
 	const uint8_t *str3 = reinterpret_cast<const uint8_t *> (str1.c_str ());
-	Packet pack1 (str3, 100);
+	Packet pack1 (str3, 120);
 	Ptr<Packet> p = &pack1;
 	if (m_socket_send[dest]->Send (p) == -1)
 		std::cout << "node "<< (int)m_node_id << " failed to send vote for block to node "<< dest <<
@@ -819,6 +846,8 @@ void GossipApp::SendTime (int dest, int size)
 	str1.append ("+");
 	std::string str2 = "TIME";
 	str1.append (str2);
+	str1.append ("+");
+	str1.append ("+");
 	const uint8_t *str3 = reinterpret_cast<const uint8_t *> (str1.c_str ());
 	Packet pack1 (str3, size);
 	Ptr<Packet> p = &pack1;
@@ -839,6 +868,8 @@ void GossipApp::SendTimeEcho(int dest)
 	str1.append ("+");
 	std::string str2 = "TIMEECHO";
 	str1.append (str2);
+	str1.append ("+");
+	str1.append ("+");
 	const uint8_t *str3 = reinterpret_cast<const uint8_t *> (str1.c_str ());
 	Packet pack1 (str3, 6000);
 	Ptr<Packet> p = &pack1;
@@ -858,8 +889,10 @@ void GossipApp::try_tcp_connect(int dest)
 	str1.append ("+");
 	std::string str2 = "CONNECT?SYN";
 	str1.append (str2);
+	str1.append ("+");
+	str1.append ("+");
 	const uint8_t *str3 = reinterpret_cast<const uint8_t *> (str1.c_str ());
-	Packet pack1 (str3, 100);
+	Packet pack1 (str3, 120);
 	Ptr<Packet> p = &pack1;
 	if (m_socket_send[dest]->Send (p) == -1)
 		std::cout << "node "<< (int)m_node_id << " failed to send request to node "<< dest <<
@@ -878,8 +911,10 @@ void GossipApp::reply_tcp_connect(int dest)
 	str1.append ("+");
 	std::string str2 = "CONNECT?SYNACK";
 	str1.append (str2);
+	str1.append ("+");
+	str1.append ("+");
 	const uint8_t *str3 = reinterpret_cast<const uint8_t *> (str1.c_str ());
-	Packet pack1 (str3, 100);
+	Packet pack1 (str3, 120);
 	Ptr<Packet> p = &pack1;
 	if (m_socket_send[dest]->Send (p) == -1)
 		std::cout << "node "<< (int)m_node_id << " failed to reply request to node "<< dest <<
@@ -914,18 +949,19 @@ void GossipApp::Receive_data_monitor()
 			{
 				int source = vec_nodes_sendme_inv.front();
 				SendGetdata(source);
-				std::cout<<"node "<<(int)m_node_id<<" send getdata to "<<source<<"\n";
+				// std::cout<<"node "<<(int)m_node_id<<" send getdata to "<<source<<"\n";
 				wait_for_SYN = source;
 				wait_SYN_start_time = Simulator::Now().GetSeconds();
 				vec_nodes_sendme_inv.erase(vec_nodes_sendme_inv.begin());
-				std::cout<<"Inv pool size: "<<(int)vec_nodes_sendme_inv.size()<<std::endl;
+				// std::cout<<"Inv pool size: "<<(int)vec_nodes_sendme_inv.size()<<std::endl;
 			}
-
+		
+			Simulator::Schedule(Seconds(5.0), &GossipApp::Receive_data_monitor, this);
 		}
 
 
-		if(Simulator::Now().GetSeconds()-m_epoch_beginning<cur_epoch_len)
-			Simulator::Schedule(Seconds(5.0), &GossipApp::Receive_data_monitor, this);
+		// if(Simulator::Now().GetSeconds()-m_epoch_beginning<cur_epoch_len)
+		// 	Simulator::Schedule(Seconds(5.0), &GossipApp::Receive_data_monitor, this);
 		// the timeout should be set very carefully
 	}
 }
@@ -978,7 +1014,8 @@ void GossipApp::HandleRead(Ptr<Socket> socket)
 							int tmp2 = (atoi) (res[5].c_str ());
 							block_received.name = tmp1;
 							block_received.height = tmp2;
-							if(Simulator::Now().GetSeconds()-m_epoch_beginning<cur_epoch_len && gossip_action==false)
+							// if(Simulator::Now().GetSeconds()-m_epoch_beginning<cur_epoch_len && gossip_action==false)
+							if(gossip_action==false)
 							{
 								std::cout << "node " <<std::setw(2)<< (int) m_node_id << " received a " << content_
 								    << " from node " << from_node << " at "
@@ -997,10 +1034,10 @@ void GossipApp::HandleRead(Ptr<Socket> socket)
 			else if(strcmp(type_of_received_message, "BLOCKINV")==0)
 			{
 				float time_invsend = atof(res[4].c_str());  // TODO freshness check
-				std::cout<<"time send: "<<time_invsend<<std::endl;
-				std::cout << "node " <<std::setw(2)<< (int) m_node_id << " received a INV"
-								    << " from node " << from_node << " at "
-								    << Simulator::Now ().GetSeconds () << " s\n";
+				// std::cout<<"time send: "<<time_invsend<<std::endl;
+				// std::cout << "node " <<std::setw(2)<< (int) m_node_id << " received a INV"
+				// 				    << " from node " << from_node << " at "
+				// 				    << Simulator::Now ().GetSeconds () << " s\n";
 				float time_now = Simulator::Now().GetSeconds();  // don't use those too old
 				if(time_now-time_invsend<TIMEOUT_FOR_SMALL_MSG)
 				{
@@ -1011,6 +1048,8 @@ void GossipApp::HandleRead(Ptr<Socket> socket)
 					vec_INV.push_back(msg_inv);
 					vec_nodes_sendme_inv.push_back(from_node);
 				}
+				else
+					std::cout<<"out of time !!!!!\n";
 				if(block_got==false && receive_data_monitor_trigger==0)
 				{
 					// if has no block and the first time receive query, start receive data
@@ -1050,6 +1089,7 @@ void GossipApp::HandleRead(Ptr<Socket> socket)
 			}
 			else if(strcmp(type_of_received_message, "BLOCKACK")==0)
 			{
+
 				float time_acksend = atof(res[4].c_str());
 				float time_now = Simulator::Now().GetSeconds();
 				Msg_ACK msg_ack;
@@ -1057,11 +1097,14 @@ void GossipApp::HandleRead(Ptr<Socket> socket)
 				msg_ack.create_time = time_acksend;
 				msg_ack.receive_time = time_now;
 				vec_ACK.push_back(msg_ack);
+				// std::cout << "node " <<std::setw(2)<< (int) m_node_id << " received a ACK"
+				// 				    << " from node " << from_node << " at "
+				// 				    << Simulator::Now ().GetSeconds () << " s\n";
 			}
 		}
 		if(strcmp(type_of_received_message, "CONNECT?SYN")==0)
 		{
-			std::cout<<(int)m_node_id<<" receives a request from "<<from_node<< " at "<<Simulator::Now().GetSeconds()<<"s\n";
+			// std::cout<<(int)m_node_id<<" receives a request from "<<from_node<< " at "<<Simulator::Now().GetSeconds()<<"s\n";
 			if(in_neighbor_number<MAX_IN_NEIGHBOR_NUMBER)
 			{
 				in_neighbor_choosed.push_back(from_node);
@@ -1069,18 +1112,18 @@ void GossipApp::HandleRead(Ptr<Socket> socket)
 				reply_tcp_connect(from_node);
 				
 			
-				std::cout<<(int)m_node_id<<" reply to "<<from_node<< " at "<<Simulator::Now().GetSeconds()<<"s\n";
-				std::cout<<(int)m_node_id<<" in neighbor number: "<<in_neighbor_choosed.size()<<"\n";
+				// std::cout<<(int)m_node_id<<" reply to "<<from_node<< " at "<<Simulator::Now().GetSeconds()<<"s\n";
+				// std::cout<<(int)m_node_id<<" in neighbor number: "<<in_neighbor_choosed.size()<<"\n";
 				
 			}
-			else
-				std::cout<<(int)m_node_id<<" has enough in neighbors!\n";
+			// else
+			// 	std::cout<<(int)m_node_id<<" has enough in neighbors!\n";
 		}
 		if(strcmp(type_of_received_message, "CONNECT?SYNACK")==0)
 		{
 			
-			std::cout<<(int)m_node_id<<" receives a reply from "<<from_node<< " at "<<Simulator::Now().GetSeconds()<<"s\n";
-			std::cout<<(int)m_node_id<<" out neighbor number: "<<out_neighbor_choosed.size()+1<<"\n";
+			// std::cout<<(int)m_node_id<<" receives a reply from "<<from_node<< " at "<<Simulator::Now().GetSeconds()<<"s\n";
+			// std::cout<<(int)m_node_id<<" out neighbor number: "<<out_neighbor_choosed.size()+1<<"\n";
 			
 			out_neighbor_choosed.push_back(from_node);
 		}

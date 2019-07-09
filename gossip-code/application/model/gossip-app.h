@@ -23,13 +23,13 @@ const int TOTAL_EPOCH_FOR_SIMULATION = 20;
 
 const int AP_NUMBER = 18;
 const int NODE_NUMBER = 52;
-const int OUT_NEIGHBOR_NUMBER = 1;
-const int MAX_IN_NEIGHBOR_NUMBER = 2;
+const int OUT_NEIGHBOR_NUMBER = 2;
+const int MAX_IN_NEIGHBOR_NUMBER = 4;
 const int BLOCK_PIECE_NUMBER = 64;
 const float FIXED_EPOCH_LEN = 10;
 const float DETERMINE_INTERVAL = 0.1;
 const float TIMEOUT_FOR_TCP = 2.0;
-const float TIMEOUT_FOR_SMALL_MSG = 20;
+const float TIMEOUT_FOR_SMALL_MSG = 100;
 const float CONSERVE_LEN = 10.0;
 
 
