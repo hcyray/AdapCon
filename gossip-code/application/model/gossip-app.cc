@@ -60,6 +60,8 @@ GossipApp::GossipApp()
 	GENESIS_BLOCK.name = 0xFFFFFFFF;
 	GENESIS_BLOCK.height = 0;
 
+	in_neighbor_number = 0;
+
 	delta = 0;
 	srtt = 1;
 	rttvar = 0;
@@ -140,12 +142,12 @@ void GossipApp::ConsensProcess()
 	}
 
 	// id0 = Simulator::Schedule(Seconds(cur_epoch_len+0*FIXED_EPOCH_LEN), &GossipApp::GossipEcho, this);
-	// id1 = Simulator::Schedule(Seconds(cur_epoch_len+1*FIXED_EPOCH_LEN), &GossipApp::GossipVote, this);
+	id1 = Simulator::Schedule(Seconds(cur_epoch_len+1*FIXED_EPOCH_LEN), &GossipApp::GossipVote, this);
 	// id2 = Simulator::Schedule(Seconds(cur_epoch_len+2*FIXED_EPOCH_LEN), &GossipApp::GossipTime, this);
 	// id3 = Simulator::Schedule(Seconds(cur_epoch_len+3*FIXED_EPOCH_LEN), &GossipApp::GossipTimeEcho, this);
-	// id_end = Simulator::Schedule(Seconds(cur_epoch_len+3*FIXED_EPOCH_LEN-1), &GossipApp::EndSummary, this);
-	// if(m_epoch<TOTAL_EPOCH_FOR_SIMULATION)
-	// 	id4 = Simulator::Schedule(Seconds(cur_epoch_len+4*FIXED_EPOCH_LEN), &GossipApp::ConsensProcess, this);
+	id_end = Simulator::Schedule(Seconds(cur_epoch_len+3*FIXED_EPOCH_LEN-1), &GossipApp::EndSummary, this);
+	if(m_epoch<TOTAL_EPOCH_FOR_SIMULATION)
+		id4 = Simulator::Schedule(Seconds(cur_epoch_len+4*FIXED_EPOCH_LEN), &GossipApp::ConsensProcess, this);
 }
 
 
@@ -186,42 +188,87 @@ void GossipApp::record_block_piece(int from_node)
 }
 
 
-void GossipApp::GetOutNeighbor ()
-{
-	// hope that a vector without initialization has size 0
-	if(out_neighbor_choosed.size()<OUT_NEIGHBOR_NUMBER)
-	{
+// void GossipApp::GetOutNeighbor ()
+// {
+// 	// hope that a vector without initialization has size 0
+// 	if(out_neighbor_choosed.size()<OUT_NEIGHBOR_NUMBER)
+// 	{
 
-		srand((unsigned)time(NULL)+m_node_id+Simulator::Now ().GetSeconds ());
-		int x = rand () % NODE_NUMBER;
-		std::vector<int>::iterator it;
-		it = std::find(out_neighbor_choosed.begin(), out_neighbor_choosed.end(), x);
-		if(it==out_neighbor_choosed.end() && x!=(int)m_node_id)
-		{
-			try_tcp_connect(x);
-			// float y = (x+0.1)/(NODE_NUMBER+1.0)+10;
-			std::cout<<"node "<<(int)m_node_id<<" send request to "<<x<<" at "<<Simulator::Now().GetSeconds()<<"s\n";
+// 		srand((unsigned)time(NULL)+m_node_id+Simulator::Now ().GetSeconds ());
+// 		int x = rand () % NODE_NUMBER;
+// 		std::vector<int>::iterator it;
+// 		it = std::find(out_neighbor_choosed.begin(), out_neighbor_choosed.end(), x);
+// 		if(it==out_neighbor_choosed.end() && x!=(int)m_node_id)
+// 		{
+// 			try_tcp_connect(x);
+// 			// float y = (x+0.1)/(NODE_NUMBER+1.0)+10;
+// 			std::cout<<"node "<<(int)m_node_id<<" send request to "<<x<<" at "<<Simulator::Now().GetSeconds()<<"s\n";
 			
-		}
-		Simulator::Schedule(Seconds (20.0), &GossipApp::GetOutNeighbor, this);
-	}
-	// else
-	// {
-	// 	std::cout<<(int)m_node_id<<" out neighbor: ";
-	// 	for(int i=0; i<OUT_NEIGHBOR_NUMBER; i++)
-	// 		std::cout<<out_neighbor_choosed[i]<<" ";
-	// 	std::cout<<"\n";
-	// }
-}
+// 		}
+// 		Simulator::Schedule(Seconds (20.0), &GossipApp::GetOutNeighbor, this);
+// 	}
+// 	// else
+// 	// {
+// 	// 	std::cout<<(int)m_node_id<<" out neighbor: ";
+// 	// 	for(int i=0; i<OUT_NEIGHBOR_NUMBER; i++)
+// 	// 		std::cout<<out_neighbor_choosed[i]<<" ";
+// 	// 	std::cout<<"\n";
+// 	// }
+// }
 
 
-void GossipApp::GetAllNeighbor ()
+// void GossipApp::GetAllNeighbor ()
+// {
+// 	neighbor_number = in_neighbor_number + OUT_NEIGHBOR_NUMBER;
+// 	neighbor_choosed.insert(neighbor_choosed.end(), out_neighbor_choosed.begin(), out_neighbor_choosed.end());
+// 	neighbor_choosed.insert(neighbor_choosed.end(), in_neighbor_choosed.begin(), in_neighbor_choosed.end());
+// 	RecordNeighbor();
+// }
+
+
+void GossipApp::ReadNeighborFromFile ()
 {
-	neighbor_number = in_neighbor_number + OUT_NEIGHBOR_NUMBER;
+	std::ifstream infile3;
+	std::string line;
+	infile3.open("scratch/subdir/log_cmjj/nodelink.txt");
+	for(int k=0; k<=(int)m_node_id; k++)
+		std::getline(infile3, line);
+	std::vector<std::string> res = SplitMessage(line, '+');
+
+	if((int)m_node_id==0)
+	{
+		for(int j=0; j<(int)res.size(); j++)
+			std::cout<<res[j]<<"-";
+		std::cout<<std::endl;
+		std::cout<<(int)res.size()<<std::endl;
+	}
+
+	for(int k=0; k<OUT_NEIGHBOR_NUMBER; k++)
+	{
+		out_neighbor_choosed.push_back(atoi(res[k].c_str()));
+	}
+	for(int k=OUT_NEIGHBOR_NUMBER; k<(int)res.size()-1; k++) // 0 is always in the end
+	{
+		in_neighbor_choosed.push_back(atoi(res[k].c_str()));
+	}
+	in_neighbor_number = (int)in_neighbor_choosed.size();
+	neighbor_number = OUT_NEIGHBOR_NUMBER + in_neighbor_number;
 	neighbor_choosed.insert(neighbor_choosed.end(), out_neighbor_choosed.begin(), out_neighbor_choosed.end());
 	neighbor_choosed.insert(neighbor_choosed.end(), in_neighbor_choosed.begin(), in_neighbor_choosed.end());
-	// need to test if this way to merge works
-	RecordNeighbor();
+
+	// std::cout<<(int)m_node_id<<" neighbor: ";
+	// for(int j=0; j<(int)res.size(); j++)
+	// 	std::cout<<res[j]<<" ";
+	// std::cout<<std::endl;
+	std::cout<<(int)m_node_id<<" out neighbor: ";
+	for(int i=0; i<(int)out_neighbor_choosed.size(); i++)
+		std::cout<<out_neighbor_choosed[i]<<" ";
+	std::cout<<"----";
+	std::cout<<"in neighbor: ";
+	for(int i=0; i<(int)in_neighbor_choosed.size(); i++)
+		std::cout<<in_neighbor_choosed[i]<<" ";
+	std::cout<<"\n";
+
 }
 
 
@@ -307,10 +354,11 @@ void GossipApp::StartApplication (void)
 		// m_socket_send[i]->ShutdownRecv();
 	}
 
-	in_neighbor_number = 0;
 
-	GetOutNeighbor ();
-	Simulator::Schedule (Seconds (590.), &GossipApp::GetAllNeighbor, this);
+
+	// GetOutNeighbor ();
+	// Simulator::Schedule (Seconds (590.), &GossipApp::GetAllNeighbor, this);
+	Simulator::Schedule (Seconds (590.), &GossipApp::ReadNeighborFromFile, this);
 
 	view = 0;
 	block_received.name = 0;
@@ -344,24 +392,31 @@ float GossipApp::InitializeEpoch()
 {
 	// if a out neighbor is kicked out, choose a new neighbor
 
+	block_received.name = 0;
+
 	for(int i=0; i<NODE_NUMBER; i++)
 	{
 		for(int j=0; j<BLOCK_PIECE_NUMBER; j++)
 			map_node_blockpiece_received[i][j] = 0;
 		map_node_vote[i] = 0;
 	}
+	consensus_success = 0;
 	block_got = false;
 	gossip_action = false;
 
 	receive_data_monitor_trigger = 0;
 	wait_for_SYN = -1;
 	wait_for_BLOCK = -1;
+	vec_nodes_sendme_inv.clear();
+	vec_INV.clear();
+	vec_SYN.clear();
+	vec_ACK.clear();
 
 	
 	wait_SYN_start_time = m_epoch_beginning;
 	wait_BLOCK_start_time = m_epoch_beginning;
 
-	return 190;
+	return 160;
 	// read the epoch length computation result from the local file
 }
 
@@ -400,6 +455,7 @@ int GossipApp::Self_Report_to_file()
 
 void GossipApp::GossipBlockOut (Block b)
 {
+	// std::cout<<(int)m_node_id<<" gossip block out at "<<Simulator::Now().GetSeconds()<<"s\n";
 	srand (Simulator::Now ().GetSeconds () + m_node_id);
   	for (int i = 0; i < neighbor_number; i++)
     {
@@ -414,7 +470,7 @@ void GossipApp::GossipBlockOut (Block b)
 
 void GossipApp::GossipBlockAfterReceive (int from_node, Block b)
 {
-
+	// std::cout<<(int)m_node_id<<" gossip block out after receiving at "<<Simulator::Now().GetSeconds()<<"s\n";
 	for (int i = 0; i < neighbor_number; i++)
     {
 		if (neighbor_choosed[i] != from_node)
@@ -434,12 +490,12 @@ void GossipApp::GossipEcho()
 	srand (Simulator::Now ().GetSeconds () + m_node_id);
   	for (int i = 0; i < neighbor_number; i++)
     {
-      
-    	float x = rand () % 1000;
-    	x = x / 1000 + 0.1 * i;
-    	Simulator::Schedule (Seconds (x), &GossipApp::SendEcho, this, neighbor_choosed[i]);
+      	
+      	SendEcho(neighbor_choosed[i]);
+    	// float x = rand () % 1000;
+    	// x = x / 1000 + 0.1 * i;
+    	// Simulator::Schedule (Seconds (x), &GossipApp::SendEcho, this, neighbor_choosed[i]);
     }
-    //  TODO
 }
 
 
@@ -447,13 +503,15 @@ void GossipApp::GossipVote()
 {
 	if(block_got==true)
 	{
-		srand (Simulator::Now ().GetSeconds () + m_node_id);
+		map_node_vote[(int)m_node_id] = 1;
+		// srand (Simulator::Now ().GetSeconds () + m_node_id);
 	  	for (int i = 0; i < neighbor_number; i++)
 	    {
-	      
-	    	float x = rand () % 1000;
-	    	x = x / 1000 + 0.1 * i;
-	    	Simulator::Schedule (Seconds (x), &GossipApp::SendVote, this, neighbor_choosed[i]);
+	      	int source = (int)m_node_id;
+	      	SendVote(source, neighbor_choosed[i]);
+	    	// float x = rand () % 1000;
+	    	// x = x / 1000 + 0.1 * i;
+	    	// Simulator::Schedule (Seconds (x), &GossipApp::SendVote, this, neighbor_choosed[i]);
 	    }
 	}
 	// TODO 
@@ -496,8 +554,29 @@ void GossipApp::GossipTimeEcho()
 
 void GossipApp::EndSummary()
 {
-
-
+	if(block_got==false)
+		std::cout<<(int)m_node_id<<" fail to committed the block, no block\n";
+	else
+	{
+		int sum=0;
+		for(int i=0; i<NODE_NUMBER; i++)
+			sum += map_node_vote[i];
+		if(sum>=2./3*NODE_NUMBER)
+		{
+			consensus_success = 1;
+			m_local_ledger.push_back(block_received.name);
+			m_ledger_built_epoch.push_back((int)m_epoch);
+			std::cout<<(int)m_node_id<<" successfully committed the block, vote number: "<<sum<<", missed voting: ";
+			for(int i=0; i<NODE_NUMBER; i++)
+			{
+				if(map_node_vote[i]==0)
+					std::cout<<i<<" ";
+			}
+			std::cout<<"\n";
+		}
+		else
+			std::cout<<(int)m_node_id<<" fail to committed the block, not enough vote, vote number: "<<sum<<"\n";
+	}
 	// if(consensus succeed)
 	// {
 	// 	Read_data();
@@ -814,12 +893,12 @@ void GossipApp::SendEcho (int dest)
 }
 
 
-void GossipApp::SendVote (int dest)
+void GossipApp::SendVote (int source, int dest)
 {
 	std::string str1 = "";
 	str1.append (std::to_string ((int) m_epoch));
 	str1.append ("+");
-	str1.append (std::to_string ((int) m_node_id));
+	str1.append (std::to_string ( source));
 	str1.append ("+");
 	std::string str2 = "BLOCKVOTE";
 	str1.append (str2);
@@ -834,10 +913,18 @@ void GossipApp::SendVote (int dest)
 }
 
 
+void
+GossipApp::RelayVotingMessage (int dest, Ptr<Packet> p)
+{
+  if(m_socket_send[dest]->Send(p)==-1)
+    std::cout<<"error relay"<<std::endl;
+}
+
+
 void GossipApp::SendTime (int dest, int size)
 {
 
-	
+
 
 	std::string str1 = "";
 	str1.append (std::to_string ((int) m_epoch));
@@ -879,63 +966,52 @@ void GossipApp::SendTimeEcho(int dest)
 }
 
 
-void GossipApp::try_tcp_connect(int dest)
-{
-
-	std::string str1 = "";
-	str1.append (std::to_string ((int) m_epoch));
-	str1.append ("+");
-	str1.append (std::to_string ((int) m_node_id));
-	str1.append ("+");
-	std::string str2 = "CONNECT?SYN";
-	str1.append (str2);
-	str1.append ("+");
-	str1.append ("+");
-	const uint8_t *str3 = reinterpret_cast<const uint8_t *> (str1.c_str ());
-	Packet pack1 (str3, 120);
-	Ptr<Packet> p = &pack1;
-	if (m_socket_send[dest]->Send (p) == -1)
-		std::cout << "node "<< (int)m_node_id << " failed to send request to node "<< dest <<
-		" , send buffer　: "<< m_socket_send[dest]->GetTxAvailable()<< std::endl;
-	// std::cout<<"node "<<(int)m_node_id<<" send connect request to "<<dest<<" at "<<Simulator::Now().GetSeconds()<<"s\n";
-
-}
-
-
-void GossipApp::reply_tcp_connect(int dest)
-{
-	std::string str1 = "";
-	str1.append (std::to_string ((int) m_epoch));
-	str1.append ("+");
-	str1.append (std::to_string ((int) m_node_id));
-	str1.append ("+");
-	std::string str2 = "CONNECT?SYNACK";
-	str1.append (str2);
-	str1.append ("+");
-	str1.append ("+");
-	const uint8_t *str3 = reinterpret_cast<const uint8_t *> (str1.c_str ());
-	Packet pack1 (str3, 120);
-	Ptr<Packet> p = &pack1;
-	if (m_socket_send[dest]->Send (p) == -1)
-		std::cout << "node "<< (int)m_node_id << " failed to reply request to node "<< dest <<
-		" , send buffer　: "<< m_socket_send[dest]->GetTxAvailable()<< std::endl;
-}
-
-
-// void GossipApp::Send_data_watchdog(int n)
+// void GossipApp::try_tcp_connect(int dest)
 // {
-// 	if(map_node_ack_time[n] - map_node_getdata_time[n] >= timeout)
-// 		// TODO
-// 		// the timeout paremeter should be set carefully
-// 	else
-// 		// TODO
 
+// 	std::string str1 = "";
+// 	str1.append (std::to_string ((int) m_epoch));
+// 	str1.append ("+");
+// 	str1.append (std::to_string ((int) m_node_id));
+// 	str1.append ("+");
+// 	std::string str2 = "CONNECT?SYN";
+// 	str1.append (str2);
+// 	str1.append ("+");
+// 	str1.append ("+");
+// 	const uint8_t *str3 = reinterpret_cast<const uint8_t *> (str1.c_str ());
+// 	Packet pack1 (str3, 120);
+// 	Ptr<Packet> p = &pack1;
+// 	if (m_socket_send[dest]->Send (p) == -1)
+// 		std::cout << "node "<< (int)m_node_id << " failed to send request to node "<< dest <<
+// 		" , send buffer　: "<< m_socket_send[dest]->GetTxAvailable()<< std::endl;
+// 	// std::cout<<"node "<<(int)m_node_id<<" send connect request to "<<dest<<" at "<<Simulator::Now().GetSeconds()<<"s\n";
+
+// }
+
+
+// void GossipApp::reply_tcp_connect(int dest)
+// {
+// 	std::string str1 = "";
+// 	str1.append (std::to_string ((int) m_epoch));
+// 	str1.append ("+");
+// 	str1.append (std::to_string ((int) m_node_id));
+// 	str1.append ("+");
+// 	std::string str2 = "CONNECT?SYNACK";
+// 	str1.append (str2);
+// 	str1.append ("+");
+// 	str1.append ("+");
+// 	const uint8_t *str3 = reinterpret_cast<const uint8_t *> (str1.c_str ());
+// 	Packet pack1 (str3, 120);
+// 	Ptr<Packet> p = &pack1;
+// 	if (m_socket_send[dest]->Send (p) == -1)
+// 		std::cout << "node "<< (int)m_node_id << " failed to reply request to node "<< dest <<
+// 		" , send buffer　: "<< m_socket_send[dest]->GetTxAvailable()<< std::endl;
 // }
 
 
 void GossipApp::Receive_data_monitor()
 {
-	std::cout<<"node " << (int) m_node_id<< " monitor executed at "<<Simulator::Now().GetSeconds()<<"s\n";
+	// std::cout<<"node " << (int) m_node_id<< " monitor executed at "<<Simulator::Now().GetSeconds()<<"s\n";
 	if(block_got==false)
 	{
 		float t = Simulator::Now().GetSeconds();
@@ -955,8 +1031,8 @@ void GossipApp::Receive_data_monitor()
 				vec_nodes_sendme_inv.erase(vec_nodes_sendme_inv.begin());
 				// std::cout<<"Inv pool size: "<<(int)vec_nodes_sendme_inv.size()<<std::endl;
 			}
-		
-			Simulator::Schedule(Seconds(5.0), &GossipApp::Receive_data_monitor, this);
+			if(Simulator::Now().GetSeconds() - m_epoch_beginning < cur_epoch_len)
+				Simulator::Schedule(Seconds(5.0), &GossipApp::Receive_data_monitor, this);
 		}
 
 
@@ -1031,6 +1107,39 @@ void GossipApp::HandleRead(Ptr<Socket> socket)
 					}
 				}
 			}
+			else if(strcmp(type_of_received_message, "BLOCKVOTE")==0)
+			{
+				// std::cout << "node " <<std::setw(2)<< (int) m_node_id << " received a " << content_
+				//     << " from node " << from_node << " at "<< Simulator::Now ().GetSeconds () << " s\n";
+				int x = (atoi) (res[1].c_str());
+				if(map_node_vote[x]==0)
+				{
+					map_node_vote[x] = 1;
+					for (int i = 0; i < neighbor_number; i++)
+					{
+						int dest = neighbor_choosed[i];
+						if(dest!=from_node)
+						// {
+						// 	srand (Simulator::Now ().GetSeconds ());
+		    //                 float x = rand () % 1000;
+		    //                 x = x / 1000+0.3;
+		    //                 Simulator::Schedule (Seconds (x), &GossipApp::SendVote, this, source, dest);
+						// }
+							SendVote(x, dest);
+					}
+
+					// for(int i=0; i<neighbor_number; i++)
+					// {
+					// 	int dest = neighbor_choosed[i];
+					// 	if(dest!=from_node)
+					// 	{
+					// 		if (m_socket_send[dest]->Send (packet) == -1)
+					// 			std::cout << "node "<< (int)m_node_id << " failed to send vote to node "<< dest <<std::endl;
+					// 			// " , send buffer　: "<< m_socket_send[dest]->GetTxAvailable()<< std::endl;
+					// 	}
+					// }
+				}
+			}
 			else if(strcmp(type_of_received_message, "BLOCKINV")==0)
 			{
 				float time_invsend = atof(res[4].c_str());  // TODO freshness check
@@ -1060,9 +1169,13 @@ void GossipApp::HandleRead(Ptr<Socket> socket)
 				
 
 			}
+			// else if(strcmp(type_of_received_message, "BLOCKECHO")==0)
+			// {
+			// 	// TODO
+			// }
 			else if(strcmp(type_of_received_message, "GETDATA")==0)
 			{
-				if(attacker_do_not_send==false)
+				if(attacker_do_not_send==false && block_got==true)
 				{
 					SendBlockSYN(from_node, block_received);
 					SendBlock(from_node, block_received);
@@ -1102,31 +1215,31 @@ void GossipApp::HandleRead(Ptr<Socket> socket)
 				// 				    << Simulator::Now ().GetSeconds () << " s\n";
 			}
 		}
-		if(strcmp(type_of_received_message, "CONNECT?SYN")==0)
-		{
+		// if(strcmp(type_of_received_message, "CONNECT?SYN")==0)
+		// {
 			// std::cout<<(int)m_node_id<<" receives a request from "<<from_node<< " at "<<Simulator::Now().GetSeconds()<<"s\n";
-			if(in_neighbor_number<MAX_IN_NEIGHBOR_NUMBER)
-			{
-				in_neighbor_choosed.push_back(from_node);
-				in_neighbor_number++;
-				reply_tcp_connect(from_node);
+			// if(in_neighbor_number<MAX_IN_NEIGHBOR_NUMBER)
+			// {
+			// 	in_neighbor_choosed.push_back(from_node);
+			// 	in_neighbor_number++;
+			// 	reply_tcp_connect(from_node);
 				
 			
 				// std::cout<<(int)m_node_id<<" reply to "<<from_node<< " at "<<Simulator::Now().GetSeconds()<<"s\n";
 				// std::cout<<(int)m_node_id<<" in neighbor number: "<<in_neighbor_choosed.size()<<"\n";
 				
-			}
+			// }
 			// else
 			// 	std::cout<<(int)m_node_id<<" has enough in neighbors!\n";
-		}
-		if(strcmp(type_of_received_message, "CONNECT?SYNACK")==0)
-		{
+		// }
+		// if(strcmp(type_of_received_message, "CONNECT?SYNACK")==0)
+		// {
 			
 			// std::cout<<(int)m_node_id<<" receives a reply from "<<from_node<< " at "<<Simulator::Now().GetSeconds()<<"s\n";
 			// std::cout<<(int)m_node_id<<" out neighbor number: "<<out_neighbor_choosed.size()+1<<"\n";
 			
-			out_neighbor_choosed.push_back(from_node);
-		}
+		// 	out_neighbor_choosed.push_back(from_node);
+		// }
 	}
 }
 

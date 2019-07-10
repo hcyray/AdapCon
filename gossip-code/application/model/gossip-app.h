@@ -60,6 +60,7 @@ public:
 	Block BlockPropose();
 	void GossipBlockOut(Block b);
 	void GossipBlockAfterReceive (int from_node, Block b);
+	void RelayVotingMessage (int dest, Ptr<Packet> p);
 	void SendBlockInv (int dest, Block b);
 	void SendBlockSYN (int dest, Block b);
 	void SendGetdata (int dest);
@@ -67,7 +68,7 @@ public:
 	void SendBlock (int dest, Block b);
 	void SendBlockPiece (int dest, int piece, Block b);
 	void SendEcho(int dest);
-	void SendVote(int dest);
+	void SendVote(int source, int dest);
 	void SendTime(int dest, int size);
 	void SendTimeEcho(int dest);
 
@@ -85,11 +86,12 @@ private:
 	virtual void StopApplication (void);
 	void HandleAccept(Ptr<Socket> s, const Address& from);
 	void HandleRead (Ptr<Socket> socket);
-	void try_tcp_connect(int dest);
-	void reply_tcp_connect(int dest);
+	// void try_tcp_connect(int dest);
+	// void reply_tcp_connect(int dest);
 	
 	void GetOutNeighbor ();
 	void GetAllNeighbor ();
+	void ReadNeighborFromFile ();
 	uint8_t GetNodeId(void);
 	std::vector<std::string> SplitMessage (const std::string &str, const char pattern);
 
@@ -106,6 +108,7 @@ private:
 	std::vector<int> m_ledger_built_epoch;
 
 	int view;
+	int consensus_success;
 	bool block_got;
 	bool gossip_action;
 	float block_got_time;

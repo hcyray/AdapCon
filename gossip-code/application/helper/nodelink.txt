@@ -1,0 +1,104 @@
+node 0 out neighbor: 8 43 
+node 0 in neighbor: 29 49 
+node 1 out neighbor: 7 21 
+node 1 in neighbor: 23 50 
+node 2 out neighbor: 16 4 
+node 2 in neighbor: 18 
+node 3 out neighbor: 25 26 
+node 3 in neighbor: 36 39 43 48 
+node 4 out neighbor: 18 48 
+node 4 in neighbor: 2 27 43 
+node 5 out neighbor: 16 17 
+node 5 in neighbor: 8 39 41 
+node 6 out neighbor: 34 19 
+node 6 in neighbor: 38 
+node 7 out neighbor: 46 18 
+node 7 in neighbor: 1 37 
+node 8 out neighbor: 19 5 
+node 8 in neighbor: 0 9 14 
+node 9 out neighbor: 33 8 
+node 9 in neighbor: 25 28 51 
+node 10 out neighbor: 49 22 
+node 10 in neighbor: 
+node 11 out neighbor: 50 12 
+node 11 in neighbor: 20 
+node 12 out neighbor: 37 51 
+node 12 in neighbor: 11 
+node 13 out neighbor: 34 47 
+node 13 in neighbor: 31 47 
+node 14 out neighbor: 8 36 
+node 14 in neighbor: 21 
+node 15 out neighbor: 15 16 
+node 15 in neighbor: 15 
+node 16 out neighbor: 27 22 
+node 16 in neighbor: 2 5 15 42 
+node 17 out neighbor: 38 19 
+node 17 in neighbor: 5 32 
+node 18 out neighbor: 2 39 
+node 18 in neighbor: 4 7 36 
+node 19 out neighbor: 22 21 
+node 19 in neighbor: 6 8 17 26 
+node 20 out neighbor: 11 38 
+node 20 in neighbor: 40 
+node 21 out neighbor: 14 46 
+node 21 in neighbor: 1 19 24 31 
+node 22 out neighbor: 34 36 
+node 22 in neighbor: 10 16 19 40 
+node 23 out neighbor: 40 1 
+node 23 in neighbor: 
+node 24 out neighbor: 41 21 
+node 24 in neighbor: 
+node 25 out neighbor: 9 38 
+node 25 in neighbor: 3 35 
+node 26 out neighbor: 19 35 
+node 26 in neighbor: 3 
+node 27 out neighbor: 51 4 
+node 27 in neighbor: 16 42 
+node 28 out neighbor: 35 9 
+node 28 in neighbor: 
+node 29 out neighbor: 0 46 
+node 29 in neighbor: 
+node 30 out neighbor: 43 36 
+node 30 in neighbor: 48 
+node 31 out neighbor: 21 13 
+node 31 in neighbor: 
+node 32 out neighbor: 50 17 
+node 32 in neighbor: 
+node 33 out neighbor: 44 37 
+node 33 in neighbor: 9 
+node 34 out neighbor: 39 41 
+node 34 in neighbor: 6 13 22 
+node 35 out neighbor: 48 25 
+node 35 in neighbor: 26 28 44 46 
+node 36 out neighbor: 3 18 
+node 36 in neighbor: 14 22 30 38 
+node 37 out neighbor: 7 40 
+node 37 in neighbor: 12 33 
+node 38 out neighbor: 6 36 
+node 38 in neighbor: 17 20 25 
+node 39 out neighbor: 5 3 
+node 39 in neighbor: 18 34 
+node 40 out neighbor: 20 22 
+node 40 in neighbor: 23 37 
+node 41 out neighbor: 5 47 
+node 41 in neighbor: 24 34 
+node 42 out neighbor: 27 16 
+node 42 in neighbor: 
+node 43 out neighbor: 4 3 
+node 43 in neighbor: 0 30 
+node 44 out neighbor: 35 50 
+node 44 in neighbor: 33 49 
+node 45 out neighbor: 46 47 
+node 45 in neighbor: 47 
+node 46 out neighbor: 48 35 
+node 46 in neighbor: 7 21 29 45 
+node 47 out neighbor: 45 13 
+node 47 in neighbor: 13 41 45 
+node 48 out neighbor: 3 30 
+node 48 in neighbor: 4 35 46 50 
+node 49 out neighbor: 0 44 
+node 49 in neighbor: 10 51 
+node 50 out neighbor: 1 48 
+node 50 in neighbor: 11 32 44 
+node 51 out neighbor: 49 9 
+node 51 in neighbor: 12 27 
