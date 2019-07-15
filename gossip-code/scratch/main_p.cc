@@ -150,8 +150,10 @@ int main()
 	// LogComponentEnable ("UdpEchoClientApplication", LOG_LEVEL_INFO);
 	// LogComponentEnable ("UdpEchoServerApplication", LOG_LEVEL_INFO);
 	Config::SetDefault("ns3::TcpSocket::SegmentSize", StringValue("16384"));
-	Config::SetDefault("ns3::TcpSocket::SndBufSize", StringValue("1048576"));
-	Config::SetDefault("ns3::TcpSocket::RcvBufSize", StringValue("1048576"));
+	// Config::SetDefault("ns3::TcpSocket::SndBufSize", StringValue("1048576"));
+	// Config::SetDefault("ns3::TcpSocket::RcvBufSize", StringValue("1048576"));
+	Config::SetDefault("ns3::TcpSocket::SndBufSize", StringValue("5242880"));
+	Config::SetDefault("ns3::TcpSocket::RcvBufSize", StringValue("5242880"));
 	// **************************************************read topology from txt file
 	std::map<int, int> map_AP_devicenumber;
     std::vector<std::pair<int, int> > vecotr_edge;
@@ -210,7 +212,7 @@ int main()
 			p2phelper.SetDeviceAttribute("DataRate", StringValue("5Mbps"));
 		else if(x==2)
 			p2phelper.SetDeviceAttribute("DataRate", StringValue("10Mbps"));
-		p2phelper.SetChannelAttribute("Delay", StringValue("25ms"));
+		p2phelper.SetChannelAttribute("Delay", StringValue("0ms"));
 		p2pdevicelist1[i] = p2phelper.Install(subnetap2rlist[i]);
 
 	}
@@ -227,7 +229,7 @@ int main()
 		subnetr2rlist[i].Add(Router.Get(vecotr_edge[i].first));
 		subnetr2rlist[i].Add(Router.Get(vecotr_edge[i].second));
 
-		p2phelper.SetDeviceAttribute("DataRate", StringValue("1GBps"));
+		p2phelper.SetDeviceAttribute("DataRate", StringValue("10GBps"));
 		p2phelper.SetChannelAttribute("Delay", StringValue("0ms"));
 		p2pdevicelist2[i] = p2phelper.Install(subnetr2rlist[i]);
 	}
@@ -355,8 +357,14 @@ int main()
 		gossipApplist[i] = gossipApp1.Install(IotNode[p.first].Get(p.second));
 		// float x = 0.2*i;
 		gossipApplist[i].Start(Seconds(0.));
-		gossipApplist[i].Stop(Seconds(4900.));
+		gossipApplist[i].Stop(Seconds(13900.));
 	}
+
+	ApplicationContainer guidanceApp;
+	GuidanceAppHelper guidanceApp1(0);
+	guidanceApp = guidanceApp1.Install(Router.Get(0));
+	guidanceApp.Start(Seconds(0.));
+	guidanceApp.Stop(Seconds(900.));
 	
 	
 // ************************************************** change bandwidth dynamically, add this later
@@ -382,7 +390,7 @@ int main()
 	
 // **************************************************  run simulation
 
-	Simulator::Stop (Seconds (5000.0));
+	Simulator::Stop (Seconds (14000.0));
     Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
 	Simulator::Run ();
     Simulator::Destroy ();

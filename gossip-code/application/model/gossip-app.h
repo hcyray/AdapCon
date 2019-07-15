@@ -19,19 +19,19 @@ namespace ns3 {
 class Socket;
 class Packet;
 
-const int TOTAL_EPOCH_FOR_SIMULATION = 20;
+const int TOTAL_EPOCH_FOR_SIMULATION = 4;
 
 const int AP_NUMBER = 18;
 const int NODE_NUMBER = 52;
-const int OUT_NEIGHBOR_NUMBER = 2;
-const int MAX_IN_NEIGHBOR_NUMBER = 4;
-const int BLOCK_PIECE_NUMBER = 64;
+const int OUT_NEIGHBOR_NUMBER = 3;
+const int MAX_IN_NEIGHBOR_NUMBER = 5;
+const int BLOCK_PIECE_NUMBER =8; // 64~1MB
 const float FIXED_EPOCH_LEN = 10;
 const float DETERMINE_INTERVAL = 0.1;
 const float TIMEOUT_FOR_TCP = 2.0;
-const float TIMEOUT_FOR_SMALL_MSG = 100;
+const float TIMEOUT_FOR_SMALL_MSG = 1000;
 const float CONSERVE_LEN = 10.0;
-
+const float BYZANTINE_P = 0.33;
 
 
 
@@ -123,6 +123,7 @@ private:
 	float time_block;
 	float time_ack;
 
+	int neighbor_required;
 	float wait_for_SYN;
 	float wait_for_BLOCK;
 	float wait_SYN_start_time;
@@ -134,7 +135,8 @@ private:
 	float watchdog_timeout;
 
 
-	Ptr<Socket> socket_receive;
+	// Ptr<Socket> socket_receive;
+	std::vector<Ptr<Socket>> m_socket_receive;
 	std::vector<Ptr<Socket>> m_socket_send;
 	std::vector<int> in_neighbor_choosed;
 	std::vector<int> out_neighbor_choosed;
@@ -143,6 +145,7 @@ private:
 	std::vector<Msg_SYN> vec_SYN;
 	std::vector<Msg_ACK> vec_ACK;
 	std::vector<int> vec_nodes_sendme_inv;
+	std::vector<int> order_reply_inv;
 
 	EventId id0;
 	EventId id1;
@@ -164,11 +167,12 @@ private:
 	std::map<int, float> map_node_onehoptime;
 	std::vector<float> vec_one_hop_time;
 	std::map<int, std::vector<float> > map_node_trustval;
+	std::map<int, int> map_node_failedSYN;
 	std::vector<int> formal_res_quorum;
 	std::vector<int> curr_res_quorum;
 	
 	
-	std::ofstream log_link_file;
+	// std::ofstream log_link_file;
 	std::ofstream self_report_file;
 
 	float delta;

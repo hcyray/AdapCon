@@ -15,6 +15,7 @@ def build(bld):
         'model/udp-echo-server.cc',
         'model/application-packet-probe.cc',
         'model/gossip-app.cc',
+        'model/guidance-app.cc',
         'model/user-traffic.cc',
         'model/server-traffic.cc',
         'model/three-gpp-http-client.cc',
@@ -30,6 +31,7 @@ def build(bld):
         'helper/gossip-app-helper.cc',
         'helper/user-traffic-helper.cc',
         'helper/server-traffic-helper.cc',
+        'helper/guidance-app-helper.cc',
         # 'helper/gossip-generator-helper.cc',
         # 'model/gossip-generator.cc',
         ]
@@ -59,6 +61,7 @@ def build(bld):
         'model/three-gpp-http-header.h',
         'model/three-gpp-http-variables.h',
         'model/gossip-app.h',
+        'model/guidance-app.h',
         'model/user-traffic.h',
         'model/server-traffic.h',
         'helper/bulk-send-helper.h',
@@ -70,6 +73,7 @@ def build(bld):
         'helper/gossip-app-helper.h',
         'helper/user-traffic-helper.h',
         'helper/server-traffic-helper.h',
+        'helper/guidance-app-helper.h',
         # 'helper/gossip-generator-helper.h',
         # 'model/gossip-generator.h',
         ]
