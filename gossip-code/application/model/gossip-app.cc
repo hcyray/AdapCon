@@ -51,7 +51,7 @@ GossipApp::GossipApp()
 {
 	NS_LOG_FUNCTION (this);
 	m_epoch = 0;
-	cur_epoch_len = 390.0;  //  main target variable
+	cur_epoch_len = 160.0;  //  main target variable
 
 	m_local_ledger.push_back (0xFFFFFFFF);
 	m_ledger_built_epoch.push_back (0);
@@ -63,10 +63,6 @@ GossipApp::GossipApp()
 
 	in_neighbor_number = 0;
 
-	delta = 0;
-	srtt = 1;
-	rttvar = 0;
-	rtt = 1;
 
 	watchdog_timeout = 60;
 
@@ -124,16 +120,14 @@ void GossipApp::ConsensProcess()
 
 
 	cur_epoch_len = InitializeEpoch();
-	if((int)m_node_id==0)
-		std::cout<<cur_epoch_len<<std::endl;
 	if_leader();
-	if(m_node_id == 0)
-	{
-		std::cout << "*****************"
-		          << "epoch " << (int) m_epoch << " starts"
-		          << "**********" << std::endl;
-		std::cout << "time now: " << Simulator::Now().GetSeconds() << "s" << std::endl;
-	}
+	// if(m_node_id == 0)
+	// {
+	// 	std::cout << "*****************"
+	// 	          << "epoch " << (int) m_epoch << " starts"
+	// 	          << "**********" << std::endl;
+	// 	std::cout << "time now: " << Simulator::Now().GetSeconds() << "s" << std::endl;
+	// }
 	if(m_leader)
 	{
 		Block b = BlockPropose();
@@ -143,10 +137,10 @@ void GossipApp::ConsensProcess()
 	}
 
 	// id0 = Simulator::Schedule(Seconds(cur_epoch_len+0*FIXED_EPOCH_LEN), &GossipApp::GossipEcho, this);
-	// id1 = Simulator::Schedule(Seconds(cur_epoch_len+1*FIXED_EPOCH_LEN), &GossipApp::GossipVote, this);
+	id1 = Simulator::Schedule(Seconds(cur_epoch_len+1*FIXED_EPOCH_LEN), &GossipApp::GossipVote, this);
 	id2 = Simulator::Schedule(Seconds(cur_epoch_len+2*FIXED_EPOCH_LEN), &GossipApp::GossipTime, this);
 	// id3 = Simulator::Schedule(Seconds(cur_epoch_len+3*FIXED_EPOCH_LEN), &GossipApp::GossipTimeEcho, this);
-	// id_end = Simulator::Schedule(Seconds(cur_epoch_len+3*FIXED_EPOCH_LEN-1), &GossipApp::EndSummary, this);
+	// id_end = Simulator::Schedule(Seconds(cur_epoch_len+4*FIXED_EPOCH_LEN-1), &GossipApp::EndSummary, this);
 	if(m_epoch<TOTAL_EPOCH_FOR_SIMULATION)
 		id4 = Simulator::Schedule(Seconds(cur_epoch_len+4*FIXED_EPOCH_LEN), &GossipApp::ConsensProcess, this);
 }
@@ -156,9 +150,13 @@ void GossipApp::if_leader(void)
 {
 	uint8_t x = view % NODE_NUMBER;
 	if(m_node_id==x)
+	{
 		m_leader = true;
+		block_got_time = Simulator::Now().GetSeconds();
+	}
 	else
 		m_leader = false;
+
 }
 
 
@@ -430,7 +428,7 @@ float GossipApp::InitializeEpoch()
 	wait_SYN_start_time = m_epoch_beginning;
 	wait_BLOCK_start_time = m_epoch_beginning;
 
-	return 260;
+	return 160;
 	// read the epoch length computation result from the local file
 }
 
@@ -460,17 +458,17 @@ int GossipApp::Self_Report_to_file()
 	else
 		self_report_file << 0 <<" "<< 0 <<"\n";
 
-	self_report_file<<"INV number: "<<(int)vec_INV.size()<<" order: ";
+	self_report_file<<"INV number: "<<(int)vec_INV.size()<<" order:";
 	for(int i=0; i<(int)order_reply_inv.size(); i++)
 		self_report_file<<" "<<order_reply_inv[i];
 	self_report_file<<"\n";
 	for(int i=0; i<(int)vec_INV.size(); i++)
 		self_report_file<<vec_INV[i].node<<" "<<vec_INV[i].create_time<<" sig "<<vec_INV[i].receive_time<<"\n";
 	// need to record reply inv order
-	self_report_file<<"SYN number:"<< (int)vec_SYN.size()<< "\n";
+	self_report_file<<"SYN number: "<< (int)vec_SYN.size()<< "\n";
 	for(int i=0; i<(int)vec_SYN.size(); i++)
 		self_report_file<<vec_SYN[i].node<<" "<<vec_SYN[i].create_time<<" sig "<<vec_SYN[i].receive_time<<"\n";
-	self_report_file<<"ACK number"<<(int)vec_ACK.size()<<"\n";
+	self_report_file<<"ACK number: "<<(int)vec_ACK.size()<<"\n";
 	for(int i=0; i<(int)vec_ACK.size(); i++)
 		self_report_file<<vec_ACK[i].node<<" "<<vec_ACK[i].create_time<<" sig "<<vec_ACK[i].receive_time<<"\n";
 
@@ -573,234 +571,6 @@ void GossipApp::GossipTimeEcho()
     	Simulator::Schedule (Seconds (x), &GossipApp::SendTimeEcho, this, neighbor_choosed[i]);
     }
 	// TODO
-}
-
-
-
-
-
-void GossipApp::EndSummary()
-{
-	if(block_got==false)
-		std::cout<<(int)m_node_id<<" fail to committed the block, no block\n";
-	else
-	{
-		int sum=0;
-		for(int i=0; i<NODE_NUMBER; i++)
-			sum += map_node_vote[i];
-		if(sum>=2./3*NODE_NUMBER)
-		{
-			consensus_success = 1;
-			m_local_ledger.push_back(block_received.name);
-			m_ledger_built_epoch.push_back((int)m_epoch);
-			std::cout<<(int)m_node_id<<" successfully committed the block, vote number: "<<sum<<", missing vote: ";
-			for(int i=0; i<NODE_NUMBER; i++)
-			{
-				if(map_node_vote[i]==0)
-					std::cout<<i<<" ";
-			}
-			std::cout<<"\n";
-		}
-		else
-			std::cout<<(int)m_node_id<<" fail to committed the block, not enough vote, vote number: "<<sum<<"\n";
-	}
-	if(consensus_success)
-	{
-		Read_data();
-		formal_res_quorum.clear();
-		formal_res_quorum.insert(formal_res_quorum.begin(), curr_res_quorum.begin(), curr_res_quorum.end());
-		Res_quorum_update(); // new res_quorum
-		Trust_val_update();
-		Kickout_malicious();
-		watchdog_timeout = Set_timeout();
-		cur_epoch_len = Epoch_len_computation();
-		// suspector.clear();
-		// std::set_difference(formal_res_quorum.begin(), formal_res_quorum.end(), curr_res_quorum.begin(), curr_res_quorum.end(),
-		// 	std::inserter(suspector, suspector.begin()));
-		// write to file
-	}
-	else
-	{
-		Read_data();
-		formal_res_quorum.clear();
-		formal_res_quorum.insert(formal_res_quorum.begin(), curr_res_quorum.begin(), curr_res_quorum.end());
-		curr_res_quorum.clear();
-		Res_quorum_update();
-		Trust_val_update();
-		Kickout_malicious();
-		watchdog_timeout *= 2;
-		cur_epoch_len *= 2;
-		// write to file
-	}
-
-}
-
-
-void GossipApp::Read_data()
-{
-	
-	for(int i=0; i<NODE_NUMBER; i++)
-	{
-		std::string str2 = "scratch/subdir/log_cmjj/node_";
-		str2.append(std::to_string(i));
-		str2.append("_self_report.txt");
-		std::ofstream fi;
-		fi.open(str2);
-		if (!fi)
-			std::cout<<"fail to open "<<str2<<std::endl;
-		std::string line;
-		int v = 0;
-		while(getline(fi, line))
-		{
-			if(strcmp("--------", line)==0)
-				v++;
-			if(v==(int)m_epoch)
-				break;
-		}
-		getline(fi, line);
-		getline(fi, line);
-		smatch match;
-
-		regex rx1("State: ([0-9]) ([0-9]*\.?[0-9]*)");
-    	if(regex_match(line, match, rx1))
-    	{
-    		int tmp1 = (atoi) match[1].c_str();
-    		float tmp2 = (atof) match[2].c_str();
-    		map_node_vote[i] = tmp1;
-    		if(tmp1)
-    		{
-    			map_node_blockrcvtime[i] = tmp2;
-    			regex rx2("SYN: ([0-9]+)");
-    			whhile(getline(fi, line))
-    			{
-    				if(regex_match(line, match, rx2))
-    				{
-    					int tmp3 = (atoi) match[1].c_str();
-    					for(int i=0; i<tmp3; i++)
-    						getline(fi, line);
-    					break;
-    				}
-    			}
-    			regex rx3("([0-9]+) ([0-9]*\.?[0-9]*) sig ([0-9]*\.?[0-9]*)");
-    			if(regex_match(line, match, rx3))
-    			{
-    				float tmp4 = (atof) match[2].c_str();
-    				float tmp5 = (atof) match[3].c_str();
-    				map_node_onehoptime[i] = tmp5 - tmp4;
-    				vec_one_hop_time.push_back(tmp5-tmp4);
-    			}
-    		}
-    		else
-    		{
-    			map_node_blockrcvtime[i] = -1;
-    			regex rx2("SYN: ([0-9]+)");
-    			int tmp3;
-    			whhile(getline(fi, line))
-    			{
-    				if(regex_match(line, match, rx2))
-    				{
-    					tmp3 = (atoi) match[1].c_str();
-    					break;
-    				}
-    			}
-    			map_node_failedSYN[i] = tmp3;
-    			map_node_onehoptime[i] = -1;
-    		}
-
-    	}
-
-
-
-		// locate current epoch;
-		// locate block rev time, map_node_blockrcvtime, vec_block_rcv_time;
-		// locate the last SYN, fill map_node_onehoptime, vec_one_hop_time;
-
-	
-	}
-	
-
-	
-
-}
-
-
-void GossipApp::Kickout_malicious()
-{
-	// TODO
-}
-
-
-float GossipApp::Set_timeout()
-{
-	for(int i=0; i<(int)vec_one_hop_time.size(); i++)
-	{
-		float s = vec_one_hop_time[i];
-		delta = s - srtt;
-		rttvar = rttvar + 1/4 * (abs(delta) - rttvar);
-		rtt = srtt + 4 * rttvar;
-	}
-	return rtt;
-}
-
-
-float GossipApp::Epoch_len_computation()
-{
-	std::vector<float> tmp;
-	tmp.insert(tmp.begin(), vec_block_rcv_time.begin(), vec_block_rcv_time.end());
-	std::sort(tmp.begin(), tmp.end());
-	int x = NODE_NUMBER*0.67;
-	float y = tmp[x] + CONSERVE_LEN;
-	return y;
-}
-
-
-void GossipApp::Res_quorum_update()
-{
-	curr_res_quorum.clear();
-	for(int i=0; i<NODE_NUMBER; i++)
-	{
-		if(map_node_vote[i]==1)
-			curr_res_quorum.push_back(i);
-	}
-}
-
-
-void GossipApp::Trust_val_update()
-{
-	for(int i=0; i<NODE_NUMBER; i++)
-	{
-		std::vector<int>::iterator it;
-		it = std::find(curr_res_quorum.begin(), curr_res_quorum.end(), i);
-		if(it!=curr_res_quorum.end())
-			map_node_trustval[i].push_back(1);
-		else
-		{
-			float x = failrcv_probability(i); 
-			map_node_trustval[i].push_back(x);
-		}
-	}
-}
-
-
-float GossipApp::failrcv_probability(int n)
-{
-	// TODO given SYN, the probability that node n can't receive blocks in time
-	float x = timeout_probability(watchdog_timeout)*(1-BYZANTINE_P) + BYZANTINE_P;
-	flaot y = pow(x, map_node_failedSYN[n]);
-	return 1;
-}
-
-
-float GossipApp::timeout_probability(float x)
-{
-	int sum=0;
-	int s = vec_one_hop_time.size();
-	for(int i=0; i<s; i++)
-	{
-		if(x>vec_one_hop_time[i])
-			sum++;
-	}
-	return (sum+0.1)/s;
 }
 
 
@@ -1000,24 +770,30 @@ void GossipApp::SendVote (int source, int dest)
 	str1.append ("+");
 	str1.append (std::to_string ( source));
 	str1.append ("+");
-	std::string str2 = "BLOCKVOTE";
+	std::string str2 = "BLOCKVOT";
 	str1.append (str2);
 	str1.append ("+");
 	str1.append ("+");
 	const uint8_t *str3 = reinterpret_cast<const uint8_t *> (str1.c_str ());
-	Packet pack1 (str3, 100);
+	Packet pack1 (str3, 200);
 	Ptr<Packet> p = &pack1;
 	if (m_socket_send[dest]->Send (p) == -1)
 		std::cout << "node "<< (int)m_node_id << " failed to send vote for block to node "<< dest <<
 		" , send buffer　: "<< m_socket_send[dest]->GetTxAvailable()<< std::endl;
+	// else
+	// 	std::cout << "node "<< (int)m_node_id << " send vote to node "<< dest <<
+	// 	" : "<< str3<< std::endl;
 }
 
 
 void
 GossipApp::RelayVotingMessage (int dest, Ptr<Packet> p)
 {
-  	if(m_socket_send[dest]->Send(p)==-1)
-    	std::cout<<(int)m_node_id<<"error voting msg relay, tx available: "<<m_socket_send[dest]->GetTxAvailable()<<std::endl;
+
+	int x = m_socket_send[dest]->Send(p);
+	std::cout<<(int)m_node_id<<" relay vote msg at "<<Simulator::Now().GetSeconds()<<"s, state: "<<x<<"\n";
+  	// if(m_socket_send[dest]->Send(p)==-1)
+   //  	std::cout<<(int)m_node_id<<"error voting msg relay, tx available: "<<m_socket_send[dest]->GetTxAvailable()<<std::endl;
 	// else
 	// 	std::cout<<(int)m_node_id<<" relay vote msg to node, "<<dest << " send buffer: "<<m_socket_send[dest]->GetTxAvailable()<<"\n";
 
@@ -1160,6 +936,8 @@ void GossipApp::HandleRead(Ptr<Socket> socket)
 	Address from;
 	while(packet=socket->RecvFrom(from))
 	{
+		packet->RemoveAllPacketTags (); 
+		packet->RemoveAllByteTags ();
 		uint8_t content_[240];
 		packet->CopyData(content_, 240);
 		Ipv4Address from_addr = InetSocketAddress::ConvertFrom(from).GetIpv4();
@@ -1211,12 +989,10 @@ void GossipApp::HandleRead(Ptr<Socket> socket)
 					}
 				}
 			}
-			else if(strcmp(type_of_received_message, "BLOCKVOTE")==0)
+			else if(strcmp(type_of_received_message, "BLOCKVOT")==0)
 			{
 				// std::cout << "node " <<std::setw(2)<< (int) m_node_id << " received a " << content_
-				    // << " from node " << from_node << " at "<< Simulator::Now ().GetSeconds () << " s, rcv buffer: "
-				    // << socket->GetRxAvailable()<< std::endl;
-					// << " from node " << from_node << " at "<< Simulator::Now ().GetSeconds () << " s\n ";
+				//     << " from node " << from_node << " at "<< Simulator::Now ().GetSeconds () << " s\n";
 				int x = (atoi) (res[1].c_str());
 				if(block_got==true)
 				{
@@ -1234,7 +1010,9 @@ void GossipApp::HandleRead(Ptr<Socket> socket)
 								// y = y / 1000;
 								// Simulator::Schedule (Seconds (x), &GossipApp::RelayVotingMessage, this, dest, packet);
 								// Simulator::Schedule (Seconds (y), &GossipApp::SendVote, this, x, dest);
-								RelayVotingMessage(dest, packet);
+								
+								Ptr<Packet> pack1 = packet->Copy();
+								RelayVotingMessage(dest, pack1);
 							}
 							
 						}

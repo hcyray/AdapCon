@@ -25,7 +25,7 @@ const int AP_NUMBER = 18;
 const int NODE_NUMBER = 52;
 const int OUT_NEIGHBOR_NUMBER = 3;
 const int MAX_IN_NEIGHBOR_NUMBER = 5;
-const int BLOCK_PIECE_NUMBER =8; // 64~1MB
+const int BLOCK_PIECE_NUMBER = 16; // 64~1MB
 const float FIXED_EPOCH_LEN = 10;
 const float DETERMINE_INTERVAL = 0.1;
 const float TIMEOUT_FOR_TCP = 2.0;
@@ -160,35 +160,10 @@ private:
 	std::map<int, int> map_node_blockrcv_state;
 	std::map<int, float> map_node_blockrcvtime;
 	std::map<int, std::map<int, int> > map_node_blockpiece_received;
-	std::map<int, float> map_node_block_rcv_time;
-	std::vector<float> vec_block_rcv_time;
 	std::map<int, int> map_node_vote;
-	
-	std::map<int, float> map_node_onehoptime;
-	std::vector<float> vec_one_hop_time;
-	std::map<int, std::vector<float> > map_node_trustval;
-	std::map<int, int> map_node_failedSYN;
-	std::vector<int> formal_res_quorum;
-	std::vector<int> curr_res_quorum;
-	
-	
-	// std::ofstream log_link_file;
+
+
 	std::ofstream self_report_file;
-
-	float delta;
-	float srtt;
-	float rttvar;
-	float rtt;
-
-	void Read_data();
-	float Set_timeout();
-	float Epoch_len_computation();
-	void Res_quorum_update();
-	void Trust_val_update();
-	float Kickout_malicious();
-	float timeout_probability(float x);
-	float failrcv_probability(int n);
-
 
 
 };
